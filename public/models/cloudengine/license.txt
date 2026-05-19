@@ -1,0 +1,11 @@
+Model Information:
+* title:	CloudEngine S12700E-12
+* source:	https://sketchfab.com/3d-models/cloudengine-s12700e-12-cfe46b58906f4f91b103f71a8296e8c1
+* author:	MrdT (https://sketchfab.com/mrdt.club)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "CloudEngine S12700E-12" (https://sketchfab.com/3d-models/cloudengine-s12700e-12-cfe46b58906f4f91b103f71a8296e8c1) by MrdT (https://sketchfab.com/mrdt.club) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

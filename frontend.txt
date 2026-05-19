@@ -1,0 +1,1375 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Wifi, 
+  ShieldAlert, 
+  ShieldCheck, 
+  FileText, 
+  Shield, 
+  FileBadge, 
+  Link as LinkIcon, 
+  RadioReceiver, 
+  Database, 
+  CheckCircle2, 
+  ChevronRight, 
+  User, 
+  Network, 
+  ArrowRightCircle, 
+  Cloud, 
+  Globe, 
+  Box,
+  Share2,
+  Radio,
+  RadioTower,
+  CircleDot,
+  RotateCcw,
+  Zap,
+  Activity,
+  Cpu,
+  Upload
+} from 'lucide-react';
+
+// 宇树 (Unitree Go2) 仿生机器狗高保真矢量重绘（完美修正：关节一致朝右弯折，背部扁平无隆起）
+const UnitreeGo2Vector = ({ className = "", status = "neutral", colors }) => {
+  return (
+    <svg 
+      viewBox="0 0 120 100" 
+      className={`transition-all duration-300 ${className}`} 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        {/* 金属机身与装甲渐变 */}
+        <linearGradient id="unitree-silver" x1="20" y1="20" x2="100" y2="80" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#f1f5f9" /> {/* 亮部银白 */}
+          <stop offset="50%" stopColor="#cbd5e1" /> {/* 金属银灰 */}
+          <stop offset="100%" stopColor="#64748b" /> {/* 暗部枪灰 */}
+        </linearGradient>
+
+        <linearGradient id="unitree-dark-metal" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="100%" stopColor="#0f172a" />
+        </linearGradient>
+
+        {/* 状态相关的霓虹发光滤镜 */}
+        <filter id={`unitree-glow-svg-${status}`} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* 科技足底感应光圈 (投影) */}
+      <ellipse cx="60" cy="86" rx="36" ry="6" fill={colors.glow} opacity="0.25" filter={`url(#unitree-glow-svg-${status})`} />
+
+      {/* === 后肢（背景侧 - 关节一致向右弯折） === */}
+      <g opacity="0.45">
+        <circle cx="82" cy="36" r="4" fill="url(#unitree-dark-metal)" stroke="#334155" />
+        {/* 关节折向右侧(92, 54)，足端踩在左侧(74, 76) */}
+        <path d="M 82 36 L 92 54 L 74 76" stroke="url(#unitree-dark-metal)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="74" cy="76" r="2.5" fill="#1e293b" />
+      </g>
+
+      {/* === 前肢（背景侧 - 关节一致向右弯折） === */}
+      <g opacity="0.45">
+        <circle cx="48" cy="40" r="4" fill="url(#unitree-dark-metal)" stroke="#334155" />
+        {/* 关节折向右侧(58, 56)，足端踩在左侧(38, 78) */}
+        <path d="M 48 40 L 58 56 L 38 78" stroke="url(#unitree-dark-metal)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="38" cy="78" r="2.5" fill="#1e293b" />
+      </g>
+
+      {/* === 主躯干（扁平流线型背甲，无隆起驼峰） === */}
+      {/* 躯干底座底盘 */}
+      <path d="M 40 44 L 84 41 L 86 31 L 42 33 Z" fill="url(#unitree-dark-metal)" />
+      {/* 极简扁平银色背甲 */}
+      <path d="M 42 33 C 42 33, 55 30.5, 68 30 C 81 29.5, 86 31, 88 31.5 C 90 32, 90 35, 87 36 L 82 40 L 42 35 Z" fill="url(#unitree-silver)" stroke="#94a3b8" strokeWidth="0.5" />
+
+      {/* 侧部特征：白色“Unitree”艺术标志 */}
+      <text 
+        x="54" 
+        y="36" 
+        fill="#ffffff" 
+        fontSize="4.5" 
+        fontWeight="bold" 
+        fontFamily="sans-serif" 
+        letterSpacing="0.1"
+        transform="rotate(-1.5 54 36)"
+        opacity="0.9"
+      >
+        Unitree
+      </text>
+
+      {/* 侧部特征：状态三点式 LED 呼吸指示灯 */}
+      <circle cx="74" cy="36" r="1" fill={colors.led} filter={`url(#unitree-glow-svg-${status})`} />
+      <circle cx="77" cy="36" r="1" fill={colors.led} filter={`url(#unitree-glow-svg-${status})`} />
+      <circle cx="80" cy="36" r="1" fill={colors.led} filter={`url(#unitree-glow-svg-${status})`} />
+
+      {/* 尾部天线座 */}
+      <path d="M 88 31 L 94 23" stroke="#475569" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="94" cy="23" r="1.5" fill={colors.accent} filter={`url(#unitree-glow-svg-${status})`} />
+
+      {/* === 前肢（前景侧 - 关节一致向右弯折） === */}
+      <g>
+        {/* 前左肩部同心圆金属盖帽 */}
+        <circle cx="38" cy="38" r="7.5" fill="url(#unitree-silver)" stroke="#64748b" strokeWidth="1.5" />
+        <circle cx="38" cy="38" r="4" fill="url(#unitree-dark-metal)" />
+        <circle cx="38" cy="38" r="1.5" fill="#e2e8f0" />
+        
+        {/* 关节折向右侧(50, 56)，足端在左侧(30, 80) */}
+        <path d="M 38 38 L 50 56 L 30 80" stroke="url(#unitree-silver)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M 38 38 L 50 56 L 30 80" stroke="url(#unitree-dark-metal)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
+        
+        {/* 膝关节盖帽饰片 */}
+        <circle cx="50" cy="56" r="1.5" fill="#475569" />
+        
+        {/* 黑色防滑蹄 */}
+        <path d="M 28 80 C 28 78, 32 78, 32 80 L 31 83 L 29 83 Z" fill="#0f172a" />
+        <circle cx="30" cy="81" r="2.5" fill="#1e293b" />
+      </g>
+
+      {/* === 后肢（前景侧 - 关节一致向右弯折） === */}
+      <g>
+        {/* 后左髋部同心圆金属盖帽 */}
+        <circle cx="86" cy="33" r="7.5" fill="url(#unitree-silver)" stroke="#64748b" strokeWidth="1.5" />
+        <circle cx="86" cy="33" r="4" fill="url(#unitree-dark-metal)" />
+        <circle cx="86" cy="33" r="1.5" fill="#e2e8f0" />
+        
+        {/* 关节折向右侧(96, 51)，足端在左侧(78, 80) */}
+        <path d="M 86 33 L 96 51 L 78 80" stroke="url(#unitree-silver)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M 86 33 L 96 51 L 78 80" stroke="url(#unitree-dark-metal)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
+        
+        {/* 后膝关节盖帽饰片 */}
+        <circle cx="96" cy="51" r="1.5" fill="#475569" />
+        
+        {/* 黑色防滑蹄 */}
+        <path d="M 76 80 C 76 78, 80 78, 80 80 L 79 83 L 77 83 Z" fill="#0f172a" />
+        <circle cx="78" cy="81" r="2.5" fill="#1e293b" />
+      </g>
+
+      {/* === 头部与前哨传感器舱 === */}
+      <g>
+        {/* 颈部连接件 */}
+        <path d="M 42 34 L 30 36 L 28 42 L 38 41 Z" fill="url(#unitree-dark-metal)" />
+
+        {/* 精美的前倾面罩/额头 */}
+        <path d="M 30 33 L 20 40 C 18 41.5, 18 44.5, 20 46 L 28 50 L 34 40 Z" fill="url(#unitree-silver)" stroke="#94a3b8" strokeWidth="0.5" />
+
+        {/* 原图标志性侧面“02”图腾喷漆 */}
+        <text 
+          x="24" 
+          y="44" 
+          fill="#334155" 
+          fontSize="4" 
+          fontWeight="bold" 
+          fontFamily="monospace"
+          transform="rotate(6 24 44)"
+          opacity="0.85"
+        >
+          02
+        </text>
+
+        {/* 头部顶端圆钮按钮 */}
+        <ellipse cx="27" cy="35" rx="2.5" ry="1.2" fill="url(#unitree-dark-metal)" />
+
+        {/* 悬挂式前置光学相机/主视觉雷达 */}
+        <path d="M 19 44 L 17 56 L 23 54 L 24 44 Z" fill="#020617" />
+        {/* 镜头玻璃反光面 */}
+        <circle cx="19.5" cy="50" r="2" fill={colors.accent} filter={`url(#unitree-glow-svg-${status})`} />
+        
+        {/* 前端防撞保护格栅 */}
+        <path d="M 15 52 C 15 52, 16 59, 21 58 C 24 57, 24 53, 24 53" stroke="#1e293b" strokeWidth="1.2" strokeLinecap="round" />
+        <line x1="18" y1="50" x2="16" y2="56" stroke="#0f172a" strokeWidth="1" />
+        <line x1="21" y1="49" x2="20" y2="56" stroke="#0f172a" strokeWidth="1" />
+      </g>
+    </svg>
+  );
+};
+
+// 支持自适应检测和全息渲染的智能机器狗组件
+const RobotDog = ({ className = "", status = "neutral" }) => {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  // 针对白底灰色实物图的高级全息滤镜算法
+  const getFilterStyle = () => {
+    switch (status) {
+      case 'unregistered':
+        return {
+          filter: 'invert(1) sepia(1) saturate(8) hue-rotate(315deg) brightness(1.1) contrast(1.3)',
+        };
+      case 'registered':
+        return {
+          filter: 'invert(1) sepia(1) saturate(6) hue-rotate(95deg) brightness(1.2) contrast(1.2)',
+        };
+      case 'neutral':
+      default:
+        return {
+          filter: 'invert(1) sepia(1) saturate(5) hue-rotate(170deg) brightness(1.2) contrast(1.2)',
+        };
+    }
+  };
+
+  const getGlowColor = () => {
+    switch (status) {
+      case 'unregistered': return 'bg-red-500 shadow-[0_0_15px_#ef4444]';
+      case 'registered': return 'bg-emerald-500 shadow-[0_0_15px_#10b981]';
+      default: return 'bg-cyan-500 shadow-[0_0_15px_#06b6d4]';
+    }
+  };
+
+  const statusColors = {
+    unregistered: {
+      glow: "#ef4444",
+      led: "#f87171",
+      accent: "#ef4444",
+    },
+    registered: {
+      glow: "#10b981",
+      led: "#34d399",
+      accent: "#10b981",
+    },
+    neutral: {
+      glow: "#06b6d4",
+      led: "#22d3ee",
+      accent: "#06b6d4",
+    }
+  }[status];
+
+  return (
+    <div className={`relative flex items-center justify-center ${className}`}>
+      {/* 科技底盘感应发光圈 */}
+      <div className={`absolute w-3/4 h-2 bottom-3 rounded-full blur-md opacity-45 transition-all duration-300 ${getGlowColor()}`} />
+      
+      {imgFailed ? (
+        // 图片加载失败时，渲染精确修正了关节弯折和扁平背部的 3D 风格矢量图
+        <UnitreeGo2Vector className="w-full h-full" status={status} colors={statusColors} />
+      ) : (
+        // 机器狗实物图片层 (过滤去除白色背景色)
+        <img 
+          src="image_c2f288.png" 
+          alt="Unitree Go2"
+          style={getFilterStyle()} 
+          className="w-full h-full object-contain mix-blend-screen transition-all duration-300 drop-shadow-[0_0_12px_rgba(255,255,255,0.25)]"
+          onError={() => setImgFailed(true)}
+        />
+      )}
+    </div>
+  );
+};
+
+// 通用科技感面板组件 (外层大框 - 升级为高透高对比度毛玻璃面板)
+const SciFiPanel = ({ children, className = "", title = "" }) => (
+  <div className={`relative border border-blue-500/30 bg-slate-950/45 backdrop-blur-xl rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.5)] ${className}`}>
+    {/* 边角装饰 */}
+    <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-blue-400"></div>
+    <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-blue-400"></div>
+    <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-blue-400"></div>
+    <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-blue-400"></div>
+    
+    {title && (
+      <div className="bg-gradient-to-r from-blue-950/60 to-transparent py-2 px-4 border-b border-blue-500/30">
+        <h3 className="text-blue-100 font-medium text-sm md:text-base">{title}</h3>
+      </div>
+    )}
+    <div className="p-4 h-full">
+      {children}
+    </div>
+  </div>
+);
+
+// 状态行组件
+const StatusRow = ({ label, value, status = "success", isMono = false }) => {
+  const getStatusColor = () => {
+    switch (status) {
+      case 'success': return 'text-emerald-400';
+      case 'pending': return 'text-blue-400';
+      case 'warning': return 'text-yellow-400';
+      case 'error': return 'text-red-400';
+      default: return 'text-gray-300';
+    }
+  };
+
+  return (
+    <div className="flex justify-between items-center py-1.5 border-b border-blue-950/40 last:border-0 text-xs lg:text-sm">
+      <span className="text-blue-200/90">{label}</span>
+      <div className="flex items-center gap-1.5">
+        <span className={`${getStatusColor()} ${isMono ? 'font-mono' : ''}`}>{value}</span>
+        {status === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+        {status === 'pending' && <CircleDot className="w-3.5 h-3.5 text-blue-500" />}
+      </div>
+    </div>
+  );
+};
+
+// ==================== WebGL 3D 拓扑组件 ====================
+const NetworkTopology3D = ({ activeFlowType, onSelectFlow }) => {
+  const mountRef = useRef(null);
+  const labelsRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [threeLoaded, setThreeLoaded] = useState(false);
+  const [selectedTargetNode, setSelectedTargetNode] = useState('RobotDog'); // Target node to replace with local model
+  const [activeSessionLogs, setActiveSessionLogs] = useState([
+    "[6G Node Active] gNB sub-carrier active at 140GHz bands",
+    "[Core Auth System] Identity Orchestrator listening..."
+  ]);
+
+  // Use refs to pass new 3D model data dynamically to the Three.js loop
+  const uploadedModelsRef = useRef({});
+  const sceneRef = useRef(null);
+  const nodeGroupsRef = useRef({});
+
+  // Node data mappings (WebGL Positions & metadata)
+  const nodeData = {
+    UE: { name: "UE (5G/6G用户终端)", pos: [-8, 0, -4], color: 0x00f0ff, type: "ue" },
+    RobotDog: { name: "Robot Dog (智能机器狗)", pos: [-8, 0, 4], color: 0x00ffcc, type: "robot" },
+    gNB: { name: "6G gNB (基站)", pos: [-3, 0, 0], color: 0x3b82f6, type: "gnb" },
+    SRF: { name: "SRF (服务注册网元)", pos: [2, 0, 3.5], color: 0xa855f7, type: "srf" },
+    UPF: { name: "UPF (用户面网元)", pos: [2, 0, -3.5], color: 0x10b981, type: "upf" },
+    ACN: { name: "ACN Agent (控制网智能体)", pos: [8, 0, 3], color: 0xec4899, type: "acn" },
+    Computing: { name: "Computing Agent (算力智能体)", pos: [8, 0, -3], color: 0xf59e0b, type: "compute" }
+  };
+
+  const connections = [
+    { from: 'UE', to: 'gNB', key: 'UE->gNB' },
+    { from: 'RobotDog', to: 'gNB', key: 'RobotDog->gNB' },
+    { from: 'gNB', to: 'SRF', key: 'gNB->SRF' },
+    { from: 'gNB', to: 'UPF', key: 'gNB->UPF' },
+    { from: 'SRF', to: 'ACN', key: 'SRF->ACN' },
+    { from: 'SRF', to: 'Computing', key: 'SRF->Computing' },
+    { from: 'UPF', to: 'Computing', key: 'UPF->Computing' }
+  ];
+
+  // Dynamic loading of Three.js + GLTFLoader sequentially
+  useEffect(() => {
+    if (window.THREE && window.THREE.GLTFLoader) {
+      setThreeLoaded(true);
+      return;
+    }
+
+    const loadScript = (url) => {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.body.appendChild(script);
+      });
+    };
+
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js')
+      .then(() => loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js'))
+      .then(() => setThreeLoaded(true))
+      .catch(err => console.error("Error loading 3D renderer engines", err));
+  }, []);
+
+  // Handle local GLB/GLTF model upload
+  const handleLocalModelUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const arrayBuffer = event.target.result;
+      const THREE = window.THREE;
+
+      if (!THREE || !THREE.GLTFLoader) return;
+
+      const loader = new THREE.GLTFLoader();
+      loader.parse(arrayBuffer, '', (gltf) => {
+        const customModelGroup = gltf.scene;
+
+        // Auto scaling and materials alignment
+        customModelGroup.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            // Upgrade with reflective sci-fi look
+            child.material.roughness = 0.15;
+            child.material.metalness = 0.85;
+          }
+        });
+
+        // Store standard scale to prevent huge GLB models breaking sand table
+        const box = new THREE.Box3().setFromObject(customModelGroup);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const targetSize = 1.6; // Perfect bounds size for sand table pedestal
+        const scaleFactor = targetSize / maxDim;
+        customModelGroup.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        
+        // Center the imported model
+        const center = box.getCenter(new THREE.Vector3());
+        customModelGroup.position.set(-center.x * scaleFactor, -center.y * scaleFactor - 0.2, -center.z * scaleFactor);
+
+        // Track and replace immediately inside the render scene
+        const targetNodeGroup = nodeGroupsRef.current[selectedTargetNode];
+        if (targetNodeGroup) {
+          // Remove previous active children meshes except the pedestal bottom group
+          const toRemove = [];
+          targetNodeGroup.children.forEach(child => {
+            // Keep the triple layer pedestal
+            if (child.name !== 'pedestal') {
+              toRemove.push(child);
+            }
+          });
+          toRemove.forEach(child => targetNodeGroup.remove(child));
+
+          // Mount the local uploaded GLTF/GLB model!
+          targetNodeGroup.add(customModelGroup);
+          setActiveSessionLogs(prev => [
+            `[Local 3D Importer] Successfully loaded local GLTF model into: ${selectedTargetNode}`,
+            ...prev.slice(0, 2)
+          ]);
+        }
+      }, (error) => {
+        console.error("Local GLTF parsing error:", error);
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  // WebGL Renderer Lifecycle
+  useEffect(() => {
+    if (!threeLoaded || !mountRef.current) return;
+
+    const THREE = window.THREE;
+    const container = mountRef.current;
+    const width = container.clientWidth;
+    const height = container.clientHeight || 450;
+
+    // 1. Scene & Camera
+    const scene = new THREE.Scene();
+    sceneRef.current = scene;
+    scene.fog = new THREE.FogExp2(0x02050a, 0.015);
+
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+    let rotationX = 0.42; 
+    let rotationY = 0.65;
+    const radius = 26;
+
+    const updateCameraPosition = () => {
+      camera.position.x = radius * Math.sin(rotationY) * Math.cos(rotationX);
+      camera.position.z = radius * Math.cos(rotationY) * Math.cos(rotationX);
+      camera.position.y = radius * Math.sin(rotationX);
+      camera.lookAt(0, 0, 0);
+    };
+    updateCameraPosition();
+
+    // 2. Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // 3. Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+    scene.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0x00f0ff, 1.5);
+    dirLight1.position.set(10, 20, 15);
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0xa855f7, 0.8);
+    dirLight2.position.set(-10, -15, -10);
+    scene.add(dirLight2);
+
+    // Subtle technological ground grid
+    const floorGrid = new THREE.GridHelper(32, 24, 0x1e3a8a, 0x0f172a);
+    floorGrid.position.y = -1.25; 
+    floorGrid.material.opacity = 0.35;
+    floorGrid.material.transparent = true;
+    scene.add(floorGrid);
+
+    // Helper: Create high-fidelity double-layered Isometric Pedestal (参照图1的高科技发光基座)
+    const createPedestal = (nodeColor) => {
+      const pedestalGroup = new THREE.Group();
+      pedestalGroup.name = 'pedestal';
+
+      const lowerGeo = new THREE.BoxGeometry(2.4, 0.15, 2.4);
+      const lowerMat = new THREE.MeshStandardMaterial({ 
+        color: 0x0f172a, 
+        metalness: 0.95, 
+        roughness: 0.15,
+        transparent: true,
+        opacity: 0.85
+      });
+      const lowerMesh = new THREE.Mesh(lowerGeo, lowerMat);
+      lowerMesh.position.y = -1.2;
+      pedestalGroup.add(lowerMesh);
+
+      const upperGeo = new THREE.BoxGeometry(2.0, 0.1, 2.0);
+      const upperMat = new THREE.MeshStandardMaterial({ 
+        color: 0x1e293b, 
+        metalness: 0.85,
+        roughness: 0.1 
+      });
+      const upperMesh = new THREE.Mesh(upperGeo, upperMat);
+      upperMesh.position.y = -1.1;
+      pedestalGroup.add(upperMesh);
+
+      const ringGeo = new THREE.BoxGeometry(2.1, 0.05, 2.1);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: nodeColor,
+        transparent: true,
+        opacity: 0.85
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.position.y = -1.06;
+      pedestalGroup.add(ringMesh);
+
+      return pedestalGroup;
+    };
+
+    // 4. Node meshes creation inside scene (High fidelity modular generation)
+    const nodeMeshes = {};
+
+    Object.entries(nodeData).forEach(([key, value]) => {
+      const nodeGroup = new THREE.Group();
+      nodeGroup.position.set(...value.pos);
+
+      // Add high fidelity pedestal base
+      const basePedestal = createPedestal(value.color);
+      nodeGroup.add(basePedestal);
+
+      // Procedural detailing layout
+      if (value.type === 'robot') {
+        const robotDogGroup = new THREE.Group();
+        const bodyGeo = new THREE.BoxGeometry(1.6, 0.7, 0.9);
+        const bodyMat = new THREE.MeshStandardMaterial({ 
+          color: 0x64748b, 
+          roughness: 0.1, 
+          metalness: 0.85,
+          emissive: 0x111827,
+          emissiveIntensity: 0.3
+        });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        robotDogGroup.add(body);
+
+        const headGeo = new THREE.BoxGeometry(0.7, 0.6, 0.6);
+        const head = new THREE.Mesh(headGeo, bodyMat);
+        head.position.set(-0.95, 0.35, 0);
+        robotDogGroup.add(head);
+
+        const visorGeo = new THREE.BoxGeometry(0.1, 0.2, 0.4);
+        const visorMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
+        const visor = new THREE.Mesh(visorGeo, visorMat);
+        visor.position.set(-1.31, 0.35, 0);
+        robotDogGroup.add(visor);
+
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.95, roughness: 0.15 });
+        const legGeo = new THREE.BoxGeometry(0.18, 1.2, 0.18);
+        for (let i = 0; i < 4; i++) {
+          const leg = new THREE.Mesh(legGeo, legMat);
+          const xOffset = i < 2 ? 0.6 : -0.6;
+          const zOffset = i % 2 === 0 ? 0.45 : -0.45;
+          leg.position.set(xOffset, -0.65, zOffset);
+          leg.rotation.z = 0.25; 
+          robotDogGroup.add(leg);
+        }
+        robotDogGroup.scale.set(0.9, 0.9, 0.9);
+        nodeGroup.add(robotDogGroup);
+
+      } else if (value.type === 'ue') {
+        const ueGeo = new THREE.BoxGeometry(1.5, 1.9, 0.15);
+        const ueMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.15, metalness: 0.7 });
+        const ue = new THREE.Mesh(ueGeo, ueMat);
+        ue.rotation.y = 0.25;
+        nodeGroup.add(ue);
+
+        const screenGeo = new THREE.PlaneGeometry(1.3, 1.7);
+        const screenMat = new THREE.MeshStandardMaterial({ 
+          color: 0x00f0ff, 
+          emissive: 0x00f0ff,
+          emissiveIntensity: 0.85,
+          transparent: true, 
+          opacity: 0.65 
+        });
+        const screen = new THREE.Mesh(screenGeo, screenMat);
+        screen.position.set(0, 0, 0.08);
+        screen.rotation.y = 0.25;
+        nodeGroup.add(screen);
+
+        const standGeo = new THREE.BoxGeometry(0.3, 1.1, 0.3);
+        const stand = new THREE.Mesh(standGeo, ueMat);
+        stand.position.y = -1.0;
+        nodeGroup.add(stand);
+
+      } else if (value.type === 'gnb') {
+        const towerGeo = new THREE.CylinderGeometry(0.1, 0.35, 2.8, 6);
+        const towerMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.95, roughness: 0.1 });
+        const tower = new THREE.Mesh(towerGeo, towerMat);
+        nodeGroup.add(tower);
+
+        const headGeo = new THREE.SphereGeometry(0.45, 16, 16);
+        const headMat = new THREE.MeshStandardMaterial({ 
+          color: 0x3b82f6,
+          emissive: 0x3b82f6,
+          emissiveIntensity: 0.95
+        });
+        const topHead = new THREE.Mesh(headGeo, headMat);
+        topHead.position.y = 1.4;
+        nodeGroup.add(topHead);
+
+        const radarGeo = new THREE.BoxGeometry(0.4, 0.6, 0.15);
+        const radarMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2 });
+        const radar = new THREE.Mesh(radarGeo, radarMat);
+        radar.position.set(0, 0.8, 0.25);
+        nodeGroup.add(radar);
+
+        const waveGeo = new THREE.TorusGeometry(1.4, 0.06, 8, 32);
+        const waveMat = new THREE.MeshBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.45 });
+        const sigWave = new THREE.Mesh(waveGeo, waveMat);
+        sigWave.rotation.x = Math.PI / 2;
+        sigWave.position.y = 0.4;
+        nodeGroup.add(sigWave);
+        nodeGroup.userData.sigWave = sigWave; 
+
+      } else if (value.type === 'srf') {
+        const srfCoreGroup = new THREE.Group();
+        const cylinderGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.35, 16);
+        const cylMat = new THREE.MeshStandardMaterial({ color: 0xa855f7, roughness: 0.1, metalness: 0.85 });
+        const energyLineMat = new THREE.MeshBasicMaterial({ color: 0xd8b4fe, transparent: true, opacity: 0.95 });
+
+        for (let i = 0; i < 3; i++) {
+          const coreSlice = new THREE.Mesh(cylinderGeo, cylMat);
+          coreSlice.position.y = (i - 1) * 0.7;
+          srfCoreGroup.add(coreSlice);
+
+          const beltGeo = new THREE.CylinderGeometry(0.88, 0.88, 0.06, 16, 1, true);
+          const belt = new THREE.Mesh(beltGeo, energyLineMat);
+          belt.position.y = (i - 1) * 0.7;
+          srfCoreGroup.add(belt);
+        }
+
+        const coreDiaGeo = new THREE.OctahedronGeometry(0.5);
+        const coreDia = new THREE.Mesh(coreDiaGeo, new THREE.MeshBasicMaterial({ color: 0xe9d5ff }));
+        coreDia.position.y = 1.2;
+        srfCoreGroup.add(coreDia);
+        srfCoreGroup.userData.spinningCore = coreDia;
+
+        nodeGroup.add(srfCoreGroup);
+        nodeGroup.userData.group = srfCoreGroup;
+
+      } else if (value.type === 'upf') {
+        const upfCore = new THREE.Group();
+        const serverGeo = new THREE.BoxGeometry(1.7, 0.5, 1.7);
+        const serverMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.2 });
+
+        for (let i = 0; i < 2; i++) {
+          const slot = new THREE.Mesh(serverGeo, serverMat);
+          slot.position.y = (i - 0.5) * 0.8;
+          upfCore.add(slot);
+
+          const greenLightGeo = new THREE.BoxGeometry(0.1, 0.1, 1.72);
+          const greenLightMat = new THREE.MeshStandardMaterial({ 
+            color: 0x10b981,
+            emissive: 0x10b981,
+            emissiveIntensity: 0.95
+          });
+          const lightL = new THREE.Mesh(greenLightGeo, greenLightMat);
+          lightL.position.set(0.8, (i - 0.5) * 0.8, -0.4);
+          upfCore.add(lightL);
+
+          const lightR = new THREE.Mesh(greenLightGeo, greenLightMat);
+          lightR.position.set(0.8, (i - 0.5) * 0.8, 0.4);
+          upfCore.add(lightR);
+        }
+        nodeGroup.add(upfCore);
+
+      } else if (value.type === 'acn') {
+        const acnCore = new THREE.OctahedronGeometry(0.7);
+        const acnMat = new THREE.MeshStandardMaterial({ 
+          color: 0xec4899, 
+          emissive: 0xec4899,
+          emissiveIntensity: 0.65,
+          roughness: 0.1, 
+          metalness: 0.55 
+        });
+        const innerMesh = new THREE.Mesh(acnCore, acnMat);
+        nodeGroup.add(innerMesh);
+        nodeGroup.userData.innerMesh = innerMesh;
+
+        const wireGeo = new THREE.IcosahedronGeometry(1.2, 1);
+        const edges = new THREE.EdgesGeometry(wireGeo);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ 
+          color: 0xf472b6, 
+          transparent: true,
+          opacity: 0.75 
+        }));
+        nodeGroup.add(line);
+        nodeGroup.userData.wireframe = line;
+
+      } else if (value.type === 'compute') {
+        const serverTower = new THREE.Group();
+        const blockGeo = new THREE.BoxGeometry(1.5, 0.25, 1.5);
+        const blockMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.85, roughness: 0.15 });
+        const glowMat = new THREE.MeshStandardMaterial({ 
+          color: 0xfbbf24, 
+          emissive: 0xfbbf24,
+          emissiveIntensity: 0.95,
+          transparent: true, 
+          opacity: 0.85 
+        });
+
+        for (let i = 0; i < 4; i++) {
+          const disk = new THREE.Mesh(blockGeo, blockMat);
+          disk.position.y = (i - 1.5) * 0.5;
+          serverTower.add(disk);
+
+          const glowingStripe = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.05, 1.52), glowMat);
+          glowingStripe.position.y = (i - 1.5) * 0.5;
+          serverTower.add(glowingStripe);
+        }
+        serverTower.scale.set(0.9, 0.9, 0.9);
+        nodeGroup.add(serverTower);
+      }
+
+      scene.add(nodeGroup);
+      nodeMeshes[key] = nodeGroup;
+      nodeGroupsRef.current[key] = nodeGroup; // Mount reference for GLTFLoader parsing replacement
+    });
+
+    // 5. Build Arched Connection Lines (上方立体弧形链路渲染 - 参照图1的空中弯折弧线)
+    const activeLineObjects = {};
+
+    connections.forEach(conn => {
+      const p1 = new THREE.Vector3(...nodeData[conn.from].pos);
+      const p2 = new THREE.Vector3(...nodeData[conn.to].pos);
+      
+      const midPoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+      const dist = p1.distanceTo(p2);
+      const arcHeight = Math.max(2.2, dist * 0.35); 
+      const controlPoint = midPoint.clone().add(new THREE.Vector3(0, arcHeight, 0));
+
+      const curve = new THREE.QuadraticBezierCurve3(p1, controlPoint, p2);
+      const points = curve.getPoints(36);
+      const geom = new THREE.BufferGeometry().setFromPoints(points);
+
+      const mat = new THREE.LineBasicMaterial({
+        color: 0x1e3a8a,
+        transparent: true,
+        opacity: 0.35,
+        linewidth: 1.5
+      });
+      const line = new THREE.Line(geom, mat);
+      scene.add(line);
+
+      activeLineObjects[conn.key] = line;
+    });
+
+    // 7. Interactive dragging mouse handlers (Camera rotation)
+    const onMouseDown = (e) => {
+      isDragging = true;
+      previousMousePosition = { x: e.clientX, y: e.clientY };
+    };
+
+    const onMouseMove = (e) => {
+      if (!isDragging) return;
+      const deltaX = e.clientX - previousMousePosition.x;
+      const deltaY = e.clientY - previousMousePosition.y;
+
+      rotationY += deltaX * 0.005;
+      rotationX = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, rotationX + deltaY * 0.005));
+
+      updateCameraPosition();
+      previousMousePosition = { x: e.clientX, y: e.clientY };
+    };
+
+    const onMouseUp = () => {
+      isDragging = false;
+    };
+
+    container.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+
+    // 8. Animation & Projection loop (Blinking flow simulation)
+    let animFrameId;
+    const tempV = new THREE.Vector3();
+
+    const animate = () => {
+      animFrameId = requestAnimationFrame(animate);
+
+      const time = Date.now() * 0.001;
+
+      // Node mesh animations (Visual rotations)
+      if (nodeMeshes.gNB && nodeMeshes.gNB.userData.sigWave) {
+        nodeMeshes.gNB.userData.sigWave.rotation.z += 0.015;
+      }
+      if (nodeMeshes.SRF && nodeMeshes.SRF.userData.group) {
+        const group = nodeMeshes.SRF.userData.group;
+        group.rotation.y += 0.005;
+        if (group.userData.spinningCore) {
+          group.userData.spinningCore.rotation.x += 0.02;
+          group.userData.spinningCore.rotation.y += 0.01;
+        }
+      }
+      if (nodeMeshes.ACN) {
+        if (nodeMeshes.ACN.userData.innerMesh) {
+          nodeMeshes.ACN.userData.innerMesh.rotation.x += 0.012;
+          nodeMeshes.ACN.userData.innerMesh.rotation.y += 0.012;
+        }
+        if (nodeMeshes.ACN.userData.wireframe) {
+          nodeMeshes.ACN.userData.wireframe.rotation.x += 0.003;
+          nodeMeshes.ACN.userData.wireframe.rotation.y -= 0.004;
+        }
+      }
+
+      // Linear high-frequency blinking path mapping
+      Object.entries(activeLineObjects).forEach(([linkKey, lineMesh]) => {
+        let isFlowActive = false;
+        let flowColor = 0x1e3a8a;
+
+        if (activeFlowType === 'auth') {
+          const authLinks = ['RobotDog->gNB', 'gNB->SRF', 'SRF->ACN'];
+          if (authLinks.includes(linkKey)) {
+            isFlowActive = true;
+            flowColor = 0x00ffcc; 
+          }
+        } else if (activeFlowType === 'compute') {
+          const computeLinks = ['UE->gNB', 'gNB->UPF', 'UPF->Computing'];
+          if (computeLinks.includes(linkKey)) {
+            isFlowActive = true;
+            flowColor = 0xf59e0b; 
+          }
+        } else if (activeFlowType === 'collab') {
+          const collabLinks = ['SRF->ACN', 'SRF->Computing'];
+          if (collabLinks.includes(linkKey)) {
+            isFlowActive = true;
+            flowColor = 0xec4899; 
+          }
+        }
+
+        if (isFlowActive) {
+          // Extremely fast blink loop without particle overload
+          lineMesh.material.color.setHex(flowColor);
+          lineMesh.material.opacity = 0.2 + 0.8 * Math.abs(Math.sin(time * 18)); 
+        } else {
+          // Ambient idle state breathing
+          lineMesh.material.color.setHex(0x1e3a8a);
+          lineMesh.material.opacity = 0.25 + 0.1 * Math.sin(time * 2);
+        }
+      });
+
+      // Render Three.js Scene
+      renderer.render(scene, camera);
+
+      // Project 3D Node positions to absolute HTML screen overlay tags
+      if (labelsRef.current) {
+        const containerRect = container.getBoundingClientRect();
+        Object.entries(nodeData).forEach(([key, value]) => {
+          const el = document.getElementById(`overlay-label-${key}`);
+          if (el) {
+            tempV.set(value.pos[0], value.pos[1] + 1.8, value.pos[2]);
+            tempV.project(camera);
+
+            if (tempV.z > 1) {
+              el.style.display = 'none';
+            } else {
+              el.style.display = 'block';
+              const x = (tempV.x * 0.5 + 0.5) * containerRect.width;
+              const y = (tempV.y * -0.5 + 0.5) * containerRect.height;
+              el.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
+            }
+          }
+        });
+      }
+    };
+    animate();
+
+    const handleResize = () => {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    const resizeObserver = new ResizeObserver(() => handleResize());
+    resizeObserver.observe(container);
+
+    // Component Cleanup
+    return () => {
+      cancelAnimationFrame(animFrameId);
+      resizeObserver.disconnect();
+      
+      container.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+
+      renderer.dispose();
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
+    };
+  }, [threeLoaded, activeFlowType]);
+
+  return (
+    <div className="border border-blue-500/35 rounded-xl p-5 bg-slate-950/40 backdrop-blur-xl flex flex-col h-full relative shadow-[0_0_25px_rgba(0,0,0,0.5)] overflow-hidden">
+      {/* HUD futuristic corner highlights */}
+      <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-blue-400"></div>
+      <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-blue-400"></div>
+      <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-blue-400"></div>
+      <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-blue-400"></div>
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+        <div>
+          <h2 className="text-base font-bold text-blue-100 glow-text tracking-wider">
+            6G 核心智能网：3D 数字孪生拓扑
+          </h2>
+          <p className="text-[10px] text-blue-300">
+            按住左键拖拽可多维旋转视角，观察水平面排布的拓扑网元
+          </p>
+        </div>
+        
+        {/* === 本地 3D 模型替换舱 (Local Model Loader HUD) === */}
+        <div className="flex items-center gap-1.5 bg-slate-950/80 border border-cyan-500/30 p-1.5 rounded-lg shadow-[0_0_12px_rgba(0,240,255,0.15)] max-w-full z-40">
+          <span className="text-[9px] text-cyan-300 font-bold whitespace-nowrap">替换网元模型:</span>
+          <select 
+            value={selectedTargetNode}
+            onChange={(e) => setSelectedTargetNode(e.target.value)}
+            className="bg-slate-900 border border-blue-500/30 text-white rounded text-[10px] py-0.5 px-1 focus:outline-none focus:border-cyan-400 cursor-pointer"
+          >
+            <option value="RobotDog">Robot Dog</option>
+            <option value="UE">UE 终端</option>
+            <option value="gNB">6G 基站</option>
+            <option value="SRF">SRF 网元</option>
+            <option value="UPF">UPF 网元</option>
+            <option value="ACN">ACN 智能体</option>
+            <option value="Computing">算力智能体</option>
+          </select>
+          
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 hover:text-white px-2 py-0.5 rounded text-[10px] border border-cyan-500/40 transition-colors font-bold whitespace-nowrap"
+          >
+            <Upload className="w-3 h-3" />
+            导入本地 .glb/.gltf
+          </button>
+          
+          <input 
+            ref={fileInputRef}
+            type="file" 
+            accept=".glb,.gltf" 
+            className="hidden" 
+            onChange={handleLocalModelUpload}
+          />
+        </div>
+      </div>
+
+      {/* 3D Container viewport */}
+      <div className="flex-1 w-full min-h-[300px] lg:min-h-[340px] relative rounded-lg overflow-hidden border border-blue-900/30 bg-slate-950/20">
+        
+        {!threeLoaded && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/75 z-50">
+            <Cpu className="w-10 h-10 text-cyan-400 animate-spin" />
+            <p className="text-xs text-blue-300 mt-2 font-mono">加载 3D 渲染引擎与加载器...</p>
+          </div>
+        )}
+
+        {/* Real-time 3D projected absolute labels overlay */}
+        <div ref={labelsRef} className="absolute inset-0 pointer-events-none z-30 overflow-hidden font-sans">
+          {Object.entries(nodeData).map(([key, value]) => (
+            <div
+              key={key}
+              id={`overlay-label-${key}`}
+              className="absolute left-0 top-0 pointer-events-none transition-all duration-75 select-none"
+              style={{ display: 'none' }}
+            >
+              <div className="bg-slate-950/90 border border-cyan-500/50 px-2.5 py-1 rounded text-[9px] sm:text-[10px] text-gray-100 whitespace-nowrap shadow-[0_0_12px_rgba(0,240,255,0.4)] flex items-center gap-1.5 backdrop-blur-md">
+                <span className="w-2 h-2 rounded-full inline-block animate-pulse" style={{ backgroundColor: `#${value.color.toString(16)}` }}></span>
+                <span className="font-bold tracking-wide">{value.name}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ThreeJS canvas root */}
+        <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing absolute inset-0 z-10" />
+
+        {/* WebGL Overlay HUD Controls */}
+        <div className="absolute bottom-3 left-3 right-3 z-30 pointer-events-auto flex flex-wrap justify-between gap-2 items-center">
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => onSelectFlow('auth')}
+              className={`text-[10px] font-bold px-2.5 py-1.5 rounded transition-all border ${
+                activeFlowType === 'auth' 
+                  ? 'bg-cyan-500/30 text-cyan-300 border-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.4)] font-extrabold' 
+                  : 'bg-slate-950/75 text-gray-300 border-blue-500/20 hover:border-cyan-500/50'
+              }`}
+            >
+              ⚡ 触发注册闪烁流
+            </button>
+            <button
+              onClick={() => onSelectFlow('compute')}
+              className={`text-[10px] font-bold px-2.5 py-1.5 rounded transition-all border ${
+                activeFlowType === 'compute' 
+                  ? 'bg-amber-500/30 text-amber-300 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.4)] font-extrabold' 
+                  : 'bg-slate-950/75 text-gray-300 border-blue-500/20 hover:border-amber-500/50'
+              }`}
+            >
+              ⚙️ 触发卸载闪烁流
+            </button>
+            <button
+              onClick={() => onSelectFlow('collab')}
+              className={`text-[10px] font-bold px-2.5 py-1.5 rounded transition-all border ${
+                activeFlowType === 'collab' 
+                  ? 'bg-pink-500/30 text-pink-300 border-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.4)] font-extrabold' 
+                  : 'bg-slate-950/75 text-gray-300 border-blue-500/20 hover:border-pink-500/50'
+              }`}
+            >
+              🔄 触发Agent闪烁流
+            </button>
+          </div>
+          
+          <button
+            onClick={() => onSelectFlow(null)}
+            className="p-1.5 rounded bg-slate-950/75 hover:bg-slate-900 border border-blue-500/20 hover:border-blue-500 text-blue-300"
+            title="重置网络活动"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* HUD Bottom Info Display (Telemetry + Dynamic Event logger) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+        <div className="border border-blue-500/20 rounded p-2.5 bg-slate-950/65 backdrop-blur-md">
+          <h4 className="text-xs font-bold text-blue-300 mb-1 flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5 text-cyan-400" />
+            6G 网络实时状态面板 (Orchestrator)
+          </h4>
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-blue-100/90 font-semibold font-mono mt-2">
+            <div>• 用户吞吐量: <span className="text-cyan-400">1.2 Tbps</span></div>
+            <div>• 丢包率: <span className="text-cyan-400">0.0000%</span></div>
+            <div>• 当前活跃节点: <span className="text-cyan-400">7</span></div>
+            <div>• ACN同步时延: <span className="text-cyan-400">2.1 μs</span></div>
+          </div>
+        </div>
+
+        {/* Dynamic CLI Server Events */}
+        <div className="border border-blue-500/20 rounded p-2 bg-black/60 font-mono text-[9px] text-cyan-400/90 leading-normal flex flex-col justify-end min-h-[58px] max-h-[64px] overflow-hidden select-none">
+          <div className="opacity-60 text-gray-400 uppercase tracking-wider mb-0.5">// 6G Core Segment log:</div>
+          {activeSessionLogs.map((log, index) => (
+            <div key={index} className="truncate">
+              &gt; {log}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function App() {
+  const [activeFlowType, setActiveFlowType] = useState('auth'); // Default auth sequence
+
+  return (
+    <div 
+      className="min-h-screen text-white p-4 md:p-8 font-sans overflow-x-hidden flex items-center justify-center relative bg-cover bg-center bg-no-repeat"
+      style={{
+        // 动态展会現場人行GIF背景，配合底层暗夜叠加遮罩确保100%可读性
+        backgroundImage: `linear-gradient(to bottom, rgba(3, 7, 18, 0.45), rgba(3, 7, 18, 0.55)), url('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzhxZnkyMHhsc3M3eWFod2Q1ejVjOHB1bmlwM3p6YjE0MWI3cnA3eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0HlB9Z58P6o6gByU/giphy.gif')`
+      }}
+    >
+      {/* 动画样式定义 */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes scan {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(200%); }
+        }
+        .scan-line {
+          animation: scan 3s linear infinite;
+        }
+        @keyframes hologram-glow {
+          0%, 100% { filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.4)) brightness(1); }
+          50% { filter: drop-shadow(0 0 18px rgba(52, 211, 153, 0.7)) brightness(1.1); }
+        }
+        @keyframes hologram-glow-red {
+          0%, 100% { filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.4)) brightness(1); }
+          50% { filter: drop-shadow(0 0 18px rgba(239, 68, 68, 0.7)) brightness(1.1); }
+        }
+        .animate-hologram {
+          animation: hologram-glow 3s ease-in-out infinite;
+        }
+        .animate-hologram-red {
+          animation: hologram-glow-red 3s ease-in-out infinite;
+        }
+        .glow-text {
+          text-shadow: 0 0 12px rgba(59,130,246,0.9);
+        }
+        @keyframes spin-slow {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 15s linear infinite;
+        }
+      `}} />
+
+      {/* 主屏幕容器 - 整体升级为全毛玻璃HUD悬浮舱 */}
+      <div className="w-full max-w-[1600px] bg-slate-950/40 backdrop-blur-xl rounded-3xl border border-blue-500/30 shadow-[0_0_80px_rgba(0,0,0,0.6)] relative overflow-hidden flex flex-col p-6 md:p-8">
+        
+        {/* 顶部 Header */}
+        <header className="flex items-center justify-between mb-8 relative z-10">
+          <div className="flex items-center gap-2 text-blue-400">
+            <span className="text-4xl font-black italic tracking-tighter">6G</span>
+            <Wifi className="w-8 h-8 animate-pulse" />
+          </div>
+          <div className="text-center absolute left-1/2 -translate-x-1/2">
+            <h1 className="text-2xl md:text-4xl font-bold tracking-widest text-white glow-text mb-2">
+              6G智能体网络：数字身份申请
+            </h1>
+            <p className="text-blue-200 font-medium text-sm md:text-base">
+              6G Agentic Network: Digital Identity Application<br/>
+              <span className="text-blue-300/90 text-xs md:text-sm">机器狗先获得可信通信凭证，再参与后续组网、授权与算力卸载</span>
+            </p>
+          </div>
+          <div className="w-24"></div>
+        </header>
+
+        {/* 核心内容区 (三列布局) */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 relative z-10">
+          
+          {/* 左列：场景入口 / 机器狗接入 */}
+          <div className="md:col-span-3">
+            <SciFiPanel className="h-full">
+              <div className="flex flex-col h-full">
+                <h2 className="text-blue-200 text-base lg:text-lg font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
+                  场景入口 / 机器狗接入
+                </h2>
+                
+                <div className="flex flex-col flex-1 gap-2">
+                  
+                  {/* === 未注册设备 (红色全息光锥投影) === */}
+                  <div className="border border-red-500/30 bg-red-950/10 backdrop-blur-md flex-1 flex flex-col h-[180px] lg:h-[210px] overflow-hidden rounded-xl p-3 relative">
+                    <div className="flex items-center gap-2 text-red-400 mb-2 relative z-20">
+                      <ShieldAlert className="w-5 h-5 animate-bounce" />
+                      <div>
+                        <div className="font-bold text-xs lg:text-sm">未注册设备</div>
+                        <div className="text-[10px] opacity-70">Unknown Device</div>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 w-full relative mt-1">
+                      {/* 红色发散全息光锥层 */}
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="unreg-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
+                            <stop offset="0%" stopColor="rgba(239, 68, 68, 0.35)" stopOpacity="0.7" />
+                            <stop offset="100%" stopColor="rgba(239, 68, 68, 0)" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        {/* 雷达源到全息面板的扩散半透明光锥 */}
+                        <polygon points="34,65 65,15 95,50" fill="url(#unreg-cone-beam)" className="opacity-40 animate-pulse" />
+                        <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                        <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                        {/* 发射微点 */}
+                        <circle cx="34" cy="65" r="1.5" fill="#ef4444" className="animate-ping" />
+                      </svg>
+
+                      {/* 机器狗本体 (靠左下坐立) */}
+                      <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+                        <RobotDog className="w-full h-full object-contain" status="unregistered" />
+                      </div>
+
+                      {/* 3D 悬浮红色警示全息牌 */}
+                      <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-red-950/80 border border-red-500/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.25)] z-20 animate-hologram-red [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] text-red-300 leading-tight">
+                        <div className="text-red-400 font-black mb-1 border-b border-red-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
+                          Device Warning
+                        </div>
+                        <div className="font-mono font-bold text-[10px] sm:text-xs truncate mb-1">
+                          Robot Dog
+                        </div>
+                        <div className="opacity-80 text-[8px] sm:text-[9px] mb-1">
+                          待注册 / Unregistered
+                        </div>
+                        <div className="mt-1 flex justify-between text-[8px] sm:text-[9px] font-bold">
+                          <span>Status:</span>
+                          <span className="text-red-400 animate-pulse">Blocked</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center text-blue-500 my-[-10px] z-10">
+                    <ChevronRight className="w-8 h-8 rotate-90 bg-slate-900 border border-blue-500/30 rounded-full" />
+                  </div>
+
+                  {/* === 已注册设备 (绿色3D全息投影面板) === */}
+                  <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex-1 flex flex-col h-[180px] lg:h-[210px] overflow-hidden rounded-xl p-3 relative">
+                    <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
+                      <ShieldCheck className="w-5 h-5 animate-pulse" />
+                      <div>
+                        <div className="font-bold text-xs lg:text-sm">已注册设备</div>
+                        <div className="text-[10px] opacity-70">Registered Device</div>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 w-full relative mt-1">
+                      {/* 全息透视光锥 (激光散射线) */}
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="reg-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
+                            <stop offset="0%" stopColor="rgba(16, 185, 129, 0.35)" stopOpacity="0.7" />
+                            <stop offset="100%" stopColor="rgba(16, 185, 129, 0)" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        {/* 光罩 */}
+                        <polygon points="34,65 65,15 95,50" fill="url(#reg-cone-beam)" className="opacity-40 animate-pulse" />
+                        <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                        <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                        {/* 激光雷达发射核心 */}
+                        <circle cx="34" cy="65" r="1.5" fill="#10b981" className="animate-ping" />
+                      </svg>
+
+                      {/* 机器狗本体 (靠左下安稳站立) */}
+                      <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+                        <RobotDog className="w-full h-full object-contain" status="registered" />
+                      </div>
+
+                      {/* 3D 浮空倾斜全息卡片 */}
+                      <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
+                        <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
+                          Digital ID
+                        </div>
+                        <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[10px] sm:text-xs">
+                          RobotDog-8731
+                        </div>
+                        <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
+                          <div className="flex justify-between items-center">
+                            <span className="opacity-75">Trust:</span>
+                            <span className="font-bold text-cyan-300">Verified</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="opacity-75">Status:</span>
+                            <span className="font-bold flex items-center gap-0.5 text-emerald-400">
+                              Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <div className="flex justify-between text-[10px] lg:text-xs text-blue-200 mt-4 px-1 font-medium">
+                  <span>① 上电接入</span>
+                  <ChevronRight className="w-3 lg:w-4 h-3 lg:h-4 text-blue-400" />
+                  <span>② 身份申请</span>
+                  <ChevronRight className="w-3 lg:w-4 h-3 lg:h-4 text-blue-400" />
+                  <span>③ 凭证签发</span>
+                </div>
+              </div>
+            </SciFiPanel>
+          </div>
+
+          {/* 中间列：6G核心网 3D 拓扑与平面网元、上方弧线数据流 */}
+          <div className="md:col-span-6">
+            <NetworkTopology3D 
+              activeFlowType={activeFlowType} 
+              onSelectFlow={(flow) => setActiveFlowType(flow)} 
+            />
+          </div>
+
+          {/* 右列：实时状态 */}
+          <div className="md:col-span-3">
+            <SciFiPanel className="h-full">
+              <div className="flex flex-col h-full">
+                <h2 className="text-blue-200 text-base lg:text-lg font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
+                  实时状态
+                </h2>
+                
+                <div className="flex flex-col flex-1 gap-4 justify-between">
+                  {/* 子栏目 1: Digital Identity */}
+                  <div className="border border-blue-500/30 rounded-lg p-3 bg-slate-950/60 backdrop-blur-md flex flex-col justify-center shadow-md">
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="w-7 h-7 rounded bg-blue-900/40 border border-blue-500/40 flex items-center justify-center">
+                        <User className="w-3.5 h-3.5 text-blue-300" />
+                      </div>
+                      <h3 className="text-white font-bold text-sm lg:text-base">Digital Identity</h3>
+                    </div>
+                    <div className="flex flex-col">
+                      <StatusRow label="Application:" value="Submitted" status="success" />
+                      <StatusRow label="Credential:" value="Issued" status="success" />
+                      <StatusRow label="Robot Dog ID:" value="RobotDog-8731" status="success" isMono />
+                      <StatusRow label="Trust Status:" value="Verified" status="success" />
+                    </div>
+                  </div>
+
+                  {/* 子栏目 2: Core Network */}
+                  <div className="border border-blue-500/30 rounded-lg p-3 bg-slate-950/60 backdrop-blur-md flex flex-col justify-center shadow-md">
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="w-7 h-7 rounded bg-blue-900/40 border border-blue-500/40 flex items-center justify-center">
+                        <Network className="w-3.5 h-3.5 text-blue-300" />
+                      </div>
+                      <h3 className="text-white font-bold text-sm lg:text-base">Core Network</h3>
+                    </div>
+                    <div className="flex flex-col">
+                      <StatusRow label="Authentication:" value="Completed" status="success" />
+                      <StatusRow label="Policy Check:" value="Passed" status="success" />
+                      <StatusRow label="Session Ready:" value="Yes" status="success" />
+                    </div>
+                  </div>
+
+                  {/* 子栏目 3: Next Steps */}
+                  <div className="border border-blue-500/30 rounded-lg p-3 bg-slate-950/60 backdrop-blur-md flex flex-col justify-center shadow-md">
+                    <div className="flex items-center gap-2.5 mb-2 opacity-80">
+                      <div className="w-7 h-7 rounded bg-blue-900/20 border border-blue-500/20 flex items-center justify-center">
+                        <ArrowRightCircle className="w-3.5 h-3.5 text-blue-300" />
+                      </div>
+                      <h3 className="text-white font-bold text-sm lg:text-base">Next Steps</h3>
+                    </div>
+                    <div className="flex flex-col">
+                      <StatusRow label="A2A Discovery:" value="Pending" status="pending" />
+                      <StatusRow label="L3 Networking:" value="Pending" status="pending" />
+                      <StatusRow label="Compute Offload:" value="Available" status="pending" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </SciFiPanel>
+          </div>
+        </div>
+
+        {/* 底部步骤条 - 升级为精致高对比度毛玻璃条 */}
+        <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
+          {/* Active Step */}
+          <div className="border border-emerald-500/80 bg-slate-950/60 backdrop-blur-md rounded-lg p-3 flex items-center gap-3 relative overflow-hidden shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]"></div>
+            <span className="text-emerald-400 font-mono font-bold text-lg opacity-90">01</span>
+            <ShieldCheck className="w-6 h-6 text-emerald-400" />
+            <div className="flex flex-col">
+              <span className="text-white font-bold text-sm">Digital ID</span>
+              <span className="text-emerald-400 text-xs font-semibold">已完成 / Completed</span>
+            </div>
+          </div>
+
+          {/* Pending Steps */}
+          {[
+            { id: "02", icon: Share2, title: "A2A", subtitle: "即将开始 / Upcoming" },
+            { id: "03", icon: Globe, title: "L3 Networking", subtitle: "即将开始 / Upcoming" },
+            { id: "04", icon: Radio, title: "Massive Uplink", subtitle: "即将开始 / Upcoming" },
+            { id: "05", icon: Cloud, title: "Compute Offload", subtitle: "即将开始 / Upcoming" },
+          ].map((step, idx) => (
+            <div key={idx} className="border border-blue-500/30 bg-slate-950/60 backdrop-blur-md rounded-lg p-3 flex items-center gap-3 shadow-md">
+              <span className="text-blue-300 font-mono font-bold text-lg opacity-60">{step.id}</span>
+              <step.icon className="w-6 h-6 text-blue-300/80" />
+              <div className="flex flex-col">
+                <span className="text-blue-100 font-bold text-sm">{step.title}</span>
+                <span className="text-blue-300/70 text-xs font-semibold">{step.subtitle}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* 底部反光效果 */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-blue-900/10 to-transparent -z-10 pointer-events-none transform scale-y-[-1] opacity-50 blur-xl"></div>
+    </div>
+  );
+}

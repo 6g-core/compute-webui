@@ -1237,7 +1237,7 @@ export default function App() {
                           Digital ID
                         </div>
                         <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[10px] sm:text-xs">
-                          RobotDog-8731
+                          DID:2168nLB3G@CMCC.org
                         </div>
                         <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
                           <div className="flex justify-between items-center">
@@ -1296,7 +1296,7 @@ export default function App() {
                     <div className="flex flex-col">
                       <StatusRow label="Application:" value="Submitted" status="success" />
                       <StatusRow label="Credential:" value="Issued" status="success" />
-                      <StatusRow label="Robot Dog ID:" value="RobotDog-8731" status="success" isMono />
+                      <StatusRow label="Robot Dog ID:" value="DID:2168nLB3G@CMCC.org" status="success" isMono />
                       <StatusRow label="Trust Status:" value="Verified" status="success" />
                     </div>
                   </div>

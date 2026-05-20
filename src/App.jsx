@@ -276,7 +276,7 @@ const SciFiPanel = ({ children, className = "", title = "" }) => (
 );
 
 // 状态行组件
-const StatusRow = ({ label, value, status = "success", isMono = false }) => {
+const StatusRow = ({ label, value, status = "success", isMono = false, valueClassName = "" }) => {
   const getStatusColor = () => {
     switch (status) {
       case 'success': return 'text-emerald-400';
@@ -290,8 +290,8 @@ const StatusRow = ({ label, value, status = "success", isMono = false }) => {
   return (
     <div className="flex justify-between items-center py-1.5 border-b border-blue-950/40 last:border-0 text-xs lg:text-sm">
       <span className="text-blue-200/90">{label}</span>
-      <div className="flex items-center gap-1.5">
-        <span className={`${getStatusColor()} ${isMono ? 'font-mono' : ''}`}>{value}</span>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className={`${getStatusColor()} ${isMono ? 'font-mono' : ''} ${valueClassName}`}>{value}</span>
         {status === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
         {status === 'pending' && <CircleDot className="w-3.5 h-3.5 text-blue-500" />}
       </div>
@@ -300,19 +300,15 @@ const StatusRow = ({ label, value, status = "success", isMono = false }) => {
 };
 
 const NetworkTopology3D = ({ activeFlowType, onSelectFlow }) => {
-  const mountRef = useRef(null);
-  const labelsRef = useRef(null);
-  const [threeLoaded, setThreeLoaded] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-
-  const nodeData = {
-    UE: { name: "AR Glasses (6G终端)", pos: [-7.9, 0, -4.1], color: 0x00f0ff, type: "ue", modelUrl: "/models/glasses/scene.gltf", modelSize: 2.1, modelBaseY: -0.85 },
-    RobotDog: { name: "Robot Dog", pos: [-7.9, 0, 4.1], color: 0x00ffcc, type: "robot", modelUrl: "/models/robotdog/scene.gltf", modelSize: 1.9, modelBaseY: -0.9 },
-    gNB: { name: "6G gNB", pos: [-3.1, 0, 0], color: 0x3b82f6, type: "gnb", modelUrl: "/models/RAN/scene.gltf", modelSize: 3.25, modelBaseY: -0.95, modelTint: 0x9ca3af },
-    SRF: { name: "SystemAgent", pos: [2.7, 0, -3.4], color: 0xa855f7, type: "srf", modelUrl: "/models/server/scene.gltf", modelSize: 2.8, modelBaseY: -0.95, modelRotationY: -Math.PI / 2 },
-    UPF: { name: "UPF", pos: [2.7, 0, 3.4], color: 0x10b981, type: "upf", modelUrl: "/models/cloudengine/scene.gltf", modelSize: 2.3, modelBaseY: -0.95 },
-    ACN: { name: "ACN Agent", pos: [8.2, 0, 3.2], color: 0xec4899, type: "acn", modelUrl: "/models/server/scene.gltf", modelSize: 2.8, modelBaseY: -0.95, modelRotationY: -Math.PI / 2 },
-    Computing: { name: "Computing Agent", pos: [8.2, 0, -3.2], color: 0xf59e0b, type: "compute", modelUrl: "/models/server/scene.gltf", modelSize: 2.8, modelBaseY: -0.95, modelRotationY: -Math.PI / 2 },
+  const nodes = {
+    UE: { name: "AR Glasses (6G终端)", x: 14, y: 74, color: "#22f5ff", image: "/topology/glasses_transparent.png", size: "w-20 md:w-24" },
+    RobotDog: { name: "Robot Dog", x: 14, y: 27, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-24 md:w-28" },
+    gNB: { name: "6G RAN", x: 33, y: 50, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-28 md:w-32" },
+    SRF: { name: "SystemAgent", x: 55, y: 37, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-24 md:w-28" },
+    UPF: { name: "UPF", x: 55, y: 76, color: "#34d399", image: "/topology/switch_transparent.png", size: "w-24 md:w-28" },
+    AgentGW: { name: "Agent GW", x: 79, y: 76, color: "#38bdf8", image: "/topology/gw.png", size: "w-24 md:w-28" },
+    ACN: { name: "ACN Agent", x: 82, y: 50, color: "#f472b6", image: "/topology/acn_transparent.png", size: "w-24 md:w-28", labelClassName: "absolute left-[78%] top-[32%]" },
+    Computing: { name: "Computing Agent", x: 80, y: 22, color: "#fbbf24", image: "/topology/computing_transparent.png", size: "w-24 md:w-28", labelClassName: "absolute left-[78%] top-[32%]" },
   };
 
   const connections = [
@@ -320,409 +316,35 @@ const NetworkTopology3D = ({ activeFlowType, onSelectFlow }) => {
     ["RobotDog", "gNB"],
     ["gNB", "SRF"],
     ["gNB", "UPF"],
+    ["UPF", "AgentGW"],
     ["SRF", "ACN"],
     ["SRF", "Computing"],
   ];
 
-  useEffect(() => {
-    if (window.THREE && window.THREE.GLTFLoader) {
-      setThreeLoaded(true);
-      return;
-    }
+  const flowPaths = {
+    auth: ["RobotDog->gNB", "gNB->SRF", "SRF->ACN"],
+    compute: ["UE->gNB", "gNB->UPF", "UPF->AgentGW"],
+    collab: ["SRF->ACN", "SRF->Computing"],
+  };
 
-    let disposed = false;
-    const loadScript = (src, id) =>
-      new Promise((resolve, reject) => {
-        const existing = document.getElementById(id);
-        if (existing) {
-          existing.addEventListener("load", resolve, { once: true });
-          existing.addEventListener("error", reject, { once: true });
-          if (window.THREE && (id !== "three-gltf-loader" || window.THREE.GLTFLoader)) {
-            resolve();
-          }
-          return;
-        }
+  const flowColor = {
+    auth: "#22f5ff",
+    compute: "#ffb020",
+    collab: "#ff4fd8",
+  };
 
-        const script = document.createElement("script");
-        script.id = id;
-        script.src = src;
-        script.async = true;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.body.appendChild(script);
-      });
+  const buildPath = ([from, to]) => {
+    const a = nodes[from];
+    const b = nodes[to];
+    const start = from === "RobotDog" && to === "gNB"
+      ? { x: a.x + 6, y: a.y - 2 }
+      : { x: a.x, y: a.y };
+    const cx = (start.x + b.x) / 2;
+    const cy = Math.min(start.y, b.y) - 10;
+    return `M ${start.x} ${start.y} Q ${cx} ${cy} ${b.x} ${b.y}`;
+  };
 
-    Promise.resolve()
-      .then(() => (window.THREE ? null : loadScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js", "three-core")))
-      .then(() => (window.THREE.GLTFLoader ? null : loadScript("https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js", "three-gltf-loader")))
-      .then(() => {
-        if (!disposed) setThreeLoaded(true);
-      })
-      .catch(() => {
-        if (!disposed) setLoadError(true);
-      });
-
-    return () => {
-      disposed = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!threeLoaded || !mountRef.current) return;
-
-    const THREE = window.THREE;
-    const container = mountRef.current;
-    const width = container.clientWidth;
-    const height = container.clientHeight || 340;
-
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x02050a, 0.018);
-    const tempV = new THREE.Vector3();
-
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    let rotationX = 0.42;
-    let rotationY = 0.65;
-    const radius = 20.5;
-
-    const updateCamera = () => {
-      camera.position.x = radius * Math.sin(rotationY) * Math.cos(rotationX);
-      camera.position.z = radius * Math.cos(rotationY) * Math.cos(rotationX);
-      camera.position.y = radius * Math.sin(rotationX);
-      camera.lookAt(0, 0, 0);
-    };
-    updateCamera();
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    container.appendChild(renderer.domElement);
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.82));
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.05);
-    keyLight.position.set(10, 18, 14);
-    scene.add(keyLight);
-    const fillLight = new THREE.DirectionalLight(0xdbeafe, 0.45);
-    fillLight.position.set(-10, 10, -12);
-    scene.add(fillLight);
-
-    let alive = true;
-    const loader = new THREE.GLTFLoader();
-    const mountGltfModel = (target, data) => {
-      if (!data.modelUrl) return;
-
-      loader.load(
-        data.modelUrl,
-        (gltf) => {
-          if (!alive) return;
-
-          const model = gltf.scene;
-          model.traverse((child) => {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-              if (child.material) {
-                const tintMaterials = Array.isArray(child.material) ? child.material : [child.material];
-                const nextMaterials = tintMaterials.map((material) => {
-                  const nextMaterial = material.clone();
-                  if (data.modelTint && nextMaterial.color) {
-                    nextMaterial.color.multiply(new THREE.Color(data.modelTint));
-                  }
-                  nextMaterial.transparent = nextMaterial.transparent || false;
-                  nextMaterial.needsUpdate = true;
-                  return nextMaterial;
-                });
-                child.material = Array.isArray(child.material) ? nextMaterials : nextMaterials[0];
-              }
-            }
-          });
-
-          const box = new THREE.Box3().setFromObject(model);
-          const size = box.getSize(new THREE.Vector3());
-          const maxAxis = Math.max(size.x, size.y, size.z) || 1;
-          model.scale.setScalar((data.modelSize || 2) / maxAxis);
-          if (data.modelRotationY) {
-            model.rotation.y += data.modelRotationY;
-          }
-          const scaledBox = new THREE.Box3().setFromObject(model);
-          const center = scaledBox.getCenter(new THREE.Vector3());
-          model.position.x -= center.x;
-          model.position.z -= center.z;
-          model.position.y += (data.modelBaseY ?? -0.9) - scaledBox.min.y;
-
-          target.children.slice().forEach((child) => target.remove(child));
-          target.add(model);
-        },
-        undefined,
-        () => {}
-      );
-    };
-
-    const createNode = (data) => {
-      const group = new THREE.Group();
-      group.position.set(...data.pos);
-      if (data.nodeScale) {
-        group.scale.setScalar(data.nodeScale);
-      }
-
-      const metal = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.65, roughness: 0.34 });
-      const accent = new THREE.MeshStandardMaterial({ color: data.color, metalness: 0.35, roughness: 0.42 });
-
-      if (data.type === "ue") {
-        const device = new THREE.Mesh(new THREE.BoxGeometry(0.88, 1.35, 0.22), metal);
-        device.rotation.x = -0.18;
-        group.add(device);
-        const screen = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.95, 0.05), accent);
-        screen.position.set(0, 0.08, 0.13);
-        screen.rotation.x = -0.18;
-        group.add(screen);
-        const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.85, 8), accent);
-        antenna.position.set(0.52, 0.9, 0);
-        antenna.rotation.z = -0.35;
-        group.add(antenna);
-        const signal = new THREE.Mesh(
-          new THREE.TorusGeometry(0.68, 0.035, 8, 28, Math.PI),
-          new THREE.MeshBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.3 })
-        );
-        signal.position.set(0.74, 1.08, 0);
-        signal.rotation.set(0, Math.PI / 2, -0.35);
-        group.add(signal);
-        group.userData.signal = signal;
-      } else if (data.type === "robot") {
-        const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.65, 0.85), metal);
-        group.add(body);
-        const head = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.52, 0.52), metal);
-        head.position.set(-0.92, 0.25, 0);
-        group.add(head);
-        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.38), accent);
-        visor.position.set(-1.25, 0.27, 0);
-        group.add(visor);
-        for (let i = 0; i < 4; i += 1) {
-          const leg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.95, 0.16), metal);
-          leg.position.set(i < 2 ? 0.52 : -0.52, -0.64, i % 2 === 0 ? 0.4 : -0.4);
-          leg.rotation.z = 0.22;
-          group.add(leg);
-        }
-      } else if (data.type === "gnb") {
-        const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.34, 2.7, 6), metal);
-        group.add(tower);
-        const top = new THREE.Mesh(new THREE.SphereGeometry(0.43, 20, 20), accent);
-        top.position.y = 1.38;
-        group.add(top);
-        const wave = new THREE.Mesh(
-          new THREE.TorusGeometry(1.25, 0.045, 8, 32),
-          new THREE.MeshBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.28 })
-        );
-        wave.rotation.x = Math.PI / 2;
-        wave.position.y = 0.5;
-        group.add(wave);
-        group.userData.wave = wave;
-      } else if (data.type === "srf") {
-        for (let i = 0; i < 3; i += 1) {
-          const slice = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.78, 0.28, 18), accent);
-          slice.position.y = (i - 1) * 0.62;
-          group.add(slice);
-        }
-        const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.48), new THREE.MeshBasicMaterial({ color: 0xe9d5ff }));
-        core.position.y = 1.05;
-        group.add(core);
-        group.userData.core = core;
-      } else if (data.type === "upf") {
-        for (let i = 0; i < 2; i += 1) {
-          const server = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.45, 1.55), metal);
-          server.position.y = (i - 0.5) * 0.72;
-          group.add(server);
-          const light = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.09, 1.62), accent);
-          light.position.set(0.78, server.position.y, 0);
-          group.add(light);
-        }
-      } else if (data.type === "acn") {
-        const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.75), accent);
-        group.add(core);
-        const wire = new THREE.LineSegments(
-          new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.18, 1)),
-          new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.5 })
-        );
-        group.add(wire);
-        group.userData.core = core;
-        group.userData.wire = wire;
-      } else {
-        for (let i = 0; i < 4; i += 1) {
-          const slab = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.24, 1.45), i % 2 ? accent : metal);
-          slab.position.y = (i - 1.5) * 0.45;
-          group.add(slab);
-        }
-      }
-
-      mountGltfModel(group, data);
-      scene.add(group);
-      return group;
-    };
-
-    const nodes = Object.fromEntries(
-      Object.entries(nodeData).map(([key, value]) => [key, createNode(value)])
-    );
-
-    const lineObjects = connections.map(([from, to]) => {
-      const p1 = new THREE.Vector3(...nodeData[from].pos);
-      const p2 = new THREE.Vector3(...nodeData[to].pos);
-      const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
-      const curve = new THREE.QuadraticBezierCurve3(
-        p1,
-        mid.clone().add(new THREE.Vector3(0, Math.max(2.2, p1.distanceTo(p2) * 0.34), 0)),
-        p2
-      );
-      const geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(36));
-      const line = new THREE.Line(
-        geometry,
-        new THREE.LineDashedMaterial({
-          color: 0xcbd5e1,
-          dashSize: 0.34,
-          gapSize: 0.22,
-          transparent: true,
-          opacity: 0.28,
-          depthTest: false,
-        })
-      );
-      line.computeLineDistances();
-      const glowLine = new THREE.Mesh(
-        new THREE.TubeGeometry(curve, 44, 0.075, 8, false),
-        new THREE.MeshBasicMaterial({
-          color: 0x22d3ee,
-          transparent: true,
-          opacity: 0,
-          depthTest: false,
-          depthWrite: false,
-        })
-      );
-      const flowBlocks = Array.from({ length: 3 }, () => {
-        const block = new THREE.Mesh(
-          new THREE.BoxGeometry(0.42, 0.18, 0.18),
-          new THREE.MeshBasicMaterial({
-            color: 0x22d3ee,
-            transparent: true,
-            opacity: 0,
-            depthTest: false,
-            depthWrite: false,
-          })
-        );
-        block.visible = false;
-        scene.add(block);
-        return block;
-      });
-      scene.add(line);
-      scene.add(glowLine);
-      return { key: `${from}->${to}`, curve, line, glowLine, flowBlocks };
-    });
-
-    let dragging = false;
-    let last = { x: 0, y: 0 };
-    const onMouseDown = (event) => {
-      dragging = true;
-      last = { x: event.clientX, y: event.clientY };
-    };
-    const onMouseMove = (event) => {
-      if (!dragging) return;
-      rotationY += (event.clientX - last.x) * 0.005;
-      rotationX = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, rotationX + (event.clientY - last.y) * 0.005));
-      last = { x: event.clientX, y: event.clientY };
-      updateCamera();
-    };
-    const onMouseUp = () => {
-      dragging = false;
-    };
-
-    container.addEventListener("mousedown", onMouseDown);
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-
-    let frameId;
-    const animate = () => {
-      frameId = requestAnimationFrame(animate);
-      const time = Date.now() * 0.001;
-
-      if (nodes.gNB?.userData.wave) nodes.gNB.userData.wave.rotation.z += 0.015;
-      if (nodes.ACN?.userData.core) {
-        nodes.ACN.userData.core.rotation.x += 0.012;
-        nodes.ACN.userData.core.rotation.y += 0.014;
-        nodes.ACN.userData.wire.rotation.y -= 0.004;
-      }
-
-      lineObjects.forEach(({ key, curve, line, glowLine, flowBlocks }) => {
-        const auth = ["RobotDog->gNB", "gNB->SRF", "SRF->ACN"];
-        const compute = ["UE->gNB", "gNB->UPF"];
-        const collab = ["SRF->ACN", "SRF->Computing"];
-        const active =
-          (activeFlowType === "auth" && auth.includes(key)) ||
-          (activeFlowType === "compute" && compute.includes(key)) ||
-          (activeFlowType === "collab" && collab.includes(key));
-        const activeColor = activeFlowType === "compute" ? 0xffb020 : activeFlowType === "collab" ? 0xff4fd8 : 0x22f5ff;
-        const pulse = 0.5 + 0.5 * Math.abs(Math.sin(time * 9));
-        line.material.color.setHex(active ? activeColor : 0xcbd5e1);
-        line.material.opacity = active ? 0.55 + 0.4 * pulse : 0.28;
-        glowLine.material.color.setHex(activeColor);
-        glowLine.material.opacity = active ? 0.22 + 0.32 * pulse : 0;
-        flowBlocks.forEach((block, index) => {
-          block.visible = active;
-          block.material.color.setHex(activeColor);
-          block.material.opacity = active ? 0.55 + 0.35 * pulse : 0;
-          if (!active) return;
-
-          const progress = (time * 0.42 + index / flowBlocks.length) % 1;
-          const point = curve.getPoint(progress);
-          const tangent = curve.getTangent(progress).normalize();
-          block.position.copy(point);
-          block.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), tangent);
-          block.scale.setScalar(0.85 + 0.28 * pulse);
-        });
-      });
-
-      renderer.render(scene, camera);
-
-      if (labelsRef.current) {
-        const containerRect = container.getBoundingClientRect();
-        Object.entries(nodeData).forEach(([key, value]) => {
-          const el = document.getElementById(`overlay-label-${key}`);
-          if (!el) return;
-
-          tempV.set(value.pos[0], value.pos[1] + 1.85, value.pos[2]);
-          tempV.project(camera);
-
-          if (tempV.z > 1) {
-            el.style.display = "none";
-            return;
-          }
-
-          const x = (tempV.x * 0.5 + 0.5) * containerRect.width;
-          const y = (tempV.y * -0.5 + 0.5) * containerRect.height;
-          el.style.display = "block";
-          el.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
-        });
-      }
-    };
-    animate();
-
-    const resizeObserver = new ResizeObserver(() => {
-      const w = container.clientWidth;
-      const h = container.clientHeight || 340;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    });
-    resizeObserver.observe(container);
-
-    return () => {
-      alive = false;
-      cancelAnimationFrame(frameId);
-      resizeObserver.disconnect();
-      container.removeEventListener("mousedown", onMouseDown);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-      renderer.dispose();
-      if (container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
-      }
-    };
-  }, [threeLoaded, activeFlowType]);
+  const isActive = (key) => flowPaths[activeFlowType]?.includes(key);
 
   return (
     <div className="border border-blue-500/35 rounded-xl p-5 bg-slate-900/25 backdrop-blur-md flex flex-col h-full relative shadow-[0_0_22px_rgba(0,0,0,0.35)] overflow-hidden">
@@ -731,16 +353,15 @@ const NetworkTopology3D = ({ activeFlowType, onSelectFlow }) => {
       <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-blue-400" />
       <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-blue-400" />
 
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div>
+      <div className="relative flex items-center justify-center gap-3 mb-4">
+        <div className="w-full text-center">
           <h2 className="text-base font-bold text-blue-100 tracking-wider">
-            6G 核心智能网：3D 数字孪生拓扑
+            6G 核心智能网：数字身份申请
           </h2>
-          <p className="text-[10px] text-blue-300">按住左键拖拽可旋转视角，观察拓扑网元与空中链路</p>
         </div>
         <button
           onClick={() => onSelectFlow("auth")}
-          className="hidden sm:flex items-center gap-1.5 border border-cyan-400/40 bg-cyan-500/15 px-2.5 py-1.5 rounded text-[10px] font-bold text-cyan-200"
+          className="absolute right-0 hidden sm:flex items-center gap-1.5 border border-cyan-400/40 bg-cyan-500/15 px-2.5 py-1.5 rounded text-[10px] font-bold text-cyan-200"
         >
           <Zap className="w-3.5 h-3.5" />
           注册链路
@@ -748,33 +369,87 @@ const NetworkTopology3D = ({ activeFlowType, onSelectFlow }) => {
       </div>
 
       <div className="flex-[1.55] w-full min-h-[300px] lg:min-h-[340px] relative rounded-lg overflow-hidden border border-blue-900/30 bg-slate-950/20">
-        {(!threeLoaded || loadError) && (
-          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/70">
-            <Cpu className="w-9 h-9 text-cyan-400 animate-spin" />
-            <p className="mt-2 text-xs text-blue-300 font-mono">
-              {loadError ? "3D 渲染引擎加载失败" : "加载 3D 渲染引擎..."}
-            </p>
-          </div>
-        )}
-        <div ref={labelsRef} className="absolute inset-0 pointer-events-none z-30 overflow-hidden font-sans">
-          {Object.entries(nodeData).map(([key, value]) => (
+        <svg className="absolute inset-0 z-10 h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <filter id="topology-line-glow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="1.4" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          {connections.map((connection) => {
+            const key = `${connection[0]}->${connection[1]}`;
+            const active = isActive(key);
+            const color = flowColor[activeFlowType] || "#22f5ff";
+            const path = buildPath(connection);
+
+            return (
+              <g key={key}>
+                <path
+                  d={path}
+                  fill="none"
+                  stroke="#cbd5e1"
+                  strokeWidth="0.35"
+                  strokeDasharray="1.2 1.1"
+                  strokeLinecap="round"
+                  opacity="0.42"
+                />
+                {active && (
+                  <>
+                    <path
+                      d={path}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth="1.15"
+                      strokeLinecap="round"
+                      opacity="0.78"
+                      filter="url(#topology-line-glow)"
+                      className="animate-pulse"
+                    />
+                    <path
+                      d={path}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth="0.9"
+                      strokeDasharray="4 8"
+                      strokeLinecap="round"
+                      opacity="0.95"
+                      className="[animation:topology-flow_1.3s_linear_infinite]"
+                    />
+                  </>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+
+        <div className="absolute inset-0 z-20">
+          {Object.entries(nodes).map(([key, value]) => (
             <div
               key={key}
-              id={`overlay-label-${key}`}
-              className="absolute left-0 top-0 pointer-events-none transition-all duration-75 select-none"
-              style={{ display: "none" }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 select-none"
+              style={{ left: `${value.x}%`, top: `${value.y}%` }}
             >
-              <div className="bg-slate-950/85 border border-slate-500/45 px-2.5 py-1 rounded text-[9px] sm:text-[10px] text-gray-100 whitespace-nowrap flex items-center gap-1.5 backdrop-blur-md">
-                <span
-                  className="w-2 h-2 rounded-full inline-block"
-                  style={{ backgroundColor: `#${value.color.toString(16).padStart(6, "0")}` }}
+              <div className="relative flex flex-col items-center">
+                <div
+                  className="absolute top-[64%] h-5 w-20 rounded-full blur-md opacity-45"
+                  style={{ backgroundColor: value.color }}
                 />
-                <span className="font-bold tracking-wide">{value.name}</span>
+                <img
+                  src={value.image}
+                  alt={value.name}
+                  className={`${value.size} relative z-10 object-contain [transform:perspective(720px)_rotateX(10deg)_rotateY(-10deg)_translateY(-4px)] drop-shadow-[0_18px_18px_rgba(0,0,0,0.58)]`}
+                  draggable="false"
+                />
+                <div className={`${value.labelClassName || "relative -mt-1"} z-20 rounded border border-slate-500/45 bg-slate-950/85 px-2.5 py-1 text-[9px] sm:text-[10px] font-bold tracking-wide text-gray-100 whitespace-nowrap backdrop-blur-md`}>
+                  {value.name}
+                </div>
               </div>
             </div>
           ))}
         </div>
-        <div ref={mountRef} className="absolute inset-0 z-10 w-full h-full cursor-grab active:cursor-grabbing" />
 
         <div className="absolute bottom-3 left-3 right-3 z-20 flex flex-wrap justify-between gap-2">
           <div className="flex gap-1.5">
@@ -820,7 +495,7 @@ const NetworkTopology3D = ({ activeFlowType, onSelectFlow }) => {
             "统一数字身份管理",
             "通信凭证签发",
             "可信接入控制",
-            "A2A与算力调度基础",
+            "智能体发布发现",
           ].map((item) => (
             <div
               key={item}
@@ -1017,6 +692,10 @@ export default function App() {
         .animate-spin-slow {
           animation: spin-slow 15s linear infinite;
         }
+        @keyframes topology-flow {
+          0% { stroke-dashoffset: 12; }
+          100% { stroke-dashoffset: 0; }
+        }
       `}} />
 
       {/* 主屏幕容器 - 整体升级为全毛玻璃HUD悬浮舱 */}
@@ -1032,11 +711,10 @@ export default function App() {
           </div>
           <div className="text-center absolute left-1/2 -translate-x-1/2">
             <h1 className="text-2xl md:text-4xl font-bold tracking-widest text-white glow-text mb-2">
-              6G智能体网络：数字身份申请
+              6G智能体网络
             </h1>
             <p className="text-blue-200 font-medium text-sm md:text-base">
-              6G Agentic Network: Digital Identity Application<br/>
-              <span className="text-blue-300/90 text-xs md:text-sm">机器狗先获得可信通信凭证，再参与后续组网、授权与算力卸载</span>
+              6G Agentic Network
             </p>
           </div>
           <div className="w-24"></div>
@@ -1045,12 +723,12 @@ export default function App() {
         {/* 核心内容区 (三列布局) */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 relative z-10">
           
-          {/* 左列：场景入口 / 机器狗接入 */}
+          {/* 左列：机器狗接入 */}
           <div className="md:col-span-3">
             <SciFiPanel className="h-full">
               <div className="flex flex-col h-full">
                 <h2 className="text-blue-200 text-base lg:text-lg font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
-                  场景入口 / 机器狗接入
+                  机器狗接入
                 </h2>
                 
                 <div className="flex flex-col flex-1 gap-2">
@@ -1147,13 +825,15 @@ export default function App() {
                         <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
                           Digital ID
                         </div>
-                        <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[10px] sm:text-xs">
-                          RobotDog-8731
+                        <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
+                          DID:2168nLB3G@CMCC.org
                         </div>
                         <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
-                          <div className="flex justify-between items-center">
-                            <span className="opacity-75">Trust:</span>
-                            <span className="font-bold text-cyan-300">Verified</span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="opacity-75">Capabilities:</span>
+                            <span className="font-bold text-cyan-300 leading-tight break-words">
+                              [4 Legs, Camera, Payload:10KG/10KM]
+                            </span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="opacity-75">Status:</span>
@@ -1169,11 +849,11 @@ export default function App() {
                 </div>
 
                 <div className="flex justify-between text-[10px] lg:text-xs text-blue-200 mt-4 px-1 font-medium">
-                  <span>① 上电接入</span>
+                  <span>① 身份申请</span>
                   <ChevronRight className="w-3 lg:w-4 h-3 lg:h-4 text-blue-400" />
-                  <span>② 身份申请</span>
+                  <span>② 业务授权</span>
                   <ChevronRight className="w-3 lg:w-4 h-3 lg:h-4 text-blue-400" />
-                  <span>③ 凭证签发</span>
+                  <span>③ 能力发布</span>
                 </div>
               </div>
             </SciFiPanel>
@@ -1207,7 +887,7 @@ export default function App() {
                     <div className="flex flex-col">
                       <StatusRow label="Application:" value="Submitted" status="success" />
                       <StatusRow label="Credential:" value="Issued" status="success" />
-                      <StatusRow label="Robot Dog ID:" value="RobotDog-8731" status="success" isMono />
+                      <StatusRow label="Robot Dog ID:" value="DID:2168nLB3G@CMCC.org" status="success" isMono valueClassName="leading-tight text-right break-all" />
                       <StatusRow label="Trust Status:" value="Verified" status="success" />
                     </div>
                   </div>

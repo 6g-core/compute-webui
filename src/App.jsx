@@ -696,6 +696,13 @@ export default function App() {
           0% { stroke-dashoffset: 12; }
           100% { stroke-dashoffset: 0; }
         }
+        @keyframes agent-log-scroll {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(-48%); }
+        }
+        .animate-agent-log-scroll {
+          animation: agent-log-scroll 12s linear infinite;
+        }
       `}} />
 
       {/* 主屏幕容器 - 整体升级为全毛玻璃HUD悬浮舱 */}
@@ -876,49 +883,63 @@ export default function App() {
                 </h2>
                 
                 <div className="flex flex-col flex-1 gap-4 justify-between">
-                  {/* 子栏目 1: Digital Identity */}
-                  <div className="border border-blue-500/30 rounded-lg p-3 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
+                  {/* 子栏目 1: 用户状态 */}
+                  <div className="border border-blue-500/30 rounded-lg p-2.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
                     <div className="flex items-center gap-2.5 mb-2">
                       <div className="w-7 h-7 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
                         <User className="w-3.5 h-3.5 text-blue-300" />
                       </div>
-                      <h3 className="text-white font-bold text-sm lg:text-base">Digital Identity</h3>
+                      <h3 className="text-white font-bold text-sm lg:text-base">用户状态</h3>
                     </div>
                     <div className="flex flex-col">
-                      <StatusRow label="Application:" value="Submitted" status="success" />
                       <StatusRow label="Credential:" value="Issued" status="success" />
                       <StatusRow label="Robot Dog ID:" value="DID:2168nLB3G@CMCC.org" status="success" isMono valueClassName="leading-tight text-right break-all" />
-                      <StatusRow label="Trust Status:" value="Verified" status="success" />
                     </div>
                   </div>
 
-                  {/* 子栏目 2: Core Network */}
-                  <div className="border border-blue-500/30 rounded-lg p-3 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
+                  {/* 子栏目 2: 智能体日志 */}
+                  <div className="border border-blue-500/30 rounded-lg p-3 bg-slate-900/30 backdrop-blur-md flex flex-col shadow-md">
                     <div className="flex items-center gap-2.5 mb-2">
                       <div className="w-7 h-7 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
                         <Network className="w-3.5 h-3.5 text-blue-300" />
                       </div>
-                      <h3 className="text-white font-bold text-sm lg:text-base">Core Network</h3>
+                      <h3 className="text-white font-bold text-sm lg:text-base">智能体日志</h3>
                     </div>
-                    <div className="flex flex-col">
-                      <StatusRow label="Authentication:" value="Completed" status="success" />
-                      <StatusRow label="Policy Check:" value="Passed" status="success" />
-                      <StatusRow label="Session Ready:" value="Yes" status="success" />
+                    <div className="h-[128px] overflow-hidden rounded border border-blue-500/20 bg-slate-950/35 px-2 py-1.5">
+                      <div className="animate-agent-log-scroll flex flex-col gap-1 text-[10px] lg:text-xs font-mono leading-snug text-blue-100/90">
+                        {[
+                          ["10:31:02", "ACN", "接收 DID 身份申请"],
+                          ["10:31:03", "SystemAgent", "校验终端能力描述"],
+                          ["10:31:05", "Agent GW", "同步接入上下文"],
+                          ["10:31:07", "ACN", "完成策略匹配"],
+                          ["10:31:10", "Computing", "发布可用算力画像"],
+                          ["10:31:13", "SystemAgent", "广播智能体发现事件"],
+                          ["10:31:16", "Agent GW", "刷新服务路由表"],
+                          ["10:31:19", "ACN", "业务授权状态更新"],
+                        ].map(([time, agent, message]) => (
+                          <div key={`${time}-${agent}`} className="flex items-start gap-1.5 whitespace-nowrap">
+                            <span className="text-cyan-300/90">{time}</span>
+                            <span className="text-emerald-300">[{agent}]</span>
+                            <span className="text-blue-100/80">{message}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* 子栏目 3: Next Steps */}
+                  {/* 子栏目 3: 工作流 */}
                   <div className="border border-blue-500/30 rounded-lg p-3 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
                     <div className="flex items-center gap-2.5 mb-2 opacity-80">
                       <div className="w-7 h-7 rounded bg-blue-900/15 border border-blue-500/20 flex items-center justify-center">
                         <ArrowRightCircle className="w-3.5 h-3.5 text-blue-300" />
                       </div>
-                      <h3 className="text-white font-bold text-sm lg:text-base">Next Steps</h3>
+                      <h3 className="text-white font-bold text-sm lg:text-base">工作流</h3>
                     </div>
                     <div className="flex flex-col">
-                      <StatusRow label="A2A Discovery:" value="Pending" status="pending" />
-                      <StatusRow label="L3 Networking:" value="Pending" status="pending" />
-                      <StatusRow label="Compute Offload:" value="Available" status="pending" />
+                      <StatusRow label="System Agent路由请求:" value="Done" status="success" />
+                      <StatusRow label="IDM颁发数字身份:" value="Done" status="success" />
+                      <StatusRow label="接入网络:" value="Ready" status="pending" />
+                      <StatusRow label="能力注册:" value="Pending" status="pending" />
                     </div>
                   </div>
                 </div>

@@ -3,12 +3,6 @@ import {
   Wifi, 
   ShieldAlert, 
   ShieldCheck, 
-  FileText, 
-  Shield, 
-  FileBadge, 
-  Link as LinkIcon, 
-  RadioReceiver, 
-  Database, 
   CheckCircle2, 
   ChevronRight, 
   User, 
@@ -16,15 +10,360 @@ import {
   ArrowRightCircle, 
   Cloud, 
   Globe, 
-  Box,
   Share2,
-  Radio,
-  RadioTower,
+  LoaderCircle,
   CircleDot,
-  RotateCcw,
-  Zap,
   Cpu
 } from 'lucide-react';
+
+const STAGE4_WORKFLOW = [
+  { label: "签约数据更新:", value: "Pending", status: "pending" },
+  { label: "下发域接入凭证:", value: "Pending", status: "pending" },
+  { label: "下发UPF配置:", value: "Pending", status: "pending" },
+];
+
+const DEMO_SEQUENCE = [
+  { stage: 1, delay: 1400 },
+  { stage: 2, delay: 7200 },
+  { stage: 4, delay: 8500 },
+  { stage: 5, delay: 2600 },
+  { stage: 6, delay: 5600 },
+  { stage: 7, delay: 4200 },
+  { stage: 8, delay: 4200 },
+];
+
+const STAGE6_WORKFLOW = [
+  {
+    label: "ID寻址路由:",
+    flowType: "a2aGateway",
+    bubble: {
+      lines: ["ID寻址路由"],
+      className: "left-[83%] top-[71%]",
+    },
+  },
+  {
+    label: "身份可信认证:",
+    flowType: "a2aTrust",
+    bubble: {
+      lines: ["身份可信认证"],
+    },
+  },
+  {
+    label: "Agent协议转换:",
+    flowType: "a2aGateway",
+    bubble: {
+      lines: ["Agent协议转换"],
+      className: "left-[83%] top-[71%]",
+    },
+  },
+];
+
+const STAGE7_WORKFLOW = [
+  {
+    label: "创建算力会话:",
+    flowType: "computeSandbox",
+    bubble: {
+      lines: ["创建算力会话"],
+      className: "left-[86%] top-[13%]",
+    },
+  },
+  {
+    label: "分配算力资源:",
+    flowType: "computeSandbox",
+    bubble: {
+      lines: ["分配算力资源"],
+      className: "left-[86%] top-[13%]",
+    },
+  },
+];
+
+const STAGE2_WORKFLOW = [
+  {
+    label: "System Agent路由请求:",
+    bubble: {
+      lines: ["解析用户意图", "路由请求"],
+      className: "left-[47%] top-[13%]",
+      arrow: "down",
+    },
+  },
+  {
+    label: "IDM颁发数字身份:",
+    bubble: {
+      lines: ["调用IDM Tool:", "颁发数字身份"],
+    },
+  },
+  {
+    label: "能力注册:",
+    bubble: {
+      lines: ["调用ARF Tool", "发布能力卡片"],
+    },
+  },
+  {
+    label: "接入网络:",
+    bubble: {
+      lines: ["接入网络"],
+      className: "left-[8%] top-[3%]",
+      arrow: "down",
+    },
+  },
+];
+
+const BASE_AGENT_LOGS = [
+  ["10:31:00", "System Agent", "初始化完成"],
+  ["10:31:01", "System Agent", "Skill加载完成"],
+  ["10:31:02", "Computing Agent", "初始化完成"],
+  ["10:31:03", "Computing Agent", "Skill加载完成"],
+  ["10:31:04", "ACN Agent", "初始化完成"],
+  ["10:31:05", "ACN Agent", "加载完成"],
+];
+
+const STAGE2_COMPLETION_LOGS = [
+  ["10:31:10", "ACN Agent", "调用IDMTool鉴权6G接入权限"],
+  ["10:31:11", "ACN Agent", "调用ARF完成智能体三方能力认证"],
+  ["10:31:12", "ACN Agent", "发布智能体卡片"],
+];
+
+const STAGE6_LOGS = [
+  ["10:31:16", "Agent GW", "根据ID寻址商家机器人"],
+  ["10:31:17", "ACN Agent", "校验对端身份凭证"],
+  ["10:31:18", "Agent GW", "建立任务级会话"],
+  ["10:31:19", "Agent GW", "转换对端Agent协议"],
+];
+
+const STAGE7_LOGS = [
+  ["10:31:20", "Computing Agent", "创建算力会话"],
+  ["10:31:21", "Computing Agent", "分配算力资源"],
+];
+
+const STAGE_CONFIG = {
+  1: {
+    leftPanelTitle: "机器狗接入",
+    activeFlowType: null,
+    showRegisteredDevice: false,
+    coreFunctions: [
+      "统一数字身份管理",
+      "通信凭证签发",
+      "可信接入控制",
+      "智能体发布发现",
+    ],
+    statusTitle: "用户状态",
+    statusRows: [
+      { label: "凭证:", value: "未颁发", status: "pending" },
+      { label: "机器狗ID:", value: "None", status: "pending", isMono: true },
+    ],
+    userStatus: {
+      credential: { value: "未颁发", status: "pending" },
+      robotDogId: { value: "None", status: "pending" },
+    },
+    logs: BASE_AGENT_LOGS,
+    workflow: [
+      { label: "System Agent路由请求:", value: "Pending", status: "pending" },
+      { label: "IDM颁发数字身份:", value: "Pending", status: "pending" },
+      { label: "接入网络:", value: "Pending", status: "pending" },
+      { label: "能力注册:", value: "Pending", status: "pending" },
+    ],
+    steps: [
+      { id: "01", icon: ShieldCheck, title: "申请Digital ID", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "02", icon: Globe, title: "L3Networking", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "03", icon: Share2, title: "A2A认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "04", icon: Cpu, title: "创建智算沙箱", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
+    ],
+  },
+  2: {
+    leftPanelTitle: "机器狗接入",
+    activeFlowType: "auth",
+    showRegisteredDevice: false,
+    coreFunctions: [
+      "统一数字身份管理",
+      "通信凭证签发",
+      "可信接入控制",
+      "智能体发布发现",
+    ],
+    statusTitle: "用户状态",
+    statusRows: [
+      { label: "凭证:", value: "未颁发", status: "pending" },
+      { label: "机器狗ID:", value: "None", status: "pending", isMono: true },
+    ],
+    userStatus: {
+      credential: { value: "未颁发", status: "pending" },
+      robotDogId: { value: "None", status: "pending" },
+    },
+    logs: [
+      ...BASE_AGENT_LOGS,
+      ["10:31:06", "System Agent", "解析用户意图"],
+      ["10:31:07", "System Agent", "请求路由至ACN Agent"],
+      ["10:31:08", "ACN Agent", "接受用户请求"],
+      ["10:31:09", "ACN Agent", "调用IDMTool生成DigitalID"],
+    ],
+    workflow: [
+      { label: "System Agent路由请求:", value: "Working", status: "working" },
+      { label: "IDM颁发数字身份:", value: "Pending", status: "pending" },
+      { label: "能力注册:", value: "Pending", status: "pending" },
+      { label: "接入网络:", value: "Pending", status: "pending" },
+    ],
+    steps: [
+      { id: "01", icon: ShieldCheck, title: "申请Digital ID", subtitle: "进行中 / Working", status: "working" },
+      { id: "02", icon: Globe, title: "L3Networking", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "03", icon: Share2, title: "A2A认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "04", icon: Cpu, title: "创建智算沙箱", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
+    ],
+  },
+  4: {
+    leftPanelTitle: "家庭域创建",
+    topologyTitle: "6G核心网：L3动态组网",
+    activeFlowType: "domain",
+    showRegisteredDevice: true,
+    hideDeviceArrow: true,
+    showHomeDomainDevice: true,
+    coreFunctions: [
+      "L3按需组网",
+      "安全接入控制",
+      "域内连接最优选路",
+    ],
+    statusTitle: "端侧状态",
+    statusRows: [
+      { label: "端侧带宽:", value: "5Mbps", status: "success" },
+      { label: "平均时延:", value: "10ms", status: "success" },
+    ],
+    logs: [
+      ...BASE_AGENT_LOGS,
+      ["10:31:06", "System Agent", "解析用户意图"],
+      ["10:31:07", "System Agent", "请求路由至ACN Agent"],
+      ["10:31:08", "ACN Agent", "接受用户请求"],
+      ["10:31:09", "ACN Agent", "调用IDMTool生成DigitalID"],
+      ["10:31:10", "ACN Agent", "调用IDMTool鉴权6G接入权限"],
+      ["10:31:11", "ACN Agent", "调用ARF完成智能体三方能力认证"],
+      ["10:31:12", "ACN Agent", "发布智能体卡片"],
+      ["10:31:13", "ACN Agent", "调用IDM Tool下发域接入凭证"],
+      ["10:31:14", "ACN Agent", "调用SMTool下发UPF配置"],
+      ["10:31:15", "ACN Agent", "实时探测最优路径"],
+    ],
+    workflow: [
+      { label: "签约数据更新:", value: "Working", status: "working" },
+      { label: "下发域接入凭证:", value: "Pending", status: "pending" },
+      { label: "下发UPF配置:", value: "Pending", status: "pending" },
+    ],
+    steps: [
+      { id: "01", icon: ShieldCheck, title: "申请Digital ID", subtitle: "已完成 / Completed", status: "success" },
+      { id: "02", icon: Globe, title: "L3Networking", subtitle: "进行中 / Working", status: "working" },
+      { id: "03", icon: Share2, title: "A2A认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "04", icon: Cpu, title: "创建智算沙箱", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
+    ],
+  },
+};
+
+STAGE_CONFIG[5] = {
+  ...STAGE_CONFIG[4],
+  leftPanelTitle: "机器狗共享实时视野",
+  activeFlowType: "dogVision",
+  showDogVision: true,
+  showHomeDomainDevice: false,
+  showRegisteredDevice: false,
+  workflow: [
+    { label: "签约数据更新:", value: "Done", status: "success" },
+    { label: "下发域接入凭证:", value: "Done", status: "success" },
+    { label: "下发UPF配置:", value: "Done", status: "success" },
+  ],
+  steps: STAGE_CONFIG[4].steps.map((step) => (
+    step.id === "02"
+      ? { ...step, subtitle: "已完成 / Completed", status: "success" }
+      : step
+  )),
+};
+
+STAGE_CONFIG[6] = {
+  ...STAGE_CONFIG[5],
+  topologyTitle: "6G核心网：Agent GW跨域互联",
+  activeFlowType: "a2aGateway",
+  coreFunctions: [
+    "ID寻址路由",
+    "可信身份背书",
+    "Agent协议转换",
+  ],
+  logs: [
+    ...STAGE_CONFIG[5].logs,
+    ...STAGE6_LOGS,
+  ],
+  workflow: [
+    { label: "ID寻址路由:", value: "Working", status: "working" },
+    { label: "身份可信认证:", value: "Pending", status: "pending" },
+    { label: "Agent协议转换:", value: "Pending", status: "pending" },
+  ],
+  steps: STAGE_CONFIG[5].steps.map((step) => (
+    step.id === "03"
+      ? { ...step, subtitle: "进行中 / Working", status: "working" }
+      : step
+  )),
+};
+
+STAGE_CONFIG[7] = {
+  ...STAGE_CONFIG[6],
+  topologyTitle: "6G核心网：算力入网",
+  activeFlowType: "computeSandbox",
+  coreFunctions: [
+    "网络提供强大算力",
+    "算力随路卸载",
+    "传输低时延",
+  ],
+  logs: [
+    ...STAGE_CONFIG[6].logs,
+    ...STAGE7_LOGS,
+  ],
+  workflow: [
+    { label: "创建算力会话:", value: "Working", status: "working" },
+    { label: "分配算力资源:", value: "Pending", status: "pending" },
+  ],
+  steps: STAGE_CONFIG[6].steps.map((step) => {
+    if (step.id === "03") {
+      return { ...step, subtitle: "已完成 / Completed", status: "success" };
+    }
+
+    if (step.id === "04") {
+      return { ...step, subtitle: "进行中 / Working", status: "working" };
+    }
+
+    return step;
+  }),
+};
+
+STAGE_CONFIG[8] = {
+  ...STAGE_CONFIG[7],
+  leftPanelTitle: "机器狗视野增强",
+  activeFlowType: "dogVision",
+  showDogVision: false,
+  showEnhancedDogVision: true,
+  workflow: [
+    { label: "算力入网实际应用:", value: "Working", status: "working" },
+  ],
+  steps: STAGE_CONFIG[7].steps.map((step) => {
+    if (step.id === "04") {
+      return { ...step, subtitle: "已完成 / Completed", status: "success" };
+    }
+
+    if (step.id === "05") {
+      return { ...step, subtitle: "进行中 / Working", status: "working" };
+    }
+
+    return step;
+  }),
+};
+
+const getStageApiUrl = () => import.meta.env.VITE_STAGE_API_URL || "/api/stage";
+
+const sleep = (delay) => new Promise((resolve) => {
+  window.setTimeout(resolve, delay);
+});
+
+const normalizeStage = (value) => {
+  const parsed = Number(value);
+  if (parsed === 3) {
+    return 2;
+  }
+  return STAGE_CONFIG[parsed] ? parsed : null;
+};
 
 // 宇树 (Unitree Go2) 仿生机器狗高保真矢量重绘（完美修正：关节一致朝右弯折，背部扁平无隆起）
 const UnitreeGo2Vector = ({ className = "", status = "neutral", colors }) => {
@@ -280,6 +619,7 @@ const StatusRow = ({ label, value, status = "success", isMono = false, valueClas
   const getStatusColor = () => {
     switch (status) {
       case 'success': return 'text-emerald-400';
+      case 'working': return 'text-amber-300';
       case 'pending': return 'text-blue-400';
       case 'warning': return 'text-yellow-400';
       case 'error': return 'text-red-400';
@@ -293,22 +633,62 @@ const StatusRow = ({ label, value, status = "success", isMono = false, valueClas
       <div className="flex min-w-0 items-center gap-1.5">
         <span className={`${getStatusColor()} ${isMono ? 'font-mono' : ''} ${valueClassName}`}>{value}</span>
         {status === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+        {status === 'working' && <CircleDot className="w-3.5 h-3.5 text-amber-300 animate-pulse" />}
         {status === 'pending' && <CircleDot className="w-3.5 h-3.5 text-blue-500" />}
       </div>
     </div>
   );
 };
 
-const NetworkTopology3D = ({ activeFlowType, onSelectFlow }) => {
+const ARGlasses = ({ className = "" }) => (
+  <div className={`relative flex items-center justify-center ${className}`}>
+    <div className="absolute w-3/4 h-2 bottom-3 rounded-full blur-md opacity-45 bg-cyan-500 shadow-[0_0_15px_#06b6d4]" />
+    <img
+      src="/topology/glasses_transparent.png"
+      alt="AR Glasses"
+      className="w-full h-full object-contain transition-all duration-300 drop-shadow-[0_0_14px_rgba(34,211,238,0.35)]"
+      draggable="false"
+    />
+  </div>
+);
+
+const AgentSpeechBubble = ({ bubble }) => {
+  if (!bubble) {
+    return null;
+  }
+
+  const lines = Array.isArray(bubble.lines) ? bubble.lines : [bubble.text];
+  const arrowClassName = bubble.arrow === "down"
+    ? "absolute bottom-[-5px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
+    : "absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 border-b border-l border-cyan-400/45 bg-slate-950/86";
+
+  return (
+    <div className={`absolute z-30 flex max-w-[185px] items-center gap-1.5 rounded-full border border-cyan-400/45 bg-slate-950/86 px-2.5 py-1.5 text-[9px] font-bold text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)] backdrop-blur-md ${bubble.className || "left-[86%] top-[42%]"}`}>
+      {bubble.status === "success" ? (
+        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
+      ) : (
+        <LoaderCircle className="h-3.5 w-3.5 shrink-0 animate-spin text-slate-300" />
+      )}
+      <span className="flex min-w-0 flex-col whitespace-nowrap leading-tight">
+        {lines.map((line) => (
+          <span key={line}>{line}</span>
+        ))}
+      </span>
+      <span className={arrowClassName} />
+    </div>
+  );
+};
+
+const NetworkTopology3D = ({ activeFlowType, coreFunctions, agentBubble, title = "6G 核心网：数字身份申请" }) => {
   const nodes = {
     UE: { name: "AR Glasses (6G终端)", x: 14, y: 74, color: "#22f5ff", image: "/topology/glasses_transparent.png", size: "w-20 md:w-24" },
     RobotDog: { name: "Robot Dog", x: 14, y: 27, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-24 md:w-28" },
     gNB: { name: "6G RAN", x: 33, y: 50, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-28 md:w-32" },
     SRF: { name: "SystemAgent", x: 55, y: 37, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-24 md:w-28" },
     UPF: { name: "UPF", x: 55, y: 76, color: "#34d399", image: "/topology/switch_transparent.png", size: "w-24 md:w-28" },
-    AgentGW: { name: "Agent GW", x: 79, y: 76, color: "#38bdf8", image: "/topology/gw.png", size: "w-24 md:w-28" },
-    ACN: { name: "ACN Agent", x: 82, y: 50, color: "#f472b6", image: "/topology/acn_transparent.png", size: "w-24 md:w-28", labelClassName: "absolute left-[78%] top-[32%]" },
-    Computing: { name: "Computing Agent", x: 80, y: 22, color: "#fbbf24", image: "/topology/computing_transparent.png", size: "w-24 md:w-28", labelClassName: "absolute left-[78%] top-[32%]" },
+    AgentGW: { name: "Agent GW", x: 76, y: 80, color: "#38bdf8", image: "/topology/gw.png", size: "w-24 md:w-28" },
+    ACN: { name: "ACN Agent", x: 82, y: 50, color: "#f472b6", image: "/topology/acn_transparent.png", size: "w-24 md:w-28", labelClassName: "absolute left-[78%] top-[68%]" },
+    Computing: { name: "Computing Agent", x: 80, y: 22, color: "#fbbf24", image: "/topology/computing_transparent.png", size: "w-24 md:w-28", labelClassName: "absolute left-[78%] top-[68%]" },
   };
 
   const connections = [
@@ -323,12 +703,22 @@ const NetworkTopology3D = ({ activeFlowType, onSelectFlow }) => {
 
   const flowPaths = {
     auth: ["RobotDog->gNB", "gNB->SRF", "SRF->ACN"],
+    domain: ["RobotDog->gNB", "UE->gNB", "gNB->SRF", "SRF->ACN"],
+    dogVision: ["RobotDog->gNB", "UE->gNB", "gNB->UPF"],
+    a2aGateway: ["RobotDog->gNB", "UE->gNB", "gNB->UPF", "UPF->AgentGW"],
+    a2aTrust: ["RobotDog->gNB", "UE->gNB", "gNB->SRF", "SRF->ACN"],
+    computeSandbox: ["RobotDog->gNB", "gNB->SRF", "SRF->Computing"],
     compute: ["UE->gNB", "gNB->UPF", "UPF->AgentGW"],
     collab: ["SRF->ACN", "SRF->Computing"],
   };
 
   const flowColor = {
     auth: "#22f5ff",
+    domain: "#34d399",
+    dogVision: "#22f5ff",
+    a2aGateway: "#38bdf8",
+    a2aTrust: "#f472b6",
+    computeSandbox: "#fbbf24",
     compute: "#ffb020",
     collab: "#ff4fd8",
   };
@@ -356,16 +746,9 @@ const NetworkTopology3D = ({ activeFlowType, onSelectFlow }) => {
       <div className="relative flex items-center justify-center gap-3 mb-4">
         <div className="w-full text-center">
           <h2 className="text-base font-bold text-blue-100 tracking-wider">
-            6G 核心智能网：数字身份申请
+            {title}
           </h2>
         </div>
-        <button
-          onClick={() => onSelectFlow("auth")}
-          className="absolute right-0 hidden sm:flex items-center gap-1.5 border border-cyan-400/40 bg-cyan-500/15 px-2.5 py-1.5 rounded text-[10px] font-bold text-cyan-200"
-        >
-          <Zap className="w-3.5 h-3.5" />
-          注册链路
-        </button>
       </div>
 
       <div className="flex-[1.55] w-full min-h-[300px] lg:min-h-[340px] relative rounded-lg overflow-hidden border border-blue-900/30 bg-slate-950/20">
@@ -450,39 +833,8 @@ const NetworkTopology3D = ({ activeFlowType, onSelectFlow }) => {
             </div>
           ))}
         </div>
+        <AgentSpeechBubble bubble={agentBubble} />
 
-        <div className="absolute bottom-3 left-3 right-3 z-20 flex flex-wrap justify-between gap-2">
-          <div className="flex gap-1.5">
-            {[
-              ["auth", "注册认证流", "cyan"],
-              ["compute", "算力卸载流", "amber"],
-              ["collab", "智能体协同", "pink"],
-            ].map(([key, label, tone]) => (
-              <button
-                key={key}
-                onClick={() => onSelectFlow(key)}
-                className={`text-[10px] font-bold px-2.5 py-1.5 rounded transition-all border ${
-                  activeFlowType === key
-                    ? tone === "amber"
-                      ? "bg-amber-500/20 text-amber-100 border-amber-400/70"
-                      : tone === "pink"
-                        ? "bg-pink-500/20 text-pink-100 border-pink-400/70"
-                        : "bg-cyan-500/20 text-cyan-100 border-cyan-400/70"
-                    : "bg-slate-950/75 text-gray-300 border-blue-500/20 hover:border-cyan-500/50"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => onSelectFlow(null)}
-            className="p-1.5 rounded bg-slate-950/75 hover:bg-slate-900 border border-blue-500/20 hover:border-blue-500 text-blue-300"
-            title="重置网络活动"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-        </div>
       </div>
 
       <div className="mt-4 border-t border-blue-500/25 pt-4">
@@ -491,12 +843,7 @@ const NetworkTopology3D = ({ activeFlowType, onSelectFlow }) => {
           <span className="text-[10px] text-cyan-300 font-mono">Core Network Functions</span>
         </div>
         <div className="grid grid-cols-2 gap-2.5">
-          {[
-            "统一数字身份管理",
-            "通信凭证签发",
-            "可信接入控制",
-            "智能体发布发现",
-          ].map((item) => (
+          {coreFunctions.map((item) => (
             <div
               key={item}
               className="flex items-center gap-2 rounded border border-blue-500/25 bg-slate-900/20 px-3 py-2 text-xs text-blue-100/90 backdrop-blur-sm"
@@ -541,6 +888,26 @@ const getWebRtcOfferUrl = () => {
 
   const protocol = window.location.protocol === "https:" ? "https:" : "http:";
   return `${protocol}//${window.location.hostname}:28450/offer`;
+};
+
+const getDogVisionOfferUrl = () => {
+  const configuredUrl = import.meta.env.VITE_DOG_WEBRTC_SIGNAL_URL;
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  return `${protocol}//${window.location.hostname}:28451/offer`;
+};
+
+const getDogEnhancedOfferUrl = () => {
+  const configuredUrl = import.meta.env.VITE_DOG_ENHANCED_WEBRTC_SIGNAL_URL;
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  return `${protocol}//${window.location.hostname}:28452/offer`;
 };
 
 const getWebRtcIceServers = () => {
@@ -652,13 +1019,782 @@ const WebRtcBackground = () => {
   );
 };
 
+const DogVisionStream = () => {
+  const videoRef = useRef(null);
+  const [state, setState] = useState("connecting");
+
+  useEffect(() => {
+    let disposed = false;
+    const iceServers = getWebRtcIceServers();
+    const pc = new RTCPeerConnection({
+      iceServers,
+      iceTransportPolicy: iceServers.length ? "relay" : "all",
+    });
+
+    pc.addTransceiver("video", { direction: "recvonly" });
+
+    pc.onconnectionstatechange = () => {
+      if (!disposed) {
+        setState(pc.connectionState);
+      }
+    };
+
+    pc.ontrack = (event) => {
+      if (!disposed && videoRef.current) {
+        videoRef.current.srcObject = event.streams[0];
+        setState("receiving");
+      }
+    };
+
+    const connect = async () => {
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await waitForIceGathering(pc);
+
+        const response = await fetch(getDogVisionOfferUrl(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(pc.localDescription),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Dog vision WebRTC offer failed: ${response.status}`);
+        }
+
+        const answer = await response.json();
+        if (!disposed) {
+          await pc.setRemoteDescription(answer);
+        }
+      } catch (error) {
+        console.error("Dog vision WebRTC connection failed", error);
+        if (!disposed) {
+          setState("failed");
+        }
+        pc.close();
+      }
+    };
+
+    connect();
+
+    return () => {
+      disposed = true;
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      pc.close();
+    };
+  }, []);
+
+  return (
+    <div className="relative h-[220px] shrink-0 overflow-hidden rounded-xl border border-emerald-400/35 bg-slate-950/45 shadow-[inset_0_0_24px_rgba(16,185,129,0.12),0_0_18px_rgba(34,211,238,0.14)] lg:h-[240px]">
+      <video
+        ref={videoRef}
+        className="absolute inset-0 h-full w-full object-cover"
+        autoPlay
+        muted
+        playsInline
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:22px_22px] mix-blend-screen" />
+      <div className="absolute inset-0 border border-cyan-300/20" />
+      <div className="absolute left-3 top-3 flex items-center gap-2 rounded border border-emerald-400/45 bg-slate-950/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-200 backdrop-blur-md">
+        <span className={`h-1.5 w-1.5 rounded-full ${state === "receiving" || state === "connected" ? "bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.9)]" : "bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.9)]"}`} />
+        {state === "receiving" || state === "connected" ? "Live" : state}
+      </div>
+      <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2 text-[10px] font-mono text-cyan-100/90">
+        {["DOG-CAM", "MOQT", "6G UPLINK"].map((item) => (
+          <div key={item} className="rounded border border-cyan-400/25 bg-slate-950/62 px-2 py-1 text-center backdrop-blur-md">
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const SyncedDogVisionStream = () => {
+  const rawVideoRef = useRef(null);
+  const enhancedVideoRef = useRef(null);
+  const [rawState, setRawState] = useState("connecting");
+  const [enhancedState, setEnhancedState] = useState("connecting");
+
+  useEffect(() => {
+    let disposed = false;
+    const iceServers = getWebRtcIceServers();
+
+    const createPeer = (videoRef, setState) => {
+      const pc = new RTCPeerConnection({
+        iceServers,
+        iceTransportPolicy: iceServers.length ? "relay" : "all",
+      });
+
+      pc.addTransceiver("video", { direction: "recvonly" });
+      pc.onconnectionstatechange = () => {
+        if (!disposed) {
+          setState(pc.connectionState);
+        }
+      };
+      pc.ontrack = (event) => {
+        if (!disposed && videoRef.current) {
+          videoRef.current.srcObject = event.streams[0];
+          setState("receiving");
+        }
+      };
+
+      return pc;
+    };
+
+    const rawPeer = createPeer(rawVideoRef, setRawState);
+    const enhancedPeer = createPeer(enhancedVideoRef, setEnhancedState);
+
+    const connectPeer = async (pc, offerUrl, setState) => {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await waitForIceGathering(pc);
+
+      const response = await fetch(offerUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pc.localDescription),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Dog vision WebRTC offer failed: ${response.status}`);
+      }
+
+      const answer = await response.json();
+      if (!disposed) {
+        await pc.setRemoteDescription(answer);
+      }
+    };
+
+    const connectBoth = async () => {
+      try {
+        await Promise.all([
+          connectPeer(rawPeer, getDogVisionOfferUrl(), setRawState),
+          connectPeer(enhancedPeer, getDogEnhancedOfferUrl(), setEnhancedState),
+        ]);
+      } catch (error) {
+        console.error("Synced dog vision WebRTC connection failed", error);
+        if (!disposed) {
+          setRawState((state) => (state === "receiving" ? state : "failed"));
+          setEnhancedState((state) => (state === "receiving" ? state : "failed"));
+        }
+        rawPeer.close();
+        enhancedPeer.close();
+      }
+    };
+
+    connectBoth();
+
+    return () => {
+      disposed = true;
+      [rawVideoRef, enhancedVideoRef].forEach((videoRef) => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+        }
+      });
+      rawPeer.close();
+      enhancedPeer.close();
+    };
+  }, []);
+
+  const panels = [
+    { label: "机器狗原始视频", state: rawState, ref: rawVideoRef },
+    { label: "机器狗增强后的视野视频", state: enhancedState, ref: enhancedVideoRef },
+  ];
+
+  return (
+    <div className="flex flex-1 min-h-[424px] flex-col gap-2">
+      {panels.map((panel) => {
+        const live = panel.state === "receiving" || panel.state === "connected";
+
+        return (
+          <div key={panel.label} className="relative flex-1 overflow-hidden rounded-xl border border-emerald-400/35 bg-slate-950/45 shadow-[inset_0_0_24px_rgba(16,185,129,0.12),0_0_18px_rgba(34,211,238,0.14)]">
+            <video
+              ref={panel.ref}
+              className="absolute inset-0 h-full w-full object-cover"
+              autoPlay
+              muted
+              playsInline
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:22px_22px] mix-blend-screen" />
+            <div className="absolute inset-0 border border-cyan-300/20" />
+            <div className="absolute left-2 top-2 flex items-center gap-2 rounded border border-emerald-400/45 bg-slate-950/70 px-2 py-1 text-[10px] font-bold tracking-wider text-emerald-200 backdrop-blur-md">
+              <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.9)]" : "bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.9)]"}`} />
+              {panel.label}
+            </div>
+            <div className="absolute bottom-2 left-2 right-2 grid grid-cols-3 gap-2 text-[9px] font-mono text-cyan-100/90">
+              {["DOG-CAM", "MOQT", live ? "SYNCED" : panel.state].map((item) => (
+                <div key={item} className="rounded border border-cyan-400/25 bg-slate-950/62 px-2 py-1 text-center backdrop-blur-md">
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const useStagePolling = () => {
+  const [stage, setStage] = useState(1);
+  const [connectionState, setConnectionState] = useState("connecting");
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let disposed = false;
+    let isPolling = false;
+
+    const pollStage = async () => {
+      if (isPolling) {
+        return;
+      }
+
+      isPolling = true;
+
+      try {
+        const response = await fetch(getStageApiUrl(), {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Stage API failed: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          throw new Error("Stage API did not return JSON");
+        }
+
+        const payload = await response.json();
+        const nextStage = normalizeStage(payload.stage);
+
+        if (!nextStage) {
+          throw new Error(`Unknown stage: ${payload.stage}`);
+        }
+
+        if (!disposed) {
+          setStage(nextStage);
+          setConnectionState("connected");
+          setError(null);
+        }
+      } catch (stageError) {
+        if (!disposed) {
+          setConnectionState("error");
+          setError(stageError.message);
+        }
+      } finally {
+        isPolling = false;
+      }
+    };
+
+    pollStage();
+    const interval = window.setInterval(pollStage, 1000);
+
+    return () => {
+      disposed = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  return { stage, connectionState, error };
+};
+
 export default function App() {
-  const [activeFlowType, setActiveFlowType] = useState("auth");
+  const { stage, connectionState, error } = useStagePolling();
+  const stageConfig = STAGE_CONFIG[stage] || STAGE_CONFIG[1];
+  const [demoRunning, setDemoRunning] = useState(false);
+  const [stage2Progress, setStage2Progress] = useState({
+    activeTask: 0,
+    completedCount: 0,
+    bubbleStatus: "working",
+  });
+  const [stage4Progress, setStage4Progress] = useState({
+    activeTask: 0,
+    completedCount: 0,
+    bubbleStatus: "working",
+  });
+  const [stage6Progress, setStage6Progress] = useState({
+    activeTask: 0,
+    completedCount: 0,
+    bubbleStatus: "working",
+  });
+  const [stage7Progress, setStage7Progress] = useState({
+    activeTask: 0,
+    completedCount: 0,
+    bubbleStatus: "working",
+  });
+
+  const postStage = async (nextStage, retries = 3) => {
+    let lastError = null;
+
+    for (let attempt = 0; attempt < retries; attempt += 1) {
+      try {
+        const response = await fetch(getStageApiUrl(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stage: nextStage }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Set stage failed: ${response.status}`);
+        }
+
+        return;
+      } catch (stageError) {
+        lastError = stageError;
+        await sleep(350);
+      }
+    }
+
+    throw lastError;
+  };
+
+  const runFullDemo = async () => {
+    if (demoRunning) {
+      return;
+    }
+
+    setDemoRunning(true);
+    try {
+      for (const item of DEMO_SEQUENCE) {
+        await postStage(item.stage);
+        await sleep(item.delay);
+      }
+      await postStage(8, 5);
+    } catch (demoError) {
+      console.error("Full stage demo failed", demoError);
+    } finally {
+      setDemoRunning(false);
+    }
+  };
+
+  useEffect(() => {
+    if (stage !== 2) {
+      setStage2Progress({
+        activeTask: 0,
+        completedCount: 0,
+        bubbleStatus: "working",
+      });
+      return;
+    }
+
+    setStage2Progress({
+      activeTask: 0,
+      completedCount: 0,
+      bubbleStatus: "working",
+    });
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage !== 2 || stage2Progress.completedCount >= STAGE2_WORKFLOW.length) {
+      return undefined;
+    }
+
+    const currentTask = stage2Progress.activeTask;
+    const timer = window.setTimeout(() => {
+      if (stage2Progress.bubbleStatus === "working") {
+        setStage2Progress((progress) => ({
+          ...progress,
+          bubbleStatus: "success",
+        }));
+        return;
+      }
+
+      setStage2Progress((progress) => {
+        const nextCompletedCount = Math.min(progress.completedCount + 1, STAGE2_WORKFLOW.length);
+        const nextTask = Math.min(currentTask + 1, STAGE2_WORKFLOW.length - 1);
+
+        return {
+          activeTask: nextTask,
+          completedCount: nextCompletedCount,
+          bubbleStatus: nextCompletedCount >= STAGE2_WORKFLOW.length ? "success" : "working",
+        };
+      });
+    }, stage2Progress.bubbleStatus === "working" ? 1100 : 420);
+
+    return () => window.clearTimeout(timer);
+  }, [stage, stage2Progress.activeTask, stage2Progress.bubbleStatus, stage2Progress.completedCount]);
+
+  useEffect(() => {
+    if (stage !== 4) {
+      setStage4Progress({
+        activeTask: 0,
+        completedCount: 0,
+        bubbleStatus: "working",
+      });
+      return;
+    }
+
+    setStage4Progress({
+      activeTask: 0,
+      completedCount: 0,
+      bubbleStatus: "working",
+    });
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage !== 6) {
+      setStage6Progress({
+        activeTask: 0,
+        completedCount: 0,
+        bubbleStatus: "working",
+      });
+      return;
+    }
+
+    setStage6Progress({
+      activeTask: 0,
+      completedCount: 0,
+      bubbleStatus: "working",
+    });
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage !== 7) {
+      setStage7Progress({
+        activeTask: 0,
+        completedCount: 0,
+        bubbleStatus: "working",
+      });
+      return;
+    }
+
+    setStage7Progress({
+      activeTask: 0,
+      completedCount: 0,
+      bubbleStatus: "working",
+    });
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage !== 4 || stage4Progress.completedCount >= STAGE4_WORKFLOW.length) {
+      return undefined;
+    }
+
+    const currentTask = stage4Progress.activeTask;
+    const timer = window.setTimeout(() => {
+      if (stage4Progress.bubbleStatus === "working") {
+        setStage4Progress((progress) => ({
+          ...progress,
+          bubbleStatus: "success",
+        }));
+        return;
+      }
+
+      setStage4Progress((progress) => {
+        const nextCompletedCount = Math.min(progress.completedCount + 1, STAGE4_WORKFLOW.length);
+        const nextTask = Math.min(currentTask + 1, STAGE4_WORKFLOW.length - 1);
+
+        return {
+          activeTask: nextTask,
+          completedCount: nextCompletedCount,
+          bubbleStatus: nextCompletedCount >= STAGE4_WORKFLOW.length ? "success" : "working",
+        };
+      });
+    }, stage4Progress.bubbleStatus === "working" ? 1200 : 450);
+
+    return () => window.clearTimeout(timer);
+  }, [stage, stage4Progress.activeTask, stage4Progress.bubbleStatus, stage4Progress.completedCount]);
+
+  useEffect(() => {
+    if (stage !== 6 || stage6Progress.completedCount >= STAGE6_WORKFLOW.length) {
+      return undefined;
+    }
+
+    const currentTask = stage6Progress.activeTask;
+    const timer = window.setTimeout(() => {
+      if (stage6Progress.bubbleStatus === "working") {
+        setStage6Progress((progress) => ({
+          ...progress,
+          bubbleStatus: "success",
+        }));
+        return;
+      }
+
+      setStage6Progress((progress) => {
+        const nextCompletedCount = Math.min(progress.completedCount + 1, STAGE6_WORKFLOW.length);
+        const nextTask = Math.min(currentTask + 1, STAGE6_WORKFLOW.length - 1);
+
+        return {
+          activeTask: nextTask,
+          completedCount: nextCompletedCount,
+          bubbleStatus: nextCompletedCount >= STAGE6_WORKFLOW.length ? "success" : "working",
+        };
+      });
+    }, stage6Progress.bubbleStatus === "working" ? 1200 : 450);
+
+    return () => window.clearTimeout(timer);
+  }, [stage, stage6Progress.activeTask, stage6Progress.bubbleStatus, stage6Progress.completedCount]);
+
+  useEffect(() => {
+    if (stage !== 7 || stage7Progress.completedCount >= STAGE7_WORKFLOW.length) {
+      return undefined;
+    }
+
+    const currentTask = stage7Progress.activeTask;
+    const timer = window.setTimeout(() => {
+      if (stage7Progress.bubbleStatus === "working") {
+        setStage7Progress((progress) => ({
+          ...progress,
+          bubbleStatus: "success",
+        }));
+        return;
+      }
+
+      setStage7Progress((progress) => {
+        const nextCompletedCount = Math.min(progress.completedCount + 1, STAGE7_WORKFLOW.length);
+        const nextTask = Math.min(currentTask + 1, STAGE7_WORKFLOW.length - 1);
+
+        return {
+          activeTask: nextTask,
+          completedCount: nextCompletedCount,
+          bubbleStatus: nextCompletedCount >= STAGE7_WORKFLOW.length ? "success" : "working",
+        };
+      });
+    }, stage7Progress.bubbleStatus === "working" ? 1200 : 450);
+
+    return () => window.clearTimeout(timer);
+  }, [stage, stage7Progress.activeTask, stage7Progress.bubbleStatus, stage7Progress.completedCount]);
+
+  const effectiveStageConfig = (() => {
+    if (stage === 2) {
+      const workflow = STAGE2_WORKFLOW.map((item, index) => {
+        if (index < stage2Progress.completedCount) {
+          return { label: item.label, value: "Done", status: "success" };
+        }
+
+        if (index === stage2Progress.activeTask && stage2Progress.completedCount < STAGE2_WORKFLOW.length) {
+          return {
+            label: item.label,
+            value: stage2Progress.bubbleStatus === "success" ? "Done" : "Working",
+            status: stage2Progress.bubbleStatus === "success" ? "success" : "working",
+          };
+        }
+
+        return { label: item.label, value: "Pending", status: "pending" };
+      });
+
+      const allDone = stage2Progress.completedCount >= STAGE2_WORKFLOW.length;
+      const activeWorkflow = allDone ? null : STAGE2_WORKFLOW[stage2Progress.activeTask];
+      const completionLogCount = Math.max(0, Math.min(stage2Progress.completedCount - 1, STAGE2_COMPLETION_LOGS.length));
+      const logs = [
+        ...stageConfig.logs,
+        ...STAGE2_COMPLETION_LOGS.slice(0, completionLogCount),
+      ];
+
+      return {
+        ...stageConfig,
+        showRegisteredDevice: allDone,
+        statusRows: [
+          {
+            label: "凭证:",
+            value: stage2Progress.completedCount >= 2 ? "已颁发" : "未颁发",
+            status: stage2Progress.completedCount >= 2 ? "success" : "pending",
+          },
+          {
+            label: "机器狗ID:",
+            value: allDone ? "DID:2168nLB3G@CMCC.org" : "None",
+            status: allDone ? "success" : "pending",
+            isMono: true,
+          },
+        ],
+        userStatus: {
+          credential: {
+            value: stage2Progress.completedCount >= 2 ? "已颁发" : "未颁发",
+            status: stage2Progress.completedCount >= 2 ? "success" : "pending",
+          },
+          robotDogId: {
+            value: allDone ? "DID:2168nLB3G@CMCC.org" : "None",
+            status: allDone ? "success" : "pending",
+          },
+        },
+        logs,
+        workflow,
+        steps: stageConfig.steps.map((step) => (
+          step.id === "01"
+            ? {
+                ...step,
+                subtitle: allDone ? "已完成 / Completed" : "进行中 / Working",
+                status: allDone ? "success" : "working",
+              }
+            : step
+        )),
+        agentBubble: activeWorkflow
+          ? {
+              ...activeWorkflow.bubble,
+              status: stage2Progress.bubbleStatus,
+            }
+          : null,
+      };
+    }
+
+    if (stage === 6) {
+      const workflow = STAGE6_WORKFLOW.map((item, index) => {
+        if (index < stage6Progress.completedCount) {
+          return { label: item.label, value: "Done", status: "success" };
+        }
+
+        if (index === stage6Progress.activeTask && stage6Progress.completedCount < STAGE6_WORKFLOW.length) {
+          return {
+            label: item.label,
+            value: stage6Progress.bubbleStatus === "success" ? "Done" : "Working",
+            status: stage6Progress.bubbleStatus === "success" ? "success" : "working",
+          };
+        }
+
+        return { label: item.label, value: "Pending", status: "pending" };
+      });
+
+      const allDone = stage6Progress.completedCount >= STAGE6_WORKFLOW.length;
+      const activeWorkflow = allDone ? null : STAGE6_WORKFLOW[stage6Progress.activeTask];
+      const visibleLogs = [
+        ...STAGE_CONFIG[5].logs,
+        ...STAGE6_LOGS.slice(0, Math.min(stage6Progress.completedCount + 1, STAGE6_LOGS.length)),
+      ];
+
+      return {
+        ...stageConfig,
+        activeFlowType: activeWorkflow?.flowType || "a2aGateway",
+        logs: visibleLogs,
+        workflow,
+        steps: stageConfig.steps.map((step) => (
+          step.id === "03"
+            ? {
+                ...step,
+                subtitle: allDone ? "已完成 / Completed" : "进行中 / Working",
+                status: allDone ? "success" : "working",
+              }
+            : step
+        )),
+        agentBubble: activeWorkflow
+          ? {
+              ...activeWorkflow.bubble,
+              status: stage6Progress.bubbleStatus,
+            }
+          : null,
+      };
+    }
+
+    if (stage === 7) {
+      const workflow = STAGE7_WORKFLOW.map((item, index) => {
+        if (index < stage7Progress.completedCount) {
+          return { label: item.label, value: "Done", status: "success" };
+        }
+
+        if (index === stage7Progress.activeTask && stage7Progress.completedCount < STAGE7_WORKFLOW.length) {
+          return {
+            label: item.label,
+            value: stage7Progress.bubbleStatus === "success" ? "Done" : "Working",
+            status: stage7Progress.bubbleStatus === "success" ? "success" : "working",
+          };
+        }
+
+        return { label: item.label, value: "Pending", status: "pending" };
+      });
+
+      const allDone = stage7Progress.completedCount >= STAGE7_WORKFLOW.length;
+      const activeWorkflow = allDone ? null : STAGE7_WORKFLOW[stage7Progress.activeTask];
+      const visibleLogs = [
+        ...STAGE_CONFIG[6].logs,
+        ...STAGE7_LOGS.slice(0, Math.min(stage7Progress.completedCount + 1, STAGE7_LOGS.length)),
+      ];
+
+      return {
+        ...stageConfig,
+        activeFlowType: activeWorkflow?.flowType || "computeSandbox",
+        logs: visibleLogs,
+        workflow,
+        steps: stageConfig.steps.map((step) => (
+          step.id === "04"
+            ? {
+                ...step,
+                subtitle: allDone ? "已完成 / Completed" : "进行中 / Working",
+                status: allDone ? "success" : "working",
+              }
+            : step
+        )),
+        agentBubble: activeWorkflow
+          ? {
+              ...activeWorkflow.bubble,
+              status: stage7Progress.bubbleStatus,
+            }
+          : null,
+      };
+    }
+
+    if (stage !== 4) {
+      return stageConfig;
+    }
+
+    const workflow = STAGE4_WORKFLOW.map((item, index) => {
+      if (index < stage4Progress.completedCount) {
+        return { ...item, value: "Done", status: "success" };
+      }
+
+      if (index === stage4Progress.activeTask && stage4Progress.completedCount < STAGE4_WORKFLOW.length) {
+        return {
+          ...item,
+          value: stage4Progress.bubbleStatus === "success" ? "Done" : "Working",
+          status: stage4Progress.bubbleStatus === "success" ? "success" : "working",
+        };
+      }
+
+      return item;
+    });
+
+    const allDone = stage4Progress.completedCount >= STAGE4_WORKFLOW.length;
+    const steps = stageConfig.steps.map((step) => (
+      step.id === "02"
+        ? {
+            ...step,
+            subtitle: allDone ? "已完成 / Completed" : "进行中 / Working",
+            status: allDone ? "success" : "working",
+          }
+        : step
+    ));
+
+    const activeWorkflow = allDone ? null : workflow[stage4Progress.activeTask];
+
+    return {
+      ...stageConfig,
+      homeDomainDevicesReady: allDone,
+      showRegisteredDevice: allDone,
+      workflow,
+      steps,
+      agentBubble: activeWorkflow
+        ? {
+            text: activeWorkflow.label.replace(/:$/, ""),
+            status: stage4Progress.bubbleStatus,
+          }
+        : null,
+    };
+  })();
 
   return (
     <div className="video-backed-ui min-h-screen text-white p-4 md:p-8 font-sans overflow-x-hidden flex items-center justify-center relative isolate">
       <WebRtcBackground />
       <div className="video-dim-overlay fixed inset-0 -z-10 bg-black/35 pointer-events-none" />
+      <button
+        type="button"
+        onClick={runFullDemo}
+        disabled={demoRunning}
+        className={`fixed right-3 top-3 z-50 rounded border px-3 py-2 text-xs font-bold tracking-wide backdrop-blur-md transition ${
+          demoRunning
+            ? "cursor-not-allowed border-amber-400/45 bg-amber-500/12 text-amber-100"
+            : "border-cyan-400/45 bg-slate-950/62 text-cyan-100 hover:border-cyan-300 hover:bg-cyan-500/14"
+        }`}
+      >
+        {demoRunning ? "演示运行中..." : "一键演示 1→8"}
+      </button>
+      {connectionState !== "connected" && (
+        <div className="fixed bottom-3 right-3 z-50 max-w-[280px] rounded border border-amber-400/40 bg-slate-950/65 px-3 py-2 text-xs text-amber-100 backdrop-blur-md">
+          Stage API: {connectionState}
+          {error && <span className="block truncate text-amber-200/70">{error}</span>}
+        </div>
+      )}
       {/* 动画样式定义 */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes scan {
@@ -696,12 +1832,27 @@ export default function App() {
           0% { stroke-dashoffset: 12; }
           100% { stroke-dashoffset: 0; }
         }
-        @keyframes agent-log-scroll {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(-48%); }
+        .agent-log-scroll {
+          overflow-x: hidden;
+          scrollbar-color: transparent transparent;
+          scrollbar-width: thin;
         }
-        .animate-agent-log-scroll {
-          animation: agent-log-scroll 12s linear infinite;
+        .agent-log-scroll::-webkit-scrollbar {
+          width: 8px;
+        }
+        .agent-log-scroll::-webkit-scrollbar-track,
+        .agent-log-scroll::-webkit-scrollbar-thumb {
+          background: transparent;
+        }
+        .agent-log-module:hover .agent-log-scroll {
+          scrollbar-color: rgba(34,211,238,0.65) rgba(15,23,42,0.7);
+        }
+        .agent-log-module:hover .agent-log-scroll::-webkit-scrollbar-track {
+          background: rgba(15,23,42,0.7);
+        }
+        .agent-log-module:hover .agent-log-scroll::-webkit-scrollbar-thumb {
+          background: rgba(34,211,238,0.65);
+          border-radius: 999px;
         }
       `}} />
 
@@ -735,133 +1886,269 @@ export default function App() {
             <SciFiPanel className="h-full">
               <div className="flex flex-col h-full">
                 <h2 className="text-blue-200 text-base lg:text-lg font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
-                  机器狗接入
+                  {effectiveStageConfig.leftPanelTitle}
                 </h2>
                 
                 <div className="flex flex-col flex-1 gap-2">
-                  
-                  {/* === 未注册设备 (红色全息光锥投影) === */}
-                  <div className="border border-red-500/30 bg-red-950/10 backdrop-blur-md flex-1 flex flex-col h-[180px] lg:h-[210px] overflow-hidden rounded-xl p-3 relative">
-                    <div className="flex items-center gap-2 text-red-400 mb-2 relative z-20">
-                      <ShieldAlert className="w-5 h-5 animate-bounce" />
-                      <div>
-                        <div className="font-bold text-xs lg:text-sm">未注册设备</div>
-                        <div className="text-[10px] opacity-70">Unknown Device</div>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 w-full relative mt-1">
-                      {/* 红色发散全息光锥层 */}
-                      <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        <defs>
-                          <linearGradient id="unreg-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
-                            <stop offset="0%" stopColor="rgba(239, 68, 68, 0.35)" stopOpacity="0.7" />
-                            <stop offset="100%" stopColor="rgba(239, 68, 68, 0)" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        {/* 雷达源到全息面板的扩散半透明光锥 */}
-                        <polygon points="34,65 65,15 95,50" fill="url(#unreg-cone-beam)" className="opacity-40 animate-pulse" />
-                        <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                        <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                        {/* 发射微点 */}
-                        <circle cx="34" cy="65" r="1.5" fill="#ef4444" className="animate-ping" />
-                      </svg>
-
-                      {/* 机器狗本体 (靠左下坐立) */}
-                      <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
-                        <RobotDog className="w-full h-full object-contain" status="unregistered" />
-                      </div>
-
-                      {/* 3D 悬浮红色警示全息牌 (靠右侧，朝狗身侧上方倾斜) */}
-                      <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-red-950/80 border border-red-500/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.25)] z-20 animate-hologram-red [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] text-red-300 leading-tight">
-                        <div className="text-red-400 font-black mb-1 border-b border-red-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
-                          Device Warning
-                        </div>
-                        <div className="font-mono font-bold text-[10px] sm:text-xs truncate mb-1">
-                          Robot Dog
-                        </div>
-                        <div className="opacity-80 text-[8px] sm:text-[9px] mb-1">
-                          待注册 / Unregistered
-                        </div>
-                        <div className="mt-1 flex justify-between text-[8px] sm:text-[9px] font-bold">
-                          <span>Status:</span>
-                          <span className="text-red-400 animate-pulse">Blocked</span>
+                  {effectiveStageConfig.showEnhancedDogVision ? (
+                    <SyncedDogVisionStream />
+                  ) : effectiveStageConfig.showDogVision ? (
+                    <DogVisionStream />
+                  ) : effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.homeDomainDevicesReady === false ? (
+                    <div className="flex-1 min-h-[424px] rounded-xl border border-emerald-500/20 bg-slate-950/10 backdrop-blur-md" aria-hidden="true" />
+                  ) : effectiveStageConfig.showHomeDomainDevice ? (
+                    <div className={`border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex flex-col overflow-hidden rounded-xl p-3 relative ${
+                      effectiveStageConfig.showRegisteredDevice
+                        ? "flex-1 h-[180px] lg:h-[210px]"
+                        : "h-[220px] lg:h-[240px]"
+                    }`}>
+                      <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
+                        <ShieldCheck className="w-5 h-5 animate-pulse" />
+                        <div>
+                          <div className="font-bold text-xs lg:text-sm">已注册设备</div>
+                          <div className="text-[10px] opacity-70">Registered Device</div>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="flex justify-center text-blue-500 my-[-10px] z-10">
-                    <ChevronRight className="w-8 h-8 rotate-90 bg-slate-900 border border-blue-500/30 rounded-full" />
-                  </div>
+                      <div className="flex-1 w-full relative mt-1">
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
+                          <defs>
+                            <linearGradient id="ar-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
+                              <stop offset="0%" stopColor="rgba(34, 211, 238, 0.35)" stopOpacity="0.7" />
+                              <stop offset="100%" stopColor="rgba(34, 211, 238, 0)" stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          <polygon points="34,65 65,15 95,50" fill="url(#ar-cone-beam)" className="opacity-40 animate-pulse" />
+                          <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(34, 211, 238, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                          <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(34, 211, 238, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                          <circle cx="34" cy="65" r="1.5" fill="#22d3ee" className="animate-ping" />
+                        </svg>
 
-                  {/* === 已注册设备 (绿色3D全息投影面板) === */}
-                  <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex-1 flex flex-col h-[180px] lg:h-[210px] overflow-hidden rounded-xl p-3 relative">
-                    <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
-                      <ShieldCheck className="w-5 h-5 animate-pulse" />
-                      <div>
-                        <div className="font-bold text-xs lg:text-sm">已注册设备</div>
-                        <div className="text-[10px] opacity-70">Registered Device</div>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 w-full relative mt-1">
-                      {/* 全息透视光锥 (激光散射线) */}
-                      <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        <defs>
-                          <linearGradient id="reg-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
-                            <stop offset="0%" stopColor="rgba(16, 185, 129, 0.35)" stopOpacity="0.7" />
-                            <stop offset="100%" stopColor="rgba(16, 185, 129, 0)" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        {/* 光罩 */}
-                        <polygon points="34,65 65,15 95,50" fill="url(#reg-cone-beam)" className="opacity-40 animate-pulse" />
-                        <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                        <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                        {/* 激光雷达发射核心 */}
-                        <circle cx="34" cy="65" r="1.5" fill="#10b981" className="animate-ping" />
-                      </svg>
-
-                      {/* 机器狗本体 (靠左下安稳站立) */}
-                      <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
-                        <RobotDog className="w-full h-full object-contain" status="registered" />
-                      </div>
-
-                      {/* 3D 浮空倾斜全息卡片 (跟在机器狗身侧上部，带透视翻折) */}
-                      <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
-                        <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
-                          Digital ID
+                        <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+                          <ARGlasses className="w-full h-full object-contain" />
                         </div>
-                        <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
-                          DID:2168nLB3G@CMCC.org
-                        </div>
-                        <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="opacity-75">Capabilities:</span>
-                            <span className="font-bold text-cyan-300 leading-tight break-words">
-                              [4 Legs, Camera, Payload:10KG/10KM]
-                            </span>
+
+                        <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
+                          <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
+                            Digital ID
                           </div>
-                          <div className="flex justify-between items-center">
-                            <span className="opacity-75">Status:</span>
-                            <span className="font-bold flex items-center gap-0.5 text-emerald-400">
-                              Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
-                            </span>
+                          <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
+                            3lt1zY73G@CMCC.org
+                          </div>
+                          <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="opacity-75">Capabilities:</span>
+                              <span className="font-bold text-cyan-300 leading-tight break-words">
+                                [Device-Network Synergy, AR]
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="opacity-75">Status:</span>
+                              <span className="font-bold flex items-center gap-0.5 text-emerald-400">
+                                Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
+                  ) : (
+                    <>
+                      {/* === 未注册设备 (红色全息光锥投影) === */}
+                      <div className={`border border-red-500/30 bg-red-950/10 backdrop-blur-md flex flex-col overflow-hidden rounded-xl p-3 relative ${
+                        effectiveStageConfig.showRegisteredDevice
+                          ? "flex-1 h-[180px] lg:h-[210px]"
+                          : "h-[220px] lg:h-[240px]"
+                      }`}>
+                        <div className="flex items-center gap-2 text-red-400 mb-2 relative z-20">
+                          <ShieldAlert className="w-5 h-5 animate-bounce" />
+                          <div>
+                            <div className="font-bold text-xs lg:text-sm">未注册设备</div>
+                            <div className="text-[10px] opacity-70">Unknown Device</div>
+                          </div>
+                        </div>
+
+                        <div className="flex-1 w-full relative mt-1">
+                          {/* 红色发散全息光锥层 */}
+                          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <defs>
+                              <linearGradient id="unreg-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
+                                <stop offset="0%" stopColor="rgba(239, 68, 68, 0.35)" stopOpacity="0.7" />
+                                <stop offset="100%" stopColor="rgba(239, 68, 68, 0)" stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+                            {/* 雷达源到全息面板的扩散半透明光锥 */}
+                            <polygon points="34,65 65,15 95,50" fill="url(#unreg-cone-beam)" className="opacity-40 animate-pulse" />
+                            <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                            <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                            {/* 发射微点 */}
+                            <circle cx="34" cy="65" r="1.5" fill="#ef4444" className="animate-ping" />
+                          </svg>
+
+                          {/* 机器狗本体 (靠左下坐立) */}
+                          <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+                            <RobotDog className="w-full h-full object-contain" status="unregistered" />
+                          </div>
+
+                          {/* 3D 悬浮红色警示全息牌 (靠右侧，朝狗身侧上方倾斜) */}
+                          <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-red-950/80 border border-red-500/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.25)] z-20 animate-hologram-red [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] text-red-300 leading-tight">
+                            <div className="text-red-400 font-black mb-1 border-b border-red-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
+                              Device Warning
+                            </div>
+                            <div className="font-mono font-bold text-[10px] sm:text-xs truncate mb-1">
+                              Robot Dog
+                            </div>
+                            <div className="opacity-80 text-[8px] sm:text-[9px] mb-1">
+                              待注册 / Unregistered
+                            </div>
+                            <div className="mt-1 flex justify-between text-[8px] sm:text-[9px] font-bold">
+                              <span>Status:</span>
+                              <span className="text-red-400 animate-pulse">Blocked</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                  {effectiveStageConfig.showRegisteredDevice && (
+                    <>
+                      {!effectiveStageConfig.hideDeviceArrow && (
+                        <div className="flex justify-center text-blue-500 my-[-10px] z-10">
+                          <ChevronRight className="w-8 h-8 rotate-90 bg-slate-900 border border-blue-500/30 rounded-full" />
+                        </div>
+                      )}
+                      {effectiveStageConfig.hideDeviceArrow && (
+                        <div className="h-3 shrink-0 opacity-0 pointer-events-none" aria-hidden="true" />
+                      )}
+
+                      {/* === 已注册设备 (绿色3D全息投影面板) === */}
+                      <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex-1 flex flex-col h-[180px] lg:h-[210px] overflow-hidden rounded-xl p-3 relative">
+                        <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
+                          <ShieldCheck className="w-5 h-5 animate-pulse" />
+                          <div>
+                            <div className="font-bold text-xs lg:text-sm">已注册设备</div>
+                            <div className="text-[10px] opacity-70">Registered Device</div>
+                          </div>
+                        </div>
+
+                        <div className="flex-1 w-full relative mt-1">
+                          {/* 全息透视光锥 (激光散射线) */}
+                          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <defs>
+                              <linearGradient id="reg-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
+                                <stop offset="0%" stopColor="rgba(16, 185, 129, 0.35)" stopOpacity="0.7" />
+                                <stop offset="100%" stopColor="rgba(16, 185, 129, 0)" stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+                            {/* 光罩 */}
+                            <polygon points="34,65 65,15 95,50" fill="url(#reg-cone-beam)" className="opacity-40 animate-pulse" />
+                            <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                            <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                            {/* 激光雷达发射核心 */}
+                            <circle cx="34" cy="65" r="1.5" fill="#10b981" className="animate-ping" />
+                          </svg>
+
+                          {/* 机器狗本体 (靠左下安稳站立) */}
+                          <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+                            <RobotDog className="w-full h-full object-contain" status="registered" />
+                          </div>
+
+                          {/* 3D 浮空倾斜全息卡片 (跟在机器狗身侧上部，带透视翻折) */}
+                          <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
+                            <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
+                              Digital ID
+                            </div>
+                            <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
+                              DID:2168nLB3G@CMCC.org
+                            </div>
+                            <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="opacity-75">Capabilities:</span>
+                                <span className="font-bold text-cyan-300 leading-tight break-words">
+                                  [4 Legs, Camera, Payload:10KG/10KM]
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="opacity-75">Status:</span>
+                                <span className="font-bold flex items-center gap-0.5 text-emerald-400">
+                                  Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                    </>
+                  )}
+                  {effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.showRegisteredDevice && (
+                    <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex-1 flex flex-col h-[180px] lg:h-[210px] overflow-hidden rounded-xl p-3 relative">
+                      <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
+                        <ShieldCheck className="w-5 h-5 animate-pulse" />
+                        <div>
+                          <div className="font-bold text-xs lg:text-sm">已注册设备</div>
+                          <div className="text-[10px] opacity-70">Registered Device</div>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 w-full relative mt-1">
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
+                          <defs>
+                            <linearGradient id="stage4-reg-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
+                              <stop offset="0%" stopColor="rgba(16, 185, 129, 0.35)" stopOpacity="0.7" />
+                              <stop offset="100%" stopColor="rgba(16, 185, 129, 0)" stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          <polygon points="34,65 65,15 95,50" fill="url(#stage4-reg-cone-beam)" className="opacity-40 animate-pulse" />
+                          <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                          <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+                          <circle cx="34" cy="65" r="1.5" fill="#10b981" className="animate-ping" />
+                        </svg>
+
+                        <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+                          <RobotDog className="w-full h-full object-contain" status="registered" />
+                        </div>
+
+                        <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
+                          <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
+                            Digital ID
+                          </div>
+                          <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
+                            DID:2168nLB3G@CMCC.org
+                          </div>
+                          <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="opacity-75">Capabilities:</span>
+                              <span className="font-bold text-cyan-300 leading-tight break-words">
+                                [4 Legs, Camera, Payload:10KG/10KM]
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="opacity-75">Status:</span>
+                              <span className="font-bold flex items-center gap-0.5 text-emerald-400">
+                                Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+
+                {effectiveStageConfig.showRegisteredDevice && !effectiveStageConfig.hideDeviceArrow && (
+                  <div className="flex justify-between text-[10px] lg:text-xs text-blue-200 mt-4 px-1 font-medium">
+                    <span>① 身份申请</span>
+                    <ChevronRight className="w-3 lg:w-4 h-3 lg:h-4 text-blue-400" />
+                    <span>② 业务授权</span>
+                    <ChevronRight className="w-3 lg:w-4 h-3 lg:h-4 text-blue-400" />
+                    <span>③ 能力发布</span>
                   </div>
-
-                </div>
-
-                <div className="flex justify-between text-[10px] lg:text-xs text-blue-200 mt-4 px-1 font-medium">
-                  <span>① 身份申请</span>
-                  <ChevronRight className="w-3 lg:w-4 h-3 lg:h-4 text-blue-400" />
-                  <span>② 业务授权</span>
-                  <ChevronRight className="w-3 lg:w-4 h-3 lg:h-4 text-blue-400" />
-                  <span>③ 能力发布</span>
-                </div>
+                )}
+                {effectiveStageConfig.showRegisteredDevice && effectiveStageConfig.hideDeviceArrow && (
+                  <div className="mt-4 h-[18px] opacity-0 pointer-events-none" aria-hidden="true" />
+                )}
               </div>
             </SciFiPanel>
           </div>
@@ -869,8 +2156,10 @@ export default function App() {
           {/* 中间列：6G核心网 3D 拓扑与平面网元、上方弧线数据流 */}
           <div className="md:col-span-6">
             <NetworkTopology3D
-              activeFlowType={activeFlowType}
-              onSelectFlow={(flow) => setActiveFlowType(flow)}
+              activeFlowType={effectiveStageConfig.activeFlowType}
+              coreFunctions={effectiveStageConfig.coreFunctions}
+              agentBubble={effectiveStageConfig.agentBubble}
+              title={effectiveStageConfig.topologyTitle}
             />
           </div>
 
@@ -889,38 +2178,37 @@ export default function App() {
                       <div className="w-7 h-7 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
                         <User className="w-3.5 h-3.5 text-blue-300" />
                       </div>
-                      <h3 className="text-white font-bold text-sm lg:text-base">用户状态</h3>
+                      <h3 className="text-white font-bold text-sm lg:text-base">{effectiveStageConfig.statusTitle}</h3>
                     </div>
                     <div className="flex flex-col">
-                      <StatusRow label="Credential:" value="Issued" status="success" />
-                      <StatusRow label="Robot Dog ID:" value="DID:2168nLB3G@CMCC.org" status="success" isMono valueClassName="leading-tight text-right break-all" />
+                      {effectiveStageConfig.statusRows.map((item) => (
+                        <StatusRow
+                          key={item.label}
+                          label={item.label}
+                          value={item.value}
+                          status={item.status}
+                          isMono={item.isMono}
+                          valueClassName={item.isMono ? "leading-tight text-right break-all" : ""}
+                        />
+                      ))}
                     </div>
                   </div>
 
                   {/* 子栏目 2: 智能体日志 */}
-                  <div className="border border-blue-500/30 rounded-lg p-3 bg-slate-900/30 backdrop-blur-md flex flex-col shadow-md">
+                  <div className="agent-log-module border border-blue-500/30 rounded-lg p-3 bg-slate-900/30 backdrop-blur-md flex flex-col shadow-md">
                     <div className="flex items-center gap-2.5 mb-2">
                       <div className="w-7 h-7 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
                         <Network className="w-3.5 h-3.5 text-blue-300" />
                       </div>
                       <h3 className="text-white font-bold text-sm lg:text-base">智能体日志</h3>
                     </div>
-                    <div className="h-[128px] overflow-hidden rounded border border-blue-500/20 bg-slate-950/35 px-2 py-1.5">
-                      <div className="animate-agent-log-scroll flex flex-col gap-1 text-[10px] lg:text-xs font-mono leading-snug text-blue-100/90">
-                        {[
-                          ["10:31:02", "ACN", "接收 DID 身份申请"],
-                          ["10:31:03", "SystemAgent", "校验终端能力描述"],
-                          ["10:31:05", "Agent GW", "同步接入上下文"],
-                          ["10:31:07", "ACN", "完成策略匹配"],
-                          ["10:31:10", "Computing", "发布可用算力画像"],
-                          ["10:31:13", "SystemAgent", "广播智能体发现事件"],
-                          ["10:31:16", "Agent GW", "刷新服务路由表"],
-                          ["10:31:19", "ACN", "业务授权状态更新"],
-                        ].map(([time, agent, message]) => (
-                          <div key={`${time}-${agent}`} className="flex items-start gap-1.5 whitespace-nowrap">
-                            <span className="text-cyan-300/90">{time}</span>
-                            <span className="text-emerald-300">[{agent}]</span>
-                            <span className="text-blue-100/80">{message}</span>
+                    <div className="agent-log-scroll h-[128px] overflow-auto rounded border border-blue-500/20 bg-slate-950/35 px-2 py-1.5">
+                      <div className="flex min-w-full flex-col gap-1 text-[10px] lg:text-xs font-mono leading-snug text-blue-100/90">
+                        {effectiveStageConfig.logs.map(([time, agent, message]) => (
+                          <div key={`${time}-${agent}-${message}`} className="flex items-start gap-1.5 whitespace-normal break-words">
+                            <span className="shrink-0 text-cyan-300/90">{time}</span>
+                            <span className="shrink-0 text-emerald-300">[{agent}]</span>
+                            <span className="min-w-0 text-blue-100/80">{message}</span>
                           </div>
                         ))}
                       </div>
@@ -936,10 +2224,9 @@ export default function App() {
                       <h3 className="text-white font-bold text-sm lg:text-base">工作流</h3>
                     </div>
                     <div className="flex flex-col">
-                      <StatusRow label="System Agent路由请求:" value="Done" status="success" />
-                      <StatusRow label="IDM颁发数字身份:" value="Done" status="success" />
-                      <StatusRow label="接入网络:" value="Ready" status="pending" />
-                      <StatusRow label="能力注册:" value="Pending" status="pending" />
+                      {effectiveStageConfig.workflow.map((item) => (
+                        <StatusRow key={item.label} label={item.label} value={item.value} status={item.status} />
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -950,33 +2237,46 @@ export default function App() {
 
         {/* 底部步骤条 - 升级为精致高对比度毛玻璃条 */}
         <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
-          {/* Active Step */}
-          <div className="border border-emerald-500/80 bg-slate-900/30 backdrop-blur-md rounded-lg p-3 flex items-center gap-3 relative overflow-hidden shadow-[0_0_18px_rgba(16,185,129,0.25)]">
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]"></div>
-            <span className="text-emerald-400 font-mono font-bold text-lg opacity-90">01</span>
-            <ShieldCheck className="w-6 h-6 text-emerald-400" />
-            <div className="flex flex-col">
-              <span className="text-white font-bold text-sm">Digital ID</span>
-              <span className="text-emerald-400 text-xs font-semibold">已完成 / Completed</span>
-            </div>
-          </div>
+          {effectiveStageConfig.steps.map((step) => {
+            const StepIcon = step.icon;
+            const isDone = step.status === "success";
+            const isWorking = step.status === "working";
 
-          {/* Pending Steps */}
-          {[
-            { id: "02", icon: Share2, title: "A2A", subtitle: "即将开始 / Upcoming" },
-            { id: "03", icon: Globe, title: "L3 Networking", subtitle: "即将开始 / Upcoming" },
-            { id: "04", icon: Radio, title: "Massive Uplink", subtitle: "即将开始 / Upcoming" },
-            { id: "05", icon: Cloud, title: "Compute Offload", subtitle: "即将开始 / Upcoming" },
-          ].map((step, idx) => (
-            <div key={idx} className="border border-blue-500/30 bg-slate-900/30 backdrop-blur-md rounded-lg p-3 flex items-center gap-3 shadow-md">
-              <span className="text-blue-300 font-mono font-bold text-lg opacity-60">{step.id}</span>
-              <step.icon className="w-6 h-6 text-blue-300/80" />
-              <div className="flex flex-col">
-                <span className="text-blue-100 font-bold text-sm">{step.title}</span>
-                <span className="text-blue-300/70 text-xs font-semibold">{step.subtitle}</span>
+            return (
+              <div
+                key={step.id}
+                className={`border bg-slate-900/30 backdrop-blur-md rounded-lg p-3 flex items-center gap-3 relative overflow-hidden shadow-md ${
+                  isDone
+                    ? "border-emerald-500/80 shadow-[0_0_18px_rgba(16,185,129,0.25)]"
+                    : isWorking
+                      ? "border-amber-400/70 shadow-[0_0_18px_rgba(251,191,36,0.18)]"
+                      : "border-blue-500/30"
+                }`}
+              >
+                {(isDone || isWorking) && (
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                    isDone
+                      ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]"
+                      : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]"
+                  }`} />
+                )}
+                <span className={`font-mono font-bold text-lg ${
+                  isDone ? "text-emerald-400 opacity-90" : isWorking ? "text-amber-300 opacity-90" : "text-blue-300 opacity-60"
+                }`}>
+                  {step.id}
+                </span>
+                <StepIcon className={`w-6 h-6 ${
+                  isDone ? "text-emerald-400" : isWorking ? "text-amber-300 animate-pulse" : "text-blue-300/80"
+                }`} />
+                <div className="flex flex-col min-w-0">
+                  <span className="text-blue-100 font-bold text-sm leading-tight">{step.title}</span>
+                  <span className={`text-xs font-semibold ${isDone ? "text-emerald-400" : isWorking ? "text-amber-300" : "text-blue-300/70"}`}>
+                    {step.subtitle}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       

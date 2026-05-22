@@ -2,7 +2,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "webrtc:server": ".venv/bin/python server/webrtc_mp4_server.py --host 0.0.0.0 --port 28450 --media fixed_camera_moving_personmp_.mp4"
+    "dev:28449": "vite --host 0.0.0.0 --port 28449 --strictPort",
+    "stage:server": "python3 server/stage_server.py --host 0.0.0.0 --port 28448",
+    "webrtc:server": ".venv/bin/python server/webrtc_mp4_server.py --host 0.0.0.0 --port 28450 --media fixed_camera_moving_personmp_.mp4",
+    "dog:server": ".venv/bin/python server/webrtc_mp4_server.py --host 0.0.0.0 --port 28451 --media dog.mp4",
+    "dog:enhanced:server": ".venv/bin/python server/webrtc_mp4_server.py --host 0.0.0.0 --port 28452 --media dog_enhanced.mp4"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

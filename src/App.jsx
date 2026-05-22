@@ -1200,8 +1200,8 @@ const SyncedDogVisionStream = () => {
   }, []);
 
   const panels = [
-    { label: "机器狗原始视频", state: rawState, ref: rawVideoRef },
-    { label: "机器狗增强后的视野视频", state: enhancedState, ref: enhancedVideoRef },
+    { label: "机器狗原始视野", state: rawState, ref: rawVideoRef },
+    { label: "机器狗增强后的视野", state: enhancedState, ref: enhancedVideoRef },
   ];
 
   return (

@@ -689,7 +689,7 @@ const NetworkTopology3D = ({ activeFlowType, coreFunctions, agentBubble, title =
     Computing: { name: "Computing Agent", x: 78, y: 18, color: "#fbbf24", image: "/topology/computing_transparent.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
     ACN: { name: "ACN Agent", x: 78, y: 41, color: "#f472b6", image: "/topology/acn_transparent.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
     AgentGW: { name: "Agent GW", x: 78, y: 63, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
-    Gateway: { name: "GW", x: 78, y: 84, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
+    Gateway: { name: "Computing Node", x: 78, y: 84, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
   };
 
   const connections = [

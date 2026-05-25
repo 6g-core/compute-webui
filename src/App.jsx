@@ -353,6 +353,7 @@ STAGE_CONFIG[8] = {
 };
 
 const getStageApiUrl = () => import.meta.env.VITE_STAGE_API_URL || "/api/stage";
+const getLatencyApiUrl = () => import.meta.env.VITE_LATENCY_API_URL || "/api/latency";
 
 const sleep = (delay) => new Promise((resolve) => {
   window.setTimeout(resolve, delay);
@@ -1359,9 +1360,163 @@ const useStagePolling = () => {
   return { stage, connectionState, error };
 };
 
+const useLatencySeries = (enabled) => {
+  const [points, setPoints] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let disposed = false;
+    let isPolling = false;
+
+    if (!enabled) {
+      setPoints([]);
+      setError(null);
+      return undefined;
+    }
+
+    const pollLatency = async () => {
+      if (isPolling) {
+        return;
+      }
+
+      isPolling = true;
+
+      try {
+        const response = await fetch(getLatencyApiUrl(), {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Latency API failed: ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const latencyMs = Number(payload.latencyMs);
+
+        if (!Number.isFinite(latencyMs)) {
+          throw new Error("Latency API returned invalid latency");
+        }
+
+        const timestamp = Number(payload.timestamp) || Date.now();
+
+        if (!disposed) {
+          setPoints((current) => [
+            ...current.slice(-23),
+            { timestamp, latencyMs },
+          ]);
+          setError(null);
+        }
+      } catch (latencyError) {
+        if (!disposed) {
+          setError(latencyError.message);
+        }
+      } finally {
+        isPolling = false;
+      }
+    };
+
+    pollLatency();
+    const interval = window.setInterval(pollLatency, 1000);
+
+    return () => {
+      disposed = true;
+      window.clearInterval(interval);
+    };
+  }, [enabled]);
+
+  return { points, error };
+};
+
+const LatencyChart = ({ points, error }) => {
+  const chartWidth = 220;
+  const chartHeight = 92;
+  const padding = { top: 10, right: 10, bottom: 20, left: 26 };
+  const plotWidth = chartWidth - padding.left - padding.right;
+  const plotHeight = chartHeight - padding.top - padding.bottom;
+  const latestPoint = points[points.length - 1];
+  const values = points.map((point) => point.latencyMs);
+  const rawMin = values.length ? Math.min(...values) : 0;
+  const rawMax = values.length ? Math.max(...values) : 30;
+  const minValue = Math.max(0, Math.floor(rawMin - 4));
+  const maxValue = Math.max(minValue + 10, Math.ceil(rawMax + 4));
+
+  const chartPoints = points.map((point, index) => {
+    const x = padding.left + (points.length <= 1 ? 0 : (index / (points.length - 1)) * plotWidth);
+    const y = padding.top + ((maxValue - point.latencyMs) / (maxValue - minValue)) * plotHeight;
+    return { x, y, ...point };
+  });
+
+  const linePath = chartPoints.map((point, index) => (
+    `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`
+  )).join(" ");
+  const areaPath = chartPoints.length
+    ? `${linePath} L ${chartPoints[chartPoints.length - 1].x.toFixed(1)} ${padding.top + plotHeight} L ${padding.left} ${padding.top + plotHeight} Z`
+    : "";
+  const startLabel = points[0]
+    ? new Date(points[0].timestamp).toLocaleTimeString("zh-CN", { minute: "2-digit", second: "2-digit" })
+    : "--:--";
+  const endLabel = latestPoint
+    ? new Date(latestPoint.timestamp).toLocaleTimeString("zh-CN", { minute: "2-digit", second: "2-digit" })
+    : "--:--";
+
+  return (
+    <div className="rounded-lg border border-cyan-400/25 bg-slate-950/35 p-2.5">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div>
+          <div className="text-xs font-bold text-cyan-100">实时链路时延</div>
+          <div className="text-[10px] font-mono text-blue-200/75">Latency / Time</div>
+        </div>
+        <div className="text-right">
+          <div className="font-mono text-lg font-black leading-none text-cyan-200">
+            {latestPoint ? latestPoint.latencyMs : "--"}ms
+          </div>
+          <div className="text-[9px] text-blue-200/70">当前</div>
+        </div>
+      </div>
+
+      <svg className="h-[108px] w-full overflow-visible" viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label="Stage8 实时时延图表">
+        <defs>
+          <linearGradient id="latency-chart-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(34,211,238,0.28)" />
+            <stop offset="100%" stopColor="rgba(34,211,238,0.02)" />
+          </linearGradient>
+        </defs>
+        <line x1={padding.left} y1={padding.top} x2={padding.left} y2={padding.top + plotHeight} stroke="rgba(125,211,252,0.38)" strokeWidth="0.8" />
+        <line x1={padding.left} y1={padding.top + plotHeight} x2={padding.left + plotWidth} y2={padding.top + plotHeight} stroke="rgba(125,211,252,0.38)" strokeWidth="0.8" />
+        {[0, 0.5, 1].map((ratio) => {
+          const y = padding.top + ratio * plotHeight;
+          const label = Math.round(maxValue - ratio * (maxValue - minValue));
+          return (
+            <g key={ratio}>
+              <line x1={padding.left} y1={y} x2={padding.left + plotWidth} y2={y} stroke="rgba(125,211,252,0.12)" strokeWidth="0.6" />
+              <text x={padding.left - 4} y={y + 3} textAnchor="end" className="fill-blue-100/65 text-[7px] font-mono">{label}</text>
+            </g>
+          );
+        })}
+        {areaPath && <path d={areaPath} fill="url(#latency-chart-fill)" />}
+        {linePath && <path d={linePath} fill="none" stroke="#22d3ee" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />}
+        {chartPoints.map((point) => (
+          <circle key={`${point.timestamp}-${point.latencyMs}`} cx={point.x} cy={point.y} r="1.8" fill="#e0f2fe" stroke="#0891b2" strokeWidth="0.8" />
+        ))}
+        <text x={padding.left} y={chartHeight - 4} className="fill-blue-100/65 text-[7px] font-mono">{startLabel}</text>
+        <text x={padding.left + plotWidth} y={chartHeight - 4} textAnchor="end" className="fill-blue-100/65 text-[7px] font-mono">{endLabel}</text>
+        <text x="2" y={padding.top + plotHeight / 2} transform={`rotate(-90 2 ${padding.top + plotHeight / 2})`} textAnchor="middle" className="fill-cyan-100/70 text-[7px] font-mono">ms</text>
+      </svg>
+
+      <div className="mt-1 flex items-center justify-between text-[10px] font-mono text-blue-100/70">
+        <span>时间窗口: 最近 {points.length || 0}s</span>
+        <span className={error ? "text-rose-300" : "text-emerald-300"}>
+          {error ? "API error" : "Live"}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const { stage, connectionState, error } = useStagePolling();
   const stageConfig = STAGE_CONFIG[stage] || STAGE_CONFIG[1];
+  const latencySeries = useLatencySeries(stage === 8);
   const [demoRunning, setDemoRunning] = useState(false);
   const [stage2Progress, setStage2Progress] = useState({
     activeTask: 0,
@@ -2230,26 +2385,32 @@ export default function App() {
                 </h2>
                 
                 <div className="flex flex-col flex-1 gap-4 justify-between">
-                  {/* 子栏目 1: 用户状态 */}
+                  {/* 子栏目 1: 实时状态 */}
                   <div className="border border-blue-500/30 rounded-lg p-2.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
-                    <div className="flex items-center gap-2.5 mb-2">
-                      <div className="w-7 h-7 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
-                        <User className="w-3.5 h-3.5 text-blue-300" />
-                      </div>
-                      <h3 className="text-white font-bold text-sm lg:text-base">{effectiveStageConfig.statusTitle}</h3>
-                    </div>
-                    <div className="flex flex-col">
-                      {effectiveStageConfig.statusRows.map((item) => (
-                        <StatusRow
-                          key={item.label}
-                          label={item.label}
-                          value={item.value}
-                          status={item.status}
-                          isMono={item.isMono}
-                          valueClassName={item.isMono ? "leading-tight text-right break-all" : ""}
-                        />
-                      ))}
-                    </div>
+                    {stage === 8 ? (
+                      <LatencyChart points={latencySeries.points} error={latencySeries.error} />
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2.5 mb-2">
+                          <div className="w-7 h-7 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
+                            <User className="w-3.5 h-3.5 text-blue-300" />
+                          </div>
+                          <h3 className="text-white font-bold text-sm lg:text-base">{effectiveStageConfig.statusTitle}</h3>
+                        </div>
+                        <div className="flex flex-col">
+                          {effectiveStageConfig.statusRows.map((item) => (
+                            <StatusRow
+                              key={item.label}
+                              label={item.label}
+                              value={item.value}
+                              status={item.status}
+                              isMono={item.isMono}
+                              valueClassName={item.isMono ? "leading-tight text-right break-all" : ""}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* 子栏目 2: 智能体日志 */}

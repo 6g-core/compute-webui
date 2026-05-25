@@ -1,11 +1,14 @@
 import argparse
 import json
+import random
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
 class StageState:
     def __init__(self, initial_stage):
         self.stage = initial_stage
+        self.latency_base = 18
 
 
 def write_json(handler, payload, status=200):
@@ -35,7 +38,19 @@ class StageRequestHandler(BaseHTTPRequestHandler):
             write_json(self, {"ok": True})
             return
 
-        if self.path != "/api/stage":
+        path = self.path.split("?", 1)[0]
+
+        if path == "/api/latency":
+            jitter = random.randint(-5, 8)
+            self.server.state.latency_base = max(8, min(32, self.server.state.latency_base + random.randint(-2, 2)))
+            latency_ms = max(6, min(40, self.server.state.latency_base + jitter))
+            write_json(self, {
+                "timestamp": int(time.time() * 1000),
+                "latencyMs": latency_ms,
+            })
+            return
+
+        if path != "/api/stage":
             write_json(self, {"error": "not found"}, status=404)
             return
 

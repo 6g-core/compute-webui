@@ -44,7 +44,7 @@ export const TOPOLOGY_STAGE_FLOW_CONFIG = {
       lines: [
         { key: "RobotDog->gNB", latencyMs: latency(4, 8) },
         { key: "UE->gNB", latencyMs: latency(3, 7) },
-        { key: "gNB->UPF", latencyMs: latency(8, 14) },
+        { key: "gNB->UPF", latencyMs: latency(8, 14), labelPosition: "below" },
       ],
     },
   },
@@ -54,7 +54,7 @@ export const TOPOLOGY_STAGE_FLOW_CONFIG = {
       lines: [
         { key: "RobotDog->gNB", latencyMs: latency(4, 8) },
         { key: "UE->gNB", latencyMs: latency(3, 7) },
-        { key: "gNB->UPF", latencyMs: latency(8, 14) },
+        { key: "gNB->UPF", latencyMs: latency(8, 14), labelPosition: "below" },
         { key: "UPF->AgentGW", latencyMs: latency(9, 16) },
       ],
     },
@@ -84,7 +84,7 @@ export const TOPOLOGY_STAGE_FLOW_CONFIG = {
       lines: [
         { key: "RobotDog->gNB", latencyMs: latency(4, 8) },
         { key: "UE->gNB", latencyMs: latency(3, 7) },
-        { key: "gNB->UPF", latencyMs: latency(8, 14) },
+        { key: "gNB->UPF", latencyMs: latency(8, 14), labelPosition: "below" },
         { key: "UPF->Gateway", latencyMs: latency(6, 11) },
       ],
     },

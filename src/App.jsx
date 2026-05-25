@@ -830,12 +830,18 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
             }
 
             const point = getPathPoint(connection, 0.52);
+            const isBelowLine = lineConfig.labelPosition === "below";
 
             return (
               <div
                 key={`${key}-latency`}
-                className="absolute -translate-x-1/2 -translate-y-full rounded border border-cyan-200/70 bg-slate-950/95 px-2 py-1 font-mono text-[9px] font-black leading-none text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.34)] backdrop-blur-md"
-                style={{ left: `${point.x}%`, top: `calc(${point.y}% - 8px)` }}
+                className={`absolute -translate-x-1/2 rounded border border-cyan-200/70 bg-slate-950/95 px-2 py-1 font-mono text-[9px] font-black leading-none text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.34)] backdrop-blur-md ${
+                  isBelowLine ? "translate-y-0" : "-translate-y-full"
+                }`}
+                style={{
+                  left: `${point.x}%`,
+                  top: isBelowLine ? `calc(${point.y}% + 8px)` : `calc(${point.y}% - 8px)`,
+                }}
               >
                 {lineConfig.displayLatencyMs}ms
               </div>

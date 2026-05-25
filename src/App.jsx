@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { getTopologyFlowConfig } from './topologyFlowConfig';
 import computingNodeImage from './Computing_Node.png';
+import upfImage from './upfnew.png';
 
 const STAGE4_WORKFLOW = [
   { label: "签约数据更新:", value: "Pending", status: "pending" },
@@ -692,7 +693,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
     RobotDog: { name: "Robot Dog", x: 12, y: 28, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-20 md:w-24" },
     gNB: { name: "6G RAN", x: 28, y: 51, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-24 md:w-28" },
     SRF: { name: "SystemAgent", x: 47, y: 36, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24" },
-    UPF: { name: "UPF", x: 47, y: 76, color: "#34d399", image: "/topology/switch_transparent.png", size: "w-20 md:w-24" },
+    UPF: { name: "UPF", x: 47, y: 76, color: "#34d399", image: upfImage, size: "w-20 md:w-24" },
     Computing: { name: "Computing Agent", x: 78, y: 18, color: "#fbbf24", image: "/topology/computing_transparent.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
     ACN: { name: "ACN Agent", x: 78, y: 41, color: "#f472b6", image: "/topology/acn_transparent.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
     AgentGW: { name: "Agent GW", x: 78, y: 63, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },

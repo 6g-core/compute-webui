@@ -664,7 +664,7 @@ const AgentSpeechBubble = ({ bubble }) => {
     : "absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 border-b border-l border-cyan-400/45 bg-slate-950/86";
 
   return (
-    <div className={`absolute z-30 flex max-w-[175px] items-center gap-1.5 rounded-full border border-cyan-400/45 bg-slate-950/86 px-2.5 py-1.5 text-[9px] font-bold text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)] backdrop-blur-md ${bubble.className || "left-[84%] top-[36%]"}`}>
+    <div className={`absolute z-30 flex max-w-[175px] items-center gap-1.5 rounded-full border border-cyan-400/45 bg-slate-950/86 px-2.5 py-1.5 text-[9px] font-bold text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)] backdrop-blur-md ${bubble.className || "left-[83%] top-[36%]"}`}>
       {bubble.status === "success" ? (
         <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
       ) : (

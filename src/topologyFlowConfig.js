@@ -85,6 +85,7 @@ export const TOPOLOGY_STAGE_FLOW_CONFIG = {
         { key: "RobotDog->gNB", latencyMs: latency(4, 8) },
         { key: "UE->gNB", latencyMs: latency(3, 7) },
         { key: "gNB->UPF", latencyMs: latency(8, 14) },
+        { key: "UPF->Gateway", latencyMs: latency(6, 11) },
       ],
     },
   },

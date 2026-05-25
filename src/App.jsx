@@ -25,16 +25,6 @@ const STAGE4_WORKFLOW = [
   { label: "下发UPF配置:", value: "Pending", status: "pending" },
 ];
 
-const DEMO_SEQUENCE = [
-  { stage: 1, delay: 1400 },
-  { stage: 2, delay: 7200 },
-  { stage: 4, delay: 8500 },
-  { stage: 5, delay: 2600 },
-  { stage: 6, delay: 5600 },
-  { stage: 7, delay: 4200 },
-  { stage: 8, delay: 4200 },
-];
-
 const STAGE6_WORKFLOW = [
   {
     label: "ID寻址路由:",
@@ -1525,7 +1515,6 @@ export default function App() {
   const { stage, connectionState, error } = useStagePolling();
   const stageConfig = STAGE_CONFIG[stage] || STAGE_CONFIG[1];
   const latencySeries = useLatencySeries(stage === 8);
-  const [demoRunning, setDemoRunning] = useState(false);
   const [stage2Progress, setStage2Progress] = useState({
     activeTask: 0,
     completedCount: 0,
@@ -1546,50 +1535,6 @@ export default function App() {
     completedCount: 0,
     bubbleStatus: "working",
   });
-
-  const postStage = async (nextStage, retries = 3) => {
-    let lastError = null;
-
-    for (let attempt = 0; attempt < retries; attempt += 1) {
-      try {
-        const response = await fetch(getStageApiUrl(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stage: nextStage }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Set stage failed: ${response.status}`);
-        }
-
-        return;
-      } catch (stageError) {
-        lastError = stageError;
-        await sleep(350);
-      }
-    }
-
-    throw lastError;
-  };
-
-  const runFullDemo = async () => {
-    if (demoRunning) {
-      return;
-    }
-
-    setDemoRunning(true);
-    try {
-      for (const item of DEMO_SEQUENCE) {
-        await postStage(item.stage);
-        await sleep(item.delay);
-      }
-      await postStage(8, 5);
-    } catch (demoError) {
-      console.error("Full stage demo failed", demoError);
-    } finally {
-      setDemoRunning(false);
-    }
-  };
 
   useEffect(() => {
     if (stage !== 2) {
@@ -1997,18 +1942,6 @@ export default function App() {
     <div className="video-backed-ui min-h-screen text-white p-4 md:p-8 font-sans overflow-x-hidden flex items-center justify-center relative isolate">
       <WebRtcBackground />
       <div className="video-dim-overlay fixed inset-0 -z-10 bg-black/35 pointer-events-none" />
-      <button
-        type="button"
-        onClick={runFullDemo}
-        disabled={demoRunning}
-        className={`fixed right-3 top-3 z-50 rounded border px-3 py-2 text-xs font-bold tracking-wide backdrop-blur-md transition ${
-          demoRunning
-            ? "cursor-not-allowed border-amber-400/45 bg-amber-500/12 text-amber-100"
-            : "border-cyan-400/45 bg-slate-950/62 text-cyan-100 hover:border-cyan-300 hover:bg-cyan-500/14"
-        }`}
-      >
-        {demoRunning ? "演示运行中..." : "一键演示 1→8"}
-      </button>
       {connectionState !== "connected" && (
         <div className="fixed bottom-3 right-3 z-50 max-w-[280px] rounded border border-amber-400/40 bg-slate-950/65 px-3 py-2 text-xs text-amber-100 backdrop-blur-md">
           Stage API: {connectionState}

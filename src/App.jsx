@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { 
   Wifi, 
   ShieldAlert, 
@@ -15,6 +15,7 @@ import {
   CircleDot,
   Cpu
 } from 'lucide-react';
+import { getTopologyFlowConfig } from './topologyFlowConfig';
 
 const STAGE4_WORKFLOW = [
   { label: "签约数据更新:", value: "Pending", status: "pending" },
@@ -679,7 +680,11 @@ const AgentSpeechBubble = ({ bubble }) => {
   );
 };
 
-const NetworkTopology3D = ({ activeFlowType, coreFunctions, agentBubble, title = "6G 核心网：数字身份申请" }) => {
+const randomLatency = ({ min, max }) => (
+  Math.floor(Math.random() * (max - min + 1)) + min
+);
+
+const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, title = "6G 核心网：数字身份申请" }) => {
   const nodes = {
     UE: { name: "AR Glasses (6G终端)", x: 12, y: 74, color: "#22f5ff", image: "/topology/glasses_transparent.png", size: "w-16 md:w-20" },
     RobotDog: { name: "Robot Dog", x: 12, y: 28, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-20 md:w-24" },
@@ -703,29 +708,20 @@ const NetworkTopology3D = ({ activeFlowType, coreFunctions, agentBubble, title =
     ["SRF", "Computing"],
   ];
 
-  const flowPaths = {
-    auth: ["RobotDog->gNB", "gNB->SRF", "SRF->ACN"],
-    domain: ["RobotDog->gNB", "UE->gNB", "gNB->SRF", "SRF->ACN"],
-    dogVision: ["RobotDog->gNB", "UE->gNB", "gNB->UPF"],
-    a2aGateway: ["RobotDog->gNB", "UE->gNB", "gNB->UPF", "UPF->AgentGW"],
-    a2aTrust: ["RobotDog->gNB", "UE->gNB", "gNB->SRF", "SRF->ACN"],
-    computeSandbox: ["RobotDog->gNB", "gNB->SRF", "SRF->Computing"],
-    compute: ["UE->gNB", "gNB->UPF", "UPF->AgentGW"],
-    collab: ["SRF->ACN", "SRF->Computing"],
-  };
+  const activeFlowConfig = getTopologyFlowConfig(stage, activeFlowType);
+  const activeLineConfigByKey = useMemo(() => (
+    Object.fromEntries(
+      activeFlowConfig.lines.map((line) => [
+        line.key,
+        {
+          ...line,
+          displayLatencyMs: randomLatency(line.latencyMs),
+        },
+      ])
+    )
+  ), [stage, activeFlowType]);
 
-  const flowColor = {
-    auth: "#22f5ff",
-    domain: "#34d399",
-    dogVision: "#22f5ff",
-    a2aGateway: "#38bdf8",
-    a2aTrust: "#f472b6",
-    computeSandbox: "#fbbf24",
-    compute: "#ffb020",
-    collab: "#ff4fd8",
-  };
-
-  const buildPath = ([from, to]) => {
+  const getPathGeometry = ([from, to]) => {
     const a = nodes[from];
     const b = nodes[to];
     const start = from === "RobotDog" && to === "gNB"
@@ -733,10 +729,24 @@ const NetworkTopology3D = ({ activeFlowType, coreFunctions, agentBubble, title =
       : { x: a.x, y: a.y };
     const cx = (start.x + b.x) / 2;
     const cy = Math.min(start.y, b.y) - 10;
-    return `M ${start.x} ${start.y} Q ${cx} ${cy} ${b.x} ${b.y}`;
+    return { start, control: { x: cx, y: cy }, end: { x: b.x, y: b.y } };
   };
 
-  const isActive = (key) => flowPaths[activeFlowType]?.includes(key);
+  const buildPath = (connection) => {
+    const { start, control, end } = getPathGeometry(connection);
+    return `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`;
+  };
+
+  const getPathPoint = (connection, t = 0.5) => {
+    const { start, control, end } = getPathGeometry(connection);
+    const inverse = 1 - t;
+    return {
+      x: (inverse ** 2 * start.x) + (2 * inverse * t * control.x) + (t ** 2 * end.x),
+      y: (inverse ** 2 * start.y) + (2 * inverse * t * control.y) + (t ** 2 * end.y),
+    };
+  };
+
+  const isActive = (key) => Boolean(activeLineConfigByKey[key]);
 
   return (
     <div className="border border-blue-500/35 rounded-xl p-5 bg-slate-900/25 backdrop-blur-md flex flex-col h-full relative shadow-[0_0_22px_rgba(0,0,0,0.35)] overflow-hidden">
@@ -767,7 +777,7 @@ const NetworkTopology3D = ({ activeFlowType, coreFunctions, agentBubble, title =
           {connections.map((connection) => {
             const key = `${connection[0]}->${connection[1]}`;
             const active = isActive(key);
-            const color = flowColor[activeFlowType] || "#22f5ff";
+            const color = activeFlowConfig.color || "#22f5ff";
             const path = buildPath(connection);
 
             return (
@@ -809,6 +819,29 @@ const NetworkTopology3D = ({ activeFlowType, coreFunctions, agentBubble, title =
             );
           })}
         </svg>
+
+        <div className="pointer-events-none absolute inset-0 z-[18]">
+          {connections.map((connection) => {
+            const key = `${connection[0]}->${connection[1]}`;
+            const lineConfig = activeLineConfigByKey[key];
+
+            if (!lineConfig) {
+              return null;
+            }
+
+            const point = getPathPoint(connection, 0.52);
+
+            return (
+              <div
+                key={`${key}-latency`}
+                className="absolute -translate-x-1/2 -translate-y-1/2 rounded border border-cyan-300/45 bg-slate-950/88 px-1.5 py-0.5 font-mono text-[8px] font-bold leading-none text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.28)] backdrop-blur-sm"
+                style={{ left: `${point.x}%`, top: `${point.y}%` }}
+              >
+                {lineConfig.displayLatencyMs}ms
+              </div>
+            );
+          })}
+        </div>
 
         <div className="absolute inset-0 z-20">
           {Object.entries(nodes).map(([key, value]) => (
@@ -2158,6 +2191,7 @@ export default function App() {
           {/* 中间列：6G核心网 3D 拓扑与平面网元、上方弧线数据流 */}
           <div className="md:col-span-6">
             <NetworkTopology3D
+              stage={stage}
               activeFlowType={effectiveStageConfig.activeFlowType}
               coreFunctions={effectiveStageConfig.coreFunctions}
               agentBubble={effectiveStageConfig.agentBubble}

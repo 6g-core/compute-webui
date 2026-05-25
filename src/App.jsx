@@ -38,7 +38,7 @@ const STAGE6_WORKFLOW = [
     flowType: "a2aGateway",
     bubble: {
       lines: ["ID寻址路由"],
-      className: "left-[75%] top-[72%]",
+      className: "left-[75%] top-[66%]",
     },
   },
   {
@@ -53,7 +53,7 @@ const STAGE6_WORKFLOW = [
     flowType: "a2aGateway",
     bubble: {
       lines: ["Agent协议转换"],
-      className: "left-[75%] top-[72%]",
+      className: "left-[75%] top-[66%]",
     },
   },
 ];
@@ -64,7 +64,7 @@ const STAGE7_WORKFLOW = [
     flowType: "computeSandbox",
     bubble: {
       lines: ["创建算力会话"],
-      className: "left-[78%] top-[13%]",
+      className: "left-[82%] top-[13%]",
     },
   },
   {
@@ -72,7 +72,7 @@ const STAGE7_WORKFLOW = [
     flowType: "computeSandbox",
     bubble: {
       lines: ["分配算力资源"],
-      className: "left-[78%] top-[13%]",
+      className: "left-[82%] top-[13%]",
     },
   },
 ];
@@ -663,7 +663,7 @@ const AgentSpeechBubble = ({ bubble }) => {
     : "absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 border-b border-l border-cyan-400/45 bg-slate-950/86";
 
   return (
-    <div className={`absolute z-30 flex max-w-[175px] items-center gap-1.5 rounded-full border border-cyan-400/45 bg-slate-950/86 px-2.5 py-1.5 text-[9px] font-bold text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)] backdrop-blur-md ${bubble.className || "left-[78%] top-[42%]"}`}>
+    <div className={`absolute z-30 flex max-w-[175px] items-center gap-1.5 rounded-full border border-cyan-400/45 bg-slate-950/86 px-2.5 py-1.5 text-[9px] font-bold text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)] backdrop-blur-md ${bubble.className || "left-[82%] top-[42%]"}`}>
       {bubble.status === "success" ? (
         <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
       ) : (
@@ -686,9 +686,9 @@ const NetworkTopology3D = ({ activeFlowType, coreFunctions, agentBubble, title =
     gNB: { name: "6G RAN", x: 28, y: 51, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-24 md:w-28" },
     SRF: { name: "SystemAgent", x: 47, y: 36, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24" },
     UPF: { name: "UPF", x: 47, y: 76, color: "#34d399", image: "/topology/switch_transparent.png", size: "w-20 md:w-24" },
-    AgentGW: { name: "Agent GW", x: 67, y: 80, color: "#38bdf8", image: "/topology/gw.png", size: "w-20 md:w-24" },
-    ACN: { name: "ACN Agent", x: 72, y: 50, color: "#f472b6", image: "/topology/acn_transparent.png", size: "w-20 md:w-24", labelClassName: "absolute left-[72%] top-[68%]" },
-    Computing: { name: "Computing Agent", x: 71, y: 22, color: "#fbbf24", image: "/topology/computing_transparent.png", size: "w-20 md:w-24", labelClassName: "absolute left-[72%] top-[68%]" },
+    AgentGW: { name: "Agent GW", x: 67, y: 74, color: "#38bdf8", image: "/topology/gw.png", size: "w-20 md:w-24" },
+    ACN: { name: "ACN Agent", x: 76, y: 50, color: "#f472b6", image: "/topology/acn_transparent.png", size: "w-20 md:w-24", labelClassName: "absolute left-[76%] top-[68%]" },
+    Computing: { name: "Computing Agent", x: 75, y: 22, color: "#fbbf24", image: "/topology/computing_transparent.png", size: "w-20 md:w-24", labelClassName: "absolute left-[76%] top-[68%]" },
   };
 
   const connections = [

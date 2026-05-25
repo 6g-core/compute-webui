@@ -709,6 +709,22 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
   ];
 
   const activeFlowConfig = getTopologyFlowConfig(stage, activeFlowType);
+  const [latencySampleTick, setLatencySampleTick] = useState(0);
+
+  useEffect(() => {
+    setLatencySampleTick(0);
+
+    if (!activeFlowConfig.lines.length) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setLatencySampleTick((tick) => tick + 1);
+    }, 1200);
+
+    return () => window.clearInterval(timer);
+  }, [stage, activeFlowType, activeFlowConfig.lines.length]);
+
   const activeLineConfigByKey = useMemo(() => (
     Object.fromEntries(
       activeFlowConfig.lines.map((line) => [
@@ -719,7 +735,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
         },
       ])
     )
-  ), [stage, activeFlowType]);
+  ), [stage, activeFlowType, latencySampleTick]);
 
   const getPathGeometry = ([from, to]) => {
     const a = nodes[from];

@@ -698,7 +698,7 @@ const NetworkTopology3D = ({ activeFlowType, coreFunctions, agentBubble, title =
     ["gNB", "SRF"],
     ["gNB", "UPF"],
     ["UPF", "Gateway"],
-    ["Gateway", "AgentGW"],
+    ["UPF", "AgentGW"],
     ["SRF", "ACN"],
     ["SRF", "Computing"],
   ];
@@ -707,10 +707,10 @@ const NetworkTopology3D = ({ activeFlowType, coreFunctions, agentBubble, title =
     auth: ["RobotDog->gNB", "gNB->SRF", "SRF->ACN"],
     domain: ["RobotDog->gNB", "UE->gNB", "gNB->SRF", "SRF->ACN"],
     dogVision: ["RobotDog->gNB", "UE->gNB", "gNB->UPF"],
-    a2aGateway: ["RobotDog->gNB", "UE->gNB", "gNB->UPF", "UPF->Gateway", "Gateway->AgentGW"],
+    a2aGateway: ["RobotDog->gNB", "UE->gNB", "gNB->UPF", "UPF->AgentGW"],
     a2aTrust: ["RobotDog->gNB", "UE->gNB", "gNB->SRF", "SRF->ACN"],
     computeSandbox: ["RobotDog->gNB", "gNB->SRF", "SRF->Computing"],
-    compute: ["UE->gNB", "gNB->UPF", "UPF->Gateway", "Gateway->AgentGW"],
+    compute: ["UE->gNB", "gNB->UPF", "UPF->AgentGW"],
     collab: ["SRF->ACN", "SRF->Computing"],
   };
 

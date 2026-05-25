@@ -1463,7 +1463,7 @@ const LatencyChart = ({ points, error }) => {
     <div className="rounded-lg border border-cyan-400/25 bg-slate-950/35 p-2.5">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <div className="text-xs font-bold text-cyan-100">实时链路时延</div>
+          <div className="text-xs font-bold text-cyan-100">端到端时延</div>
           <div className="text-[10px] font-mono text-blue-200/75">Latency / Time</div>
         </div>
         <div className="text-right">

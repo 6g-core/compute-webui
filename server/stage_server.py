@@ -8,7 +8,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 class StageState:
     def __init__(self, initial_stage):
         self.stage = initial_stage
-        self.latency_base = 18
 
 
 def write_json(handler, payload, status=200):
@@ -41,9 +40,7 @@ class StageRequestHandler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
 
         if path == "/api/latency":
-            jitter = random.randint(-5, 8)
-            self.server.state.latency_base = max(8, min(32, self.server.state.latency_base + random.randint(-2, 2)))
-            latency_ms = max(6, min(40, self.server.state.latency_base + jitter))
+            latency_ms = 70 + random.randint(-5, 5)
             write_json(self, {
                 "timestamp": int(time.time() * 1000),
                 "latencyMs": latency_ms,

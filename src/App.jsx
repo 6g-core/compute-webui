@@ -834,8 +834,8 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
             return (
               <div
                 key={`${key}-latency`}
-                className="absolute -translate-x-1/2 -translate-y-1/2 rounded border border-cyan-300/45 bg-slate-950/88 px-1.5 py-0.5 font-mono text-[8px] font-bold leading-none text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.28)] backdrop-blur-sm"
-                style={{ left: `${point.x}%`, top: `${point.y}%` }}
+                className="absolute -translate-x-1/2 -translate-y-full rounded border border-cyan-200/70 bg-slate-950/95 px-2 py-1 font-mono text-[9px] font-black leading-none text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.34)] backdrop-blur-md"
+                style={{ left: `${point.x}%`, top: `calc(${point.y}% - 8px)` }}
               >
                 {lineConfig.displayLatencyMs}ms
               </div>

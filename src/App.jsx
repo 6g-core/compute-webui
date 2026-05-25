@@ -361,18 +361,27 @@ const buildHttpUrl = (port, path, host) => {
   return `${protocol}//${host || window.location.hostname}:${port}${path}`;
 };
 
+const buildRuntimeBackendUrl = (baseKey, portKey, defaultPort, path, hostKey = "backendHost") => {
+  const runtimeConfig = getRuntimeConfig();
+  const configuredBase = runtimeConfig[baseKey];
+  if (configuredBase) {
+    return `${String(configuredBase).replace(/\/$/, "")}${path}`;
+  }
+  return buildHttpUrl(runtimeConfig[portKey] || defaultPort, path, runtimeConfig[hostKey]);
+};
+
 const getStageApiUrl = () => {
   const runtimeConfig = getRuntimeConfig();
   return runtimeConfig.stageApiUrl
     || import.meta.env.VITE_STAGE_API_URL
-    || buildHttpUrl(runtimeConfig.stageApiPort || 28448, "/api/stage", runtimeConfig.backendHost);
+    || buildRuntimeBackendUrl("sysAgentApiUrl", "sysAgentPort", 8000, "/api/stage");
 };
 
 const getLatencyApiUrl = () => {
   const runtimeConfig = getRuntimeConfig();
   return runtimeConfig.latencyApiUrl
     || import.meta.env.VITE_LATENCY_API_URL
-    || buildHttpUrl(runtimeConfig.stageApiPort || 28448, "/api/latency", runtimeConfig.backendHost);
+    || buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/latency", "sandboxHost");
 };
 
 const sleep = (delay) => new Promise((resolve) => {
@@ -965,7 +974,7 @@ const getWebRtcOfferUrl = () => {
     return configuredUrl;
   }
 
-  return buildHttpUrl(runtimeConfig.webRtcPort || 28450, "/offer", runtimeConfig.webRtcHost);
+  return buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/v1/web/sdp/offer", "sandboxHost");
 };
 
 const getDogVisionOfferUrl = () => {
@@ -975,11 +984,7 @@ const getDogVisionOfferUrl = () => {
     return configuredUrl;
   }
 
-  return buildHttpUrl(
-    runtimeConfig.dogWebRtcPort || 28451,
-    "/offer",
-    runtimeConfig.dogWebRtcHost || runtimeConfig.webRtcHost
-  );
+  return getWebRtcOfferUrl();
 };
 
 const getDogEnhancedOfferUrl = () => {
@@ -989,11 +994,7 @@ const getDogEnhancedOfferUrl = () => {
     return configuredUrl;
   }
 
-  return buildHttpUrl(
-    runtimeConfig.dogEnhancedWebRtcPort || 28452,
-    "/offer",
-    runtimeConfig.dogEnhancedWebRtcHost || runtimeConfig.webRtcHost
-  );
+  return getWebRtcOfferUrl();
 };
 
 const getWebRtcIceServers = () => {
@@ -1018,6 +1019,36 @@ const getWebRtcIceServers = () => {
       credential: "f41bd6b00f9fe5b5980197d793699aea",
     },
   ];
+};
+
+const connectBackendVideoPeer = async (pc, offerUrl, clientId) => {
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await waitForIceGathering(pc);
+
+  const localDescription = pc.localDescription || offer;
+  const response = await fetch(offerUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: clientId,
+      sdp_offer: {
+        type: localDescription.type,
+        sdp: localDescription.sdp,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`WebRTC offer failed: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  if (!payload?.sdp_answer) {
+    throw new Error("WebRTC answer missing sdp_answer");
+  }
+
+  await pc.setRemoteDescription(payload.sdp_answer);
 };
 
 const WebRtcBackground = () => {
@@ -1049,24 +1080,7 @@ const WebRtcBackground = () => {
 
     const connect = async () => {
       try {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        await waitForIceGathering(pc);
-
-        const response = await fetch(getWebRtcOfferUrl(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(pc.localDescription),
-        });
-
-        if (!response.ok) {
-          throw new Error(`WebRTC offer failed: ${response.status}`);
-        }
-
-        const answer = await response.json();
-        if (!disposed) {
-          await pc.setRemoteDescription(answer);
-        }
+        await connectBackendVideoPeer(pc, getWebRtcOfferUrl(), "react-background");
       } catch (error) {
         console.error("WebRTC background connection failed", error);
         if (!disposed) {
@@ -1134,24 +1148,7 @@ const DogVisionStream = () => {
 
     const connect = async () => {
       try {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        await waitForIceGathering(pc);
-
-        const response = await fetch(getDogVisionOfferUrl(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(pc.localDescription),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Dog vision WebRTC offer failed: ${response.status}`);
-        }
-
-        const answer = await response.json();
-        if (!disposed) {
-          await pc.setRemoteDescription(answer);
-        }
+        await connectBackendVideoPeer(pc, getDogVisionOfferUrl(), "react-dog-vision");
       } catch (error) {
         console.error("Dog vision WebRTC connection failed", error);
         if (!disposed) {
@@ -1233,32 +1230,15 @@ const SyncedDogVisionStream = () => {
     const rawPeer = createPeer(rawVideoRef, setRawState);
     const enhancedPeer = createPeer(enhancedVideoRef, setEnhancedState);
 
-    const connectPeer = async (pc, offerUrl, setState) => {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      await waitForIceGathering(pc);
-
-      const response = await fetch(offerUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(pc.localDescription),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Dog vision WebRTC offer failed: ${response.status}`);
-      }
-
-      const answer = await response.json();
-      if (!disposed) {
-        await pc.setRemoteDescription(answer);
-      }
+    const connectPeer = async (pc, offerUrl, clientId) => {
+      await connectBackendVideoPeer(pc, offerUrl, clientId);
     };
 
     const connectBoth = async () => {
       try {
         await Promise.all([
-          connectPeer(rawPeer, getDogVisionOfferUrl(), setRawState),
-          connectPeer(enhancedPeer, getDogEnhancedOfferUrl(), setEnhancedState),
+          connectPeer(rawPeer, getDogVisionOfferUrl(), "react-dog-raw"),
+          connectPeer(enhancedPeer, getDogEnhancedOfferUrl(), "react-dog-enhanced"),
         ]);
       } catch (error) {
         console.error("Synced dog vision WebRTC connection failed", error);

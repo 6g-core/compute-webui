@@ -38,7 +38,7 @@ const STAGE6_WORKFLOW = [
     flowType: "a2aGateway",
     bubble: {
       lines: ["ID寻址路由"],
-      className: "left-[83%] top-[71%]",
+      className: "left-[75%] top-[72%]",
     },
   },
   {
@@ -53,7 +53,7 @@ const STAGE6_WORKFLOW = [
     flowType: "a2aGateway",
     bubble: {
       lines: ["Agent协议转换"],
-      className: "left-[83%] top-[71%]",
+      className: "left-[75%] top-[72%]",
     },
   },
 ];
@@ -64,7 +64,7 @@ const STAGE7_WORKFLOW = [
     flowType: "computeSandbox",
     bubble: {
       lines: ["创建算力会话"],
-      className: "left-[86%] top-[13%]",
+      className: "left-[78%] top-[13%]",
     },
   },
   {
@@ -72,7 +72,7 @@ const STAGE7_WORKFLOW = [
     flowType: "computeSandbox",
     bubble: {
       lines: ["分配算力资源"],
-      className: "left-[86%] top-[13%]",
+      className: "left-[78%] top-[13%]",
     },
   },
 ];
@@ -82,7 +82,7 @@ const STAGE2_WORKFLOW = [
     label: "System Agent路由请求:",
     bubble: {
       lines: ["解析用户意图", "路由请求"],
-      className: "left-[47%] top-[13%]",
+      className: "left-[40%] top-[13%]",
       arrow: "down",
     },
   },
@@ -663,7 +663,7 @@ const AgentSpeechBubble = ({ bubble }) => {
     : "absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 border-b border-l border-cyan-400/45 bg-slate-950/86";
 
   return (
-    <div className={`absolute z-30 flex max-w-[185px] items-center gap-1.5 rounded-full border border-cyan-400/45 bg-slate-950/86 px-2.5 py-1.5 text-[9px] font-bold text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)] backdrop-blur-md ${bubble.className || "left-[86%] top-[42%]"}`}>
+    <div className={`absolute z-30 flex max-w-[175px] items-center gap-1.5 rounded-full border border-cyan-400/45 bg-slate-950/86 px-2.5 py-1.5 text-[9px] font-bold text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)] backdrop-blur-md ${bubble.className || "left-[78%] top-[42%]"}`}>
       {bubble.status === "success" ? (
         <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
       ) : (
@@ -681,14 +681,14 @@ const AgentSpeechBubble = ({ bubble }) => {
 
 const NetworkTopology3D = ({ activeFlowType, coreFunctions, agentBubble, title = "6G 核心网：数字身份申请" }) => {
   const nodes = {
-    UE: { name: "AR Glasses (6G终端)", x: 14, y: 74, color: "#22f5ff", image: "/topology/glasses_transparent.png", size: "w-20 md:w-24" },
-    RobotDog: { name: "Robot Dog", x: 14, y: 27, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-24 md:w-28" },
-    gNB: { name: "6G RAN", x: 33, y: 50, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-28 md:w-32" },
-    SRF: { name: "SystemAgent", x: 55, y: 37, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-24 md:w-28" },
-    UPF: { name: "UPF", x: 55, y: 76, color: "#34d399", image: "/topology/switch_transparent.png", size: "w-24 md:w-28" },
-    AgentGW: { name: "Agent GW", x: 76, y: 80, color: "#38bdf8", image: "/topology/gw.png", size: "w-24 md:w-28" },
-    ACN: { name: "ACN Agent", x: 82, y: 50, color: "#f472b6", image: "/topology/acn_transparent.png", size: "w-24 md:w-28", labelClassName: "absolute left-[78%] top-[68%]" },
-    Computing: { name: "Computing Agent", x: 80, y: 22, color: "#fbbf24", image: "/topology/computing_transparent.png", size: "w-24 md:w-28", labelClassName: "absolute left-[78%] top-[68%]" },
+    UE: { name: "AR Glasses (6G终端)", x: 12, y: 74, color: "#22f5ff", image: "/topology/glasses_transparent.png", size: "w-16 md:w-20" },
+    RobotDog: { name: "Robot Dog", x: 12, y: 28, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-20 md:w-24" },
+    gNB: { name: "6G RAN", x: 28, y: 51, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-24 md:w-28" },
+    SRF: { name: "SystemAgent", x: 47, y: 36, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24" },
+    UPF: { name: "UPF", x: 47, y: 76, color: "#34d399", image: "/topology/switch_transparent.png", size: "w-20 md:w-24" },
+    AgentGW: { name: "Agent GW", x: 67, y: 80, color: "#38bdf8", image: "/topology/gw.png", size: "w-20 md:w-24" },
+    ACN: { name: "ACN Agent", x: 72, y: 50, color: "#f472b6", image: "/topology/acn_transparent.png", size: "w-20 md:w-24", labelClassName: "absolute left-[72%] top-[68%]" },
+    Computing: { name: "Computing Agent", x: 71, y: 22, color: "#fbbf24", image: "/topology/computing_transparent.png", size: "w-20 md:w-24", labelClassName: "absolute left-[72%] top-[68%]" },
   };
 
   const connections = [

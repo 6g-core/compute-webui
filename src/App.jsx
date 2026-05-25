@@ -354,8 +354,26 @@ STAGE_CONFIG[8] = {
   }),
 };
 
-const getStageApiUrl = () => import.meta.env.VITE_STAGE_API_URL || "/api/stage";
-const getLatencyApiUrl = () => import.meta.env.VITE_LATENCY_API_URL || "/api/latency";
+const getRuntimeConfig = () => window.__RUNTIME_CONFIG__ || {};
+
+const buildHttpUrl = (port, path, host) => {
+  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  return `${protocol}//${host || window.location.hostname}:${port}${path}`;
+};
+
+const getStageApiUrl = () => {
+  const runtimeConfig = getRuntimeConfig();
+  return runtimeConfig.stageApiUrl
+    || import.meta.env.VITE_STAGE_API_URL
+    || buildHttpUrl(runtimeConfig.stageApiPort || 28448, "/api/stage", runtimeConfig.backendHost);
+};
+
+const getLatencyApiUrl = () => {
+  const runtimeConfig = getRuntimeConfig();
+  return runtimeConfig.latencyApiUrl
+    || import.meta.env.VITE_LATENCY_API_URL
+    || buildHttpUrl(runtimeConfig.stageApiPort || 28448, "/api/latency", runtimeConfig.backendHost);
+};
 
 const sleep = (delay) => new Promise((resolve) => {
   window.setTimeout(resolve, delay);
@@ -941,33 +959,41 @@ const waitForIceGathering = (pc) => {
 };
 
 const getWebRtcOfferUrl = () => {
-  const configuredUrl = import.meta.env.VITE_WEBRTC_SIGNAL_URL;
+  const runtimeConfig = getRuntimeConfig();
+  const configuredUrl = runtimeConfig.webRtcSignalUrl || import.meta.env.VITE_WEBRTC_SIGNAL_URL;
   if (configuredUrl) {
     return configuredUrl;
   }
 
-  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-  return `${protocol}//${window.location.hostname}:28450/offer`;
+  return buildHttpUrl(runtimeConfig.webRtcPort || 28450, "/offer", runtimeConfig.webRtcHost);
 };
 
 const getDogVisionOfferUrl = () => {
-  const configuredUrl = import.meta.env.VITE_DOG_WEBRTC_SIGNAL_URL;
+  const runtimeConfig = getRuntimeConfig();
+  const configuredUrl = runtimeConfig.dogWebRtcSignalUrl || import.meta.env.VITE_DOG_WEBRTC_SIGNAL_URL;
   if (configuredUrl) {
     return configuredUrl;
   }
 
-  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-  return `${protocol}//${window.location.hostname}:28451/offer`;
+  return buildHttpUrl(
+    runtimeConfig.dogWebRtcPort || 28451,
+    "/offer",
+    runtimeConfig.dogWebRtcHost || runtimeConfig.webRtcHost
+  );
 };
 
 const getDogEnhancedOfferUrl = () => {
-  const configuredUrl = import.meta.env.VITE_DOG_ENHANCED_WEBRTC_SIGNAL_URL;
+  const runtimeConfig = getRuntimeConfig();
+  const configuredUrl = runtimeConfig.dogEnhancedWebRtcSignalUrl || import.meta.env.VITE_DOG_ENHANCED_WEBRTC_SIGNAL_URL;
   if (configuredUrl) {
     return configuredUrl;
   }
 
-  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-  return `${protocol}//${window.location.hostname}:28452/offer`;
+  return buildHttpUrl(
+    runtimeConfig.dogEnhancedWebRtcPort || 28452,
+    "/offer",
+    runtimeConfig.dogEnhancedWebRtcHost || runtimeConfig.webRtcHost
+  );
 };
 
 const getWebRtcIceServers = () => {

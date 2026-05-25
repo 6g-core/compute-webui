@@ -1,0 +1,12 @@
+.git
+dist
+node_modules
+.venv
+.run-logs
+UI.png
+UI2.png
+UI3.png
+assets
+*.log
+__pycache__
+server/__pycache__

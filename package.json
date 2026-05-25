@@ -1,6 +1,7 @@
 {
   "type": "module",
   "scripts": {
+    "build": "vite build",
     "dev": "vite --host 0.0.0.0",
     "dev:28449": "vite --host 0.0.0.0 --port 28449 --strictPort",
     "stage:server": "python3 server/stage_server.py --host 0.0.0.0 --port 28448",

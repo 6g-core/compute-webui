@@ -1011,24 +1011,6 @@ const getWebRtcIceServers = () => {
   ];
 };
 
-const createWebRtcClientId = (prefix) => (
-  `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-);
-
-const closeBackendVideoPeer = (offerUrl, clientId) => {
-  try {
-    const sessionUrl = new URL(offerUrl, window.location.href);
-    sessionUrl.pathname = `/webrtc/session/${encodeURIComponent(`web:${clientId}`)}`;
-    sessionUrl.search = "";
-    fetch(sessionUrl.toString(), {
-      method: "DELETE",
-      keepalive: true,
-    }).catch(() => {});
-  } catch {
-    // Best-effort cleanup only; the peer connection is still closed locally.
-  }
-};
-
 const connectBackendVideoPeer = async (pc, offerUrl, clientId) => {
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
@@ -1071,9 +1053,6 @@ const WebRtcBackground = () => {
       iceTransportPolicy: iceServers.length ? "relay" : "all",
     });
 
-    const offerUrl = getWebRtcOfferUrl();
-    const clientId = createWebRtcClientId("react-background");
-
     pc.addTransceiver("video", { direction: "recvonly" });
 
     pc.onconnectionstatechange = () => {
@@ -1091,7 +1070,7 @@ const WebRtcBackground = () => {
 
     const connect = async () => {
       try {
-        await connectBackendVideoPeer(pc, offerUrl, clientId);
+        await connectBackendVideoPeer(pc, getWebRtcOfferUrl(), "react-background");
       } catch (error) {
         console.error("WebRTC background connection failed", error);
         if (!disposed) {
@@ -1108,7 +1087,6 @@ const WebRtcBackground = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
-      closeBackendVideoPeer(offerUrl, clientId);
       pc.close();
     };
   }, []);
@@ -1142,8 +1120,6 @@ const DogVisionStream = () => {
       iceServers,
       iceTransportPolicy: iceServers.length ? "relay" : "all",
     });
-    const offerUrl = getDogVisionOfferUrl();
-    const clientId = createWebRtcClientId("react-dog-vision");
 
     pc.addTransceiver("video", { direction: "recvonly" });
 
@@ -1162,7 +1138,7 @@ const DogVisionStream = () => {
 
     const connect = async () => {
       try {
-        await connectBackendVideoPeer(pc, offerUrl, clientId);
+        await connectBackendVideoPeer(pc, getDogVisionOfferUrl(), "react-dog-vision");
       } catch (error) {
         console.error("Dog vision WebRTC connection failed", error);
         if (!disposed) {
@@ -1179,7 +1155,6 @@ const DogVisionStream = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
-      closeBackendVideoPeer(offerUrl, clientId);
       pc.close();
     };
   }, []);
@@ -1244,10 +1219,6 @@ const SyncedDogVisionStream = () => {
 
     const rawPeer = createPeer(rawVideoRef, setRawState);
     const enhancedPeer = createPeer(enhancedVideoRef, setEnhancedState);
-    const rawOfferUrl = getDogVisionOfferUrl();
-    const enhancedOfferUrl = getDogEnhancedOfferUrl();
-    const rawClientId = createWebRtcClientId("react-dog-raw");
-    const enhancedClientId = createWebRtcClientId("react-dog-enhanced");
 
     const connectPeer = async (pc, offerUrl, clientId) => {
       await connectBackendVideoPeer(pc, offerUrl, clientId);
@@ -1256,8 +1227,8 @@ const SyncedDogVisionStream = () => {
     const connectBoth = async () => {
       try {
         await Promise.all([
-          connectPeer(rawPeer, rawOfferUrl, rawClientId),
-          connectPeer(enhancedPeer, enhancedOfferUrl, enhancedClientId),
+          connectPeer(rawPeer, getDogVisionOfferUrl(), "react-dog-raw"),
+          connectPeer(enhancedPeer, getDogEnhancedOfferUrl(), "react-dog-enhanced"),
         ]);
       } catch (error) {
         console.error("Synced dog vision WebRTC connection failed", error);
@@ -1279,8 +1250,6 @@ const SyncedDogVisionStream = () => {
           videoRef.current.srcObject = null;
         }
       });
-      closeBackendVideoPeer(rawOfferUrl, rawClientId);
-      closeBackendVideoPeer(enhancedOfferUrl, enhancedClientId);
       rawPeer.close();
       enhancedPeer.close();
     };

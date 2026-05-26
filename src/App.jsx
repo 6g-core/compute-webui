@@ -1011,7 +1011,7 @@ const getWebRtcIceServers = () => {
   ];
 };
 
-const connectBackendVideoPeer = async (pc, offerUrl, clientId) => {
+const connectBackendVideoPeer = async (pc, offerUrl, clientId, streamType) => {
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   await waitForIceGathering(pc);
@@ -1022,6 +1022,7 @@ const connectBackendVideoPeer = async (pc, offerUrl, clientId) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       client_id: clientId,
+      ...(streamType ? { streamType } : {}),
       sdp_offer: {
         type: localDescription.type,
         sdp: localDescription.sdp,
@@ -1138,7 +1139,7 @@ const DogVisionStream = () => {
 
     const connect = async () => {
       try {
-        await connectBackendVideoPeer(pc, getDogVisionOfferUrl(), "react-dog-vision");
+        await connectBackendVideoPeer(pc, getDogVisionOfferUrl(), "react-dog-vision", "raw");
       } catch (error) {
         console.error("Dog vision WebRTC connection failed", error);
         if (!disposed) {
@@ -1220,15 +1221,15 @@ const SyncedDogVisionStream = () => {
     const rawPeer = createPeer(rawVideoRef, setRawState);
     const enhancedPeer = createPeer(enhancedVideoRef, setEnhancedState);
 
-    const connectPeer = async (pc, offerUrl, clientId) => {
-      await connectBackendVideoPeer(pc, offerUrl, clientId);
+    const connectPeer = async (pc, offerUrl, clientId, streamType) => {
+      await connectBackendVideoPeer(pc, offerUrl, clientId, streamType);
     };
 
     const connectBoth = async () => {
       try {
         await Promise.all([
-          connectPeer(rawPeer, getDogVisionOfferUrl(), "react-dog-raw"),
-          connectPeer(enhancedPeer, getDogEnhancedOfferUrl(), "react-dog-enhanced"),
+          connectPeer(rawPeer, getDogVisionOfferUrl(), "react-dog-raw", "raw"),
+          connectPeer(enhancedPeer, getDogEnhancedOfferUrl(), "react-dog-enhanced", "enhanced"),
         ]);
       } catch (error) {
         console.error("Synced dog vision WebRTC connection failed", error);

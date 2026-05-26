@@ -399,6 +399,13 @@ const getLatencyApiUrl = () => {
     || buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/latency", "sandboxHost");
 };
 
+const getSandboxHealthApiUrl = () => {
+  const runtimeConfig = getRuntimeConfig();
+  return runtimeConfig.sandboxHealthApiUrl
+    || import.meta.env.VITE_SANDBOX_HEALTH_API_URL
+    || buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/health", "sandboxHost");
+};
+
 const sleep = (delay) => new Promise((resolve) => {
   window.setTimeout(resolve, delay);
 });
@@ -741,15 +748,17 @@ const AgentLogPanel = ({ logs }) => {
           return (
             <div
               key={`${time}-${agent}-${message}`}
-              className={`rounded-md border px-1.5 py-1 transition-colors ${tone.row}`}
+              className={`rounded-md border px-2 py-1.5 transition-colors ${tone.row}`}
             >
-              <div className="flex items-start gap-1.5 whitespace-normal break-words">
-                <span className="shrink-0 text-cyan-300/90">{time}</span>
-                <span className={`shrink-0 rounded border px-1 text-[9px] font-bold tracking-[0.08em] ${tone.badge}`}>
+              <div className="mb-0.5 flex min-w-0 items-center gap-1.5 text-[9px] leading-none text-blue-200/65">
+                <span className="shrink-0 text-cyan-300/80">{time}</span>
+                <span className={`shrink-0 rounded border px-1 py-0.5 text-[8px] font-bold tracking-[0.08em] ${tone.badge}`}>
                   {tone.label}
                 </span>
-                <span className="shrink-0 text-emerald-300">[{agent}]</span>
-                <span className={`min-w-0 ${tone.text}`}>{message}</span>
+                <span className="min-w-0 truncate text-emerald-300/85">{agent}</span>
+              </div>
+              <div className={`whitespace-normal break-words pl-0.5 ${tone.text}`}>
+                {message}
               </div>
             </div>
           );
@@ -1162,6 +1171,120 @@ const connectBackendVideoPeer = async (pc, offerUrl, clientId, streamType) => {
   await pc.setRemoteDescription(payload.sdp_answer);
 };
 
+const DOG_VIDEO_HEALTH_POLL_MS = 500;
+
+const getDogVideoGateState = (health, hasError = false) => {
+  if (hasError) {
+    return "waiting-sandbox";
+  }
+  if (!health) {
+    return "waiting-task";
+  }
+  if (!health.streamRequested) {
+    return "waiting-task";
+  }
+  if (!health.dogConnected) {
+    return "waiting-dog";
+  }
+  if (!health.videoReady) {
+    return "waiting-stream";
+  }
+  return "ready";
+};
+
+const isDogVideoReadyForOffer = (health) => (
+  health?.ok === true
+  && health?.streamRequested === true
+  && health?.dogConnected === true
+  && health?.videoReady === true
+);
+
+const useDogVideoOfferGate = (enabled = true) => {
+  const [snapshot, setSnapshot] = useState({
+    health: null,
+    ready: false,
+    state: enabled ? "waiting-task" : "idle",
+  });
+
+  useEffect(() => {
+    if (!enabled) {
+      setSnapshot({
+        health: null,
+        ready: false,
+        state: "idle",
+      });
+      return undefined;
+    }
+
+    let disposed = false;
+    let timerId = null;
+
+    const poll = async () => {
+      try {
+        const response = await fetch(getSandboxHealthApiUrl(), { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`Sandbox health failed: ${response.status}`);
+        }
+
+        const health = await response.json();
+        if (!disposed) {
+          const ready = isDogVideoReadyForOffer(health);
+          setSnapshot({
+            health,
+            ready,
+            state: ready ? "ready" : getDogVideoGateState(health),
+          });
+        }
+      } catch (error) {
+        console.error("Sandbox health polling failed", error);
+        if (!disposed) {
+          setSnapshot((current) => ({
+            health: current.health,
+            ready: false,
+            state: getDogVideoGateState(current.health, true),
+          }));
+        }
+      }
+
+      if (!disposed) {
+        timerId = window.setTimeout(poll, DOG_VIDEO_HEALTH_POLL_MS);
+      }
+    };
+
+    poll();
+
+    return () => {
+      disposed = true;
+      if (timerId !== null) {
+        window.clearTimeout(timerId);
+      }
+    };
+  }, [enabled]);
+
+  return snapshot;
+};
+
+const formatVideoState = (state) => {
+  if (state === "receiving" || state === "connected") {
+    return "Live";
+  }
+
+  const labels = {
+    idle: "Idle",
+    ready: "Ready",
+    connecting: "Connecting",
+    failed: "Failed",
+    disconnected: "Disconnected",
+    closed: "Closed",
+    "waiting-task": "Waiting task",
+    "waiting-dog": "Waiting dog",
+    "waiting-stream": "Waiting stream",
+    "waiting-sandbox": "Waiting sandbox",
+  };
+
+  return labels[state] || state;
+};
+
 const WebRtcBackground = () => {
   const videoRef = useRef(null);
   const [state, setState] = useState("connecting");
@@ -1232,15 +1355,31 @@ const WebRtcBackground = () => {
 
 const DogVisionStream = () => {
   const videoRef = useRef(null);
-  const [state, setState] = useState("connecting");
+  const { health, ready, state: gateState } = useDogVideoOfferGate(true);
+  const streamEpoch = health?.streamEpoch ?? null;
+  const [state, setState] = useState("waiting-task");
 
   useEffect(() => {
+    if (!ready) {
+      setState(gateState);
+    }
+  }, [gateState, ready]);
+
+  useEffect(() => {
+    if (!ready) {
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      return undefined;
+    }
+
     let disposed = false;
     const iceServers = getWebRtcIceServers();
     const pc = new RTCPeerConnection({
       iceServers,
       iceTransportPolicy: iceServers.length ? "relay" : "all",
     });
+    setState("connecting");
 
     pc.addTransceiver("video", { direction: "recvonly" });
 
@@ -1278,7 +1417,7 @@ const DogVisionStream = () => {
       }
       pc.close();
     };
-  }, []);
+  }, [ready, streamEpoch]);
 
   return (
     <div className="relative h-[220px] shrink-0 overflow-hidden rounded-xl border border-emerald-400/35 bg-slate-950/45 shadow-[inset_0_0_24px_rgba(16,185,129,0.12),0_0_18px_rgba(34,211,238,0.14)] lg:h-[240px]">
@@ -1293,7 +1432,7 @@ const DogVisionStream = () => {
       <div className="absolute inset-0 border border-cyan-300/20" />
       <div className="absolute left-3 top-3 flex items-center gap-2 rounded border border-emerald-400/45 bg-slate-950/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-200 backdrop-blur-md">
         <span className={`h-1.5 w-1.5 rounded-full ${state === "receiving" || state === "connected" ? "bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.9)]" : "bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.9)]"}`} />
-        {state === "receiving" || state === "connected" ? "Live" : state}
+        {formatVideoState(state)}
       </div>
       <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2 text-[10px] font-mono text-cyan-100/90">
         {["DOG-CAM", "MOQT", "6G UPLINK"].map((item) => (
@@ -1309,10 +1448,28 @@ const DogVisionStream = () => {
 const SyncedDogVisionStream = () => {
   const rawVideoRef = useRef(null);
   const enhancedVideoRef = useRef(null);
-  const [rawState, setRawState] = useState("connecting");
-  const [enhancedState, setEnhancedState] = useState("connecting");
+  const { health, ready, state: gateState } = useDogVideoOfferGate(true);
+  const streamEpoch = health?.streamEpoch ?? null;
+  const [rawState, setRawState] = useState("waiting-task");
+  const [enhancedState, setEnhancedState] = useState("waiting-task");
 
   useEffect(() => {
+    if (!ready) {
+      setRawState(gateState);
+      setEnhancedState(gateState);
+    }
+  }, [gateState, ready]);
+
+  useEffect(() => {
+    if (!ready) {
+      [rawVideoRef, enhancedVideoRef].forEach((videoRef) => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+        }
+      });
+      return undefined;
+    }
+
     let disposed = false;
     const iceServers = getWebRtcIceServers();
 
@@ -1340,6 +1497,8 @@ const SyncedDogVisionStream = () => {
 
     const rawPeer = createPeer(rawVideoRef, setRawState);
     const enhancedPeer = createPeer(enhancedVideoRef, setEnhancedState);
+    setRawState("connecting");
+    setEnhancedState("connecting");
 
     const connectPeer = async (pc, offerUrl, clientId, streamType) => {
       await connectBackendVideoPeer(pc, offerUrl, clientId, streamType);
@@ -1374,7 +1533,7 @@ const SyncedDogVisionStream = () => {
       rawPeer.close();
       enhancedPeer.close();
     };
-  }, []);
+  }, [ready, streamEpoch]);
 
   const panels = [
     { label: "机器狗原始视野", state: rawState, ref: rawVideoRef },
@@ -1402,7 +1561,7 @@ const SyncedDogVisionStream = () => {
               {panel.label}
             </div>
             <div className="absolute bottom-2 left-2 right-2 grid grid-cols-3 gap-2 text-[9px] font-mono text-cyan-100/90">
-              {["DOG-CAM", "MOQT", live ? "SYNCED" : panel.state].map((item) => (
+              {["DOG-CAM", "MOQT", live ? "SYNCED" : formatVideoState(panel.state)].map((item) => (
                 <div key={item} className="rounded border border-cyan-400/25 bg-slate-950/62 px-2 py-1 text-center backdrop-blur-md">
                   {item}
                 </div>

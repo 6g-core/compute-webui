@@ -128,6 +128,13 @@ const STAGE7_LOGS = [
   ["10:31:21", "Computing Agent", "分配算力资源"],
 ];
 
+const STAGE_ANIMATION_TIMING = {
+  2: { workingMs: 560, successMs: 180 },
+  4: { workingMs: 500, successMs: 150 },
+  6: { workingMs: 800, successMs: 180 },
+  7: { workingMs: 1280, successMs: 180 },
+};
+
 const STAGE_CONFIG = {
   1: {
     leftPanelTitle: "机器狗接入",
@@ -1579,7 +1586,9 @@ export default function App() {
           bubbleStatus: nextCompletedCount >= STAGE2_WORKFLOW.length ? "success" : "working",
         };
       });
-    }, stage2Progress.bubbleStatus === "working" ? 1100 : 420);
+    }, stage2Progress.bubbleStatus === "working"
+      ? STAGE_ANIMATION_TIMING[2].workingMs
+      : STAGE_ANIMATION_TIMING[2].successMs);
 
     return () => window.clearTimeout(timer);
   }, [stage, stage2Progress.activeTask, stage2Progress.bubbleStatus, stage2Progress.completedCount]);
@@ -1660,7 +1669,9 @@ export default function App() {
           bubbleStatus: nextCompletedCount >= STAGE4_WORKFLOW.length ? "success" : "working",
         };
       });
-    }, stage4Progress.bubbleStatus === "working" ? 1200 : 450);
+    }, stage4Progress.bubbleStatus === "working"
+      ? STAGE_ANIMATION_TIMING[4].workingMs
+      : STAGE_ANIMATION_TIMING[4].successMs);
 
     return () => window.clearTimeout(timer);
   }, [stage, stage4Progress.activeTask, stage4Progress.bubbleStatus, stage4Progress.completedCount]);
@@ -1690,7 +1701,9 @@ export default function App() {
           bubbleStatus: nextCompletedCount >= STAGE6_WORKFLOW.length ? "success" : "working",
         };
       });
-    }, stage6Progress.bubbleStatus === "working" ? 1200 : 450);
+    }, stage6Progress.bubbleStatus === "working"
+      ? STAGE_ANIMATION_TIMING[6].workingMs
+      : STAGE_ANIMATION_TIMING[6].successMs);
 
     return () => window.clearTimeout(timer);
   }, [stage, stage6Progress.activeTask, stage6Progress.bubbleStatus, stage6Progress.completedCount]);
@@ -1720,7 +1733,9 @@ export default function App() {
           bubbleStatus: nextCompletedCount >= STAGE7_WORKFLOW.length ? "success" : "working",
         };
       });
-    }, stage7Progress.bubbleStatus === "working" ? 1200 : 450);
+    }, stage7Progress.bubbleStatus === "working"
+      ? STAGE_ANIMATION_TIMING[7].workingMs
+      : STAGE_ANIMATION_TIMING[7].successMs);
 
     return () => window.clearTimeout(timer);
   }, [stage, stage7Progress.activeTask, stage7Progress.bubbleStatus, stage7Progress.completedCount]);

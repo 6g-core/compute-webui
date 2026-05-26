@@ -102,30 +102,44 @@ const STAGE2_WORKFLOW = [
 ];
 
 const BASE_AGENT_LOGS = [
-  ["10:31:00", "System Agent", "初始化完成"],
-  ["10:31:01", "System Agent", "Skill加载完成"],
-  ["10:31:02", "Computing Agent", "初始化完成"],
-  ["10:31:03", "Computing Agent", "Skill加载完成"],
-  ["10:31:04", "ACN Agent", "初始化完成"],
-  ["10:31:05", "ACN Agent", "加载完成"],
+  ["10:31:00", "System Agent", "初始化完成，监听 /api/stage 与 /api/v1/intent"],
+  ["10:31:01", "System Agent", "加载Skill: intent-router, stage-controller, visual-task-gate"],
+  ["10:31:02", "System Agent", "思考摘要: 等待ACN/Computing/视觉任务事件形成闭环"],
+  ["10:31:03", "Computing Agent", "初始化完成，注册能力 visual-recog-sandbox"],
+  ["10:31:04", "Computing Agent", "ToolRegistry: CMFTool, SandboxHealthTool, VisualTaskEventTool"],
+  ["10:31:05", "ACN Agent", "加载完成，注册IDMTool/ARFTool/SMTool/PathProbeTool"],
 ];
 
 const STAGE2_COMPLETION_LOGS = [
-  ["10:31:10", "ACN Agent", "调用IDMTool鉴权6G接入权限"],
-  ["10:31:11", "ACN Agent", "调用ARF完成智能体三方能力认证"],
-  ["10:31:12", "ACN Agent", "发布智能体卡片"],
+  ["10:31:10", "ACN Agent", "ToolCall IDMTool.verifyAccess params={networkSlice:'6G-ACN', subject:'AR_GLASSES'}"],
+  ["10:31:11", "ACN Agent", "ToolCall ARFTool.attestAgents params={agents:['System','ACN','RobotDog']}"],
+  ["10:31:12", "ACN Agent", "发布智能体卡片 capability={dogVision, voiceIntent, searchObject}"],
+  ["10:31:13", "System Agent", "思考摘要: 数字身份与能力卡片已就绪，可以进入家庭域接入"],
 ];
 
 const STAGE6_LOGS = [
-  ["10:31:16", "Agent GW", "根据ID寻址商家机器人"],
-  ["10:31:17", "ACN Agent", "校验对端身份凭证"],
-  ["10:31:18", "Agent GW", "建立任务级会话"],
-  ["10:31:19", "Agent GW", "转换对端Agent协议"],
+  ["10:31:16", "Agent GW", "ToolCall Directory.lookup params={did:'DID:2168nLB3G@CMCC.org'}"],
+  ["10:31:17", "ACN Agent", "校验对端身份凭证 credentialScope={homeDomain:true, dogVision:true}"],
+  ["10:31:18", "Agent GW", "建立任务级会话 session={type:'A2A', qos:'low-latency'}"],
+  ["10:31:19", "Agent GW", "协议转换 request={from:'glasses-intent', to:'sandbox-voice'}"],
+  ["10:31:20", "System Agent", "思考摘要: A2A链路可用，等待真实视觉任务触发算力入网"],
 ];
 
 const STAGE7_LOGS = [
-  ["10:31:20", "Computing Agent", "创建算力会话"],
-  ["10:31:21", "Computing Agent", "分配算力资源"],
+  ["10:31:21", "Sandbox", "收到眼镜意图 intent_payload='寻找紫色瓶子'"],
+  ["10:31:22", "Sandbox", "SemanticRoute response={scene:'search_object', normalized_argument:'purple bottle'}"],
+  ["10:31:23", "Sandbox", "ToolCall Detector.update_prompts params={prompts:['purple bottle']}"],
+  ["10:31:24", "Sandbox", "POST /api/v1/system/visual_task/event body={event:'started', task_type:'search_object'}"],
+  ["10:31:25", "System Agent", "思考摘要: media_established=true 且 visual_task=search_object，允许进入Stage7"],
+  ["10:31:26", "Computing Agent", "ToolCall CMFTool.createSession params={sandbox:'visual-recog', target:'purple bottle'}"],
+  ["10:31:27", "Computing Agent", "分配算力资源 gpuProfile={model:'YOLO', stream:'dog_camera'}"],
+];
+
+const STAGE5_LOGS = [
+  ["10:31:14", "System Agent", "收到Computing意图 intent_type=COMPUTING payload='启动视觉识别沙箱'"],
+  ["10:31:15", "System Agent", "ToolCall Router.match params={intent_type:'COMPUTING', candidates:['cmf']}"],
+  ["10:31:16", "System Agent", "思考摘要: 视觉识别需要拉起sandbox并等待狗视频按需推流"],
+  ["10:31:17", "Computing Agent", "ToolCall CMFTool.startSandbox params={name:'visual-recog', mode:'on-demand'}"],
 ];
 
 const STAGE_ANIMATION_TIMING = {
@@ -191,10 +205,10 @@ const STAGE_CONFIG = {
     },
     logs: [
       ...BASE_AGENT_LOGS,
-      ["10:31:06", "System Agent", "解析用户意图"],
-      ["10:31:07", "System Agent", "请求路由至ACN Agent"],
-      ["10:31:08", "ACN Agent", "接受用户请求"],
-      ["10:31:09", "ACN Agent", "调用IDMTool生成DigitalID"],
+      ["10:31:06", "System Agent", "解析用户意图 intent_type=ACN_NETWORKING payload='联系我的狗'"],
+      ["10:31:07", "System Agent", "ToolCall Router.match params={intent_type:'ACN_NETWORKING', candidates:['acn']}"],
+      ["10:31:08", "System Agent", "思考摘要: 需要先完成身份签发，再开放家庭域网络"],
+      ["10:31:09", "ACN Agent", "ToolCall IDMTool.createDigitalID params={device:'AR_GLASSES', scope:'home-domain'}"],
     ],
     workflow: [
       { label: "System Agent路由请求:", value: "Working", status: "working" },
@@ -229,16 +243,16 @@ const STAGE_CONFIG = {
     ],
     logs: [
       ...BASE_AGENT_LOGS,
-      ["10:31:06", "System Agent", "解析用户意图"],
-      ["10:31:07", "System Agent", "请求路由至ACN Agent"],
-      ["10:31:08", "ACN Agent", "接受用户请求"],
-      ["10:31:09", "ACN Agent", "调用IDMTool生成DigitalID"],
-      ["10:31:10", "ACN Agent", "调用IDMTool鉴权6G接入权限"],
-      ["10:31:11", "ACN Agent", "调用ARF完成智能体三方能力认证"],
-      ["10:31:12", "ACN Agent", "发布智能体卡片"],
-      ["10:31:13", "ACN Agent", "调用IDM Tool下发域接入凭证"],
-      ["10:31:14", "ACN Agent", "调用SMTool下发UPF配置"],
-      ["10:31:15", "ACN Agent", "实时探测最优路径"],
+      ["10:31:06", "System Agent", "解析用户意图 intent_type=ACN_NETWORKING payload='联系我的狗'"],
+      ["10:31:07", "System Agent", "ToolCall Router.match params={intent_type:'ACN_NETWORKING', candidates:['acn']}"],
+      ["10:31:08", "System Agent", "思考摘要: 需要先完成身份签发，再开放家庭域网络"],
+      ["10:31:09", "ACN Agent", "ToolCall IDMTool.createDigitalID params={device:'AR_GLASSES', scope:'home-domain'}"],
+      ["10:31:10", "ACN Agent", "ToolCall IDMTool.verifyAccess params={networkSlice:'6G-ACN', subject:'AR_GLASSES'}"],
+      ["10:31:11", "ACN Agent", "ToolCall ARFTool.attestAgents params={agents:['System','ACN','RobotDog']}"],
+      ["10:31:12", "ACN Agent", "发布智能体卡片 capability={dogVision, voiceIntent, searchObject}"],
+      ["10:31:13", "ACN Agent", "ToolCall IDMTool.issueDomainCredential params={domain:'home', ttl:'session'}"],
+      ["10:31:14", "ACN Agent", "ToolCall SMTool.configureUPF params={qos:'low-latency', route:'dog-video'}"],
+      ["10:31:15", "ACN Agent", "ToolCall PathProbeTool.select params={metric:'latency', target:'sandbox'}"],
     ],
     workflow: [
       { label: "签约数据更新:", value: "Working", status: "working" },
@@ -262,6 +276,10 @@ STAGE_CONFIG[5] = {
   showDogVision: true,
   showHomeDomainDevice: false,
   showRegisteredDevice: false,
+  logs: [
+    ...STAGE_CONFIG[4].logs,
+    ...STAGE5_LOGS,
+  ],
   workflow: [
     { label: "签约数据更新:", value: "Done", status: "success" },
     { label: "下发域接入凭证:", value: "Done", status: "success" },
@@ -663,6 +681,79 @@ const StatusRow = ({ label, value, status = "success", isMono = false, valueClas
         {status === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
         {status === 'working' && <CircleDot className="w-3.5 h-3.5 text-amber-300 animate-pulse" />}
         {status === 'pending' && <CircleDot className="w-3.5 h-3.5 text-blue-500" />}
+      </div>
+    </div>
+  );
+};
+
+const AgentLogPanel = ({ logs }) => {
+  const scrollRef = useRef(null);
+  const logSignature = logs.map(([time, agent, message]) => `${time}|${agent}|${message}`).join(";");
+  const getLogTone = (message) => {
+    if (String(message).includes("ToolCall")) {
+      return {
+        row: "border-cyan-400/18 bg-cyan-400/[0.055] shadow-[inset_2px_0_0_rgba(34,211,238,0.65)]",
+        badge: "border-cyan-300/45 bg-cyan-400/10 text-cyan-200",
+        label: "TOOL",
+        text: "text-cyan-50/90",
+      };
+    }
+
+    if (String(message).includes("思考摘要")) {
+      return {
+        row: "border-amber-300/20 bg-amber-300/[0.07] shadow-[inset_2px_0_0_rgba(251,191,36,0.72)]",
+        badge: "border-amber-200/45 bg-amber-300/10 text-amber-100",
+        label: "PLAN",
+        text: "text-amber-50/90 italic",
+      };
+    }
+
+    return {
+      row: "border-transparent bg-transparent",
+      badge: "border-blue-300/25 bg-blue-400/5 text-blue-200/80",
+      label: "LOG",
+      text: "text-blue-100/80",
+    };
+  };
+
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) {
+      return undefined;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      scrollElement.scrollTop = scrollElement.scrollHeight;
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [logSignature]);
+
+  return (
+    <div
+      ref={scrollRef}
+      className="agent-log-scroll h-[128px] overflow-auto rounded border border-blue-500/20 bg-slate-950/35 px-2 py-1.5"
+    >
+      <div className="flex min-w-full flex-col gap-1 text-[10px] lg:text-xs font-mono leading-snug text-blue-100/90">
+        {logs.map(([time, agent, message]) => {
+          const tone = getLogTone(message);
+
+          return (
+            <div
+              key={`${time}-${agent}-${message}`}
+              className={`rounded-md border px-1.5 py-1 transition-colors ${tone.row}`}
+            >
+              <div className="flex items-start gap-1.5 whitespace-normal break-words">
+                <span className="shrink-0 text-cyan-300/90">{time}</span>
+                <span className={`shrink-0 rounded border px-1 text-[9px] font-bold tracking-[0.08em] ${tone.badge}`}>
+                  {tone.label}
+                </span>
+                <span className="shrink-0 text-emerald-300">[{agent}]</span>
+                <span className={`min-w-0 ${tone.text}`}>{message}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -2400,17 +2491,7 @@ export default function App() {
                       </div>
                       <h3 className="text-white font-bold text-sm lg:text-base">智能体日志</h3>
                     </div>
-                    <div className="agent-log-scroll h-[128px] overflow-auto rounded border border-blue-500/20 bg-slate-950/35 px-2 py-1.5">
-                      <div className="flex min-w-full flex-col gap-1 text-[10px] lg:text-xs font-mono leading-snug text-blue-100/90">
-                        {effectiveStageConfig.logs.map(([time, agent, message]) => (
-                          <div key={`${time}-${agent}-${message}`} className="flex items-start gap-1.5 whitespace-normal break-words">
-                            <span className="shrink-0 text-cyan-300/90">{time}</span>
-                            <span className="shrink-0 text-emerald-300">[{agent}]</span>
-                            <span className="min-w-0 text-blue-100/80">{message}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    <AgentLogPanel logs={effectiveStageConfig.logs} />
                   </div>
 
                   {/* 子栏目 3: 工作流 */}

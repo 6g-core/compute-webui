@@ -1353,23 +1353,74 @@ const WebRtcBackground = () => {
   );
 };
 
-const DogVisionStream = () => {
+const DogVisionPanel = ({ label, state, videoRef, tall = false }) => {
+  const live = state === "receiving" || state === "connected";
+
+  return (
+    <div className={`relative overflow-hidden rounded-xl border border-emerald-400/35 bg-slate-950/45 shadow-[inset_0_0_24px_rgba(16,185,129,0.12),0_0_18px_rgba(34,211,238,0.14)] ${tall ? "flex-1" : "h-[220px] shrink-0 lg:h-[240px]"}`}>
+      <video
+        ref={videoRef}
+        className="absolute inset-0 h-full w-full object-cover"
+        autoPlay
+        muted
+        playsInline
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:22px_22px] mix-blend-screen" />
+      <div className="absolute inset-0 border border-cyan-300/20" />
+      <div className="absolute left-2 top-2 flex items-center gap-2 rounded border border-emerald-400/45 bg-slate-950/70 px-2 py-1 text-[10px] font-bold tracking-wider text-emerald-200 backdrop-blur-md">
+        <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.9)]" : "bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.9)]"}`} />
+        {label}
+      </div>
+      <div className="absolute bottom-2 left-2 right-2 grid grid-cols-3 gap-2 text-[9px] font-mono text-cyan-100/90">
+        {["DOG-CAM", "MOQT", live ? "SYNCED" : formatVideoState(state)].map((item) => (
+          <div key={item} className="rounded border border-cyan-400/25 bg-slate-950/62 px-2 py-1 text-center backdrop-blur-md">
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const useBackendVideoStream = ({
+  enabled,
+  ready,
+  gateState,
+  streamEpoch,
+  offerUrl,
+  clientId,
+  streamType,
+  label,
+  attachKey,
+}) => {
   const videoRef = useRef(null);
-  const { health, ready, state: gateState } = useDogVideoOfferGate(true);
-  const streamEpoch = health?.streamEpoch ?? null;
-  const [state, setState] = useState("waiting-task");
+  const [state, setState] = useState(enabled ? "waiting-task" : "idle");
+  const [stream, setStream] = useState(null);
 
   useEffect(() => {
-    if (!ready) {
-      setState(gateState);
-    }
-  }, [gateState, ready]);
-
-  useEffect(() => {
-    if (!ready) {
+    if (!enabled) {
+      setState("idle");
+      setStream(null);
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
+      return;
+    }
+
+    if (!ready) {
+      setState(gateState);
+      setStream(null);
+    }
+  }, [enabled, gateState, ready]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [attachKey, stream]);
+
+  useEffect(() => {
+    if (!enabled || !ready) {
       return undefined;
     }
 
@@ -1390,17 +1441,17 @@ const DogVisionStream = () => {
     };
 
     pc.ontrack = (event) => {
-      if (!disposed && videoRef.current) {
-        videoRef.current.srcObject = event.streams[0];
+      if (!disposed) {
+        setStream(event.streams[0]);
         setState("receiving");
       }
     };
 
     const connect = async () => {
       try {
-        await connectBackendVideoPeer(pc, getDogVisionOfferUrl(), "react-dog-vision", "raw");
+        await connectBackendVideoPeer(pc, offerUrl, clientId, streamType);
       } catch (error) {
-        console.error("Dog vision WebRTC connection failed", error);
+        console.error(`${label} WebRTC connection failed`, error);
         if (!disposed) {
           setState("failed");
         }
@@ -1412,164 +1463,64 @@ const DogVisionStream = () => {
 
     return () => {
       disposed = true;
+      setStream(null);
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
       pc.close();
     };
-  }, [ready, streamEpoch]);
+  }, [clientId, enabled, gateState, label, offerUrl, ready, streamEpoch, streamType]);
 
-  return (
-    <div className="relative h-[220px] shrink-0 overflow-hidden rounded-xl border border-emerald-400/35 bg-slate-950/45 shadow-[inset_0_0_24px_rgba(16,185,129,0.12),0_0_18px_rgba(34,211,238,0.14)] lg:h-[240px]">
-      <video
-        ref={videoRef}
-        className="absolute inset-0 h-full w-full object-cover"
-        autoPlay
-        muted
-        playsInline
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:22px_22px] mix-blend-screen" />
-      <div className="absolute inset-0 border border-cyan-300/20" />
-      <div className="absolute left-3 top-3 flex items-center gap-2 rounded border border-emerald-400/45 bg-slate-950/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-200 backdrop-blur-md">
-        <span className={`h-1.5 w-1.5 rounded-full ${state === "receiving" || state === "connected" ? "bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.9)]" : "bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.9)]"}`} />
-        {formatVideoState(state)}
-      </div>
-      <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2 text-[10px] font-mono text-cyan-100/90">
-        {["DOG-CAM", "MOQT", "6G UPLINK"].map((item) => (
-          <div key={item} className="rounded border border-cyan-400/25 bg-slate-950/62 px-2 py-1 text-center backdrop-blur-md">
-            {item}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return { state, videoRef };
 };
 
-const SyncedDogVisionStream = () => {
-  const rawVideoRef = useRef(null);
-  const enhancedVideoRef = useRef(null);
+const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
   const { health, ready, state: gateState } = useDogVideoOfferGate(true);
   const streamEpoch = health?.streamEpoch ?? null;
-  const [rawState, setRawState] = useState("waiting-task");
-  const [enhancedState, setEnhancedState] = useState("waiting-task");
+  const raw = useBackendVideoStream({
+    enabled: true,
+    ready,
+    gateState,
+    streamEpoch,
+    offerUrl: getDogVisionOfferUrl(),
+    clientId: "react-dog-raw",
+    streamType: "raw",
+    label: "Dog raw vision",
+    attachKey: showEnhanced,
+  });
+  const enhanced = useBackendVideoStream({
+    enabled: preloadEnhanced,
+    ready,
+    gateState,
+    streamEpoch,
+    offerUrl: getDogEnhancedOfferUrl(),
+    clientId: "react-dog-enhanced",
+    streamType: "enhanced",
+    label: "Dog enhanced vision",
+    attachKey: showEnhanced,
+  });
 
-  useEffect(() => {
-    if (!ready) {
-      setRawState(gateState);
-      setEnhancedState(gateState);
-    }
-  }, [gateState, ready]);
-
-  useEffect(() => {
-    if (!ready) {
-      [rawVideoRef, enhancedVideoRef].forEach((videoRef) => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = null;
-        }
-      });
-      return undefined;
-    }
-
-    let disposed = false;
-    const iceServers = getWebRtcIceServers();
-
-    const createPeer = (videoRef, setState) => {
-      const pc = new RTCPeerConnection({
-        iceServers,
-        iceTransportPolicy: iceServers.length ? "relay" : "all",
-      });
-
-      pc.addTransceiver("video", { direction: "recvonly" });
-      pc.onconnectionstatechange = () => {
-        if (!disposed) {
-          setState(pc.connectionState);
-        }
-      };
-      pc.ontrack = (event) => {
-        if (!disposed && videoRef.current) {
-          videoRef.current.srcObject = event.streams[0];
-          setState("receiving");
-        }
-      };
-
-      return pc;
-    };
-
-    const rawPeer = createPeer(rawVideoRef, setRawState);
-    const enhancedPeer = createPeer(enhancedVideoRef, setEnhancedState);
-    setRawState("connecting");
-    setEnhancedState("connecting");
-
-    const connectPeer = async (pc, offerUrl, clientId, streamType) => {
-      await connectBackendVideoPeer(pc, offerUrl, clientId, streamType);
-    };
-
-    const connectBoth = async () => {
-      try {
-        await Promise.all([
-          connectPeer(rawPeer, getDogVisionOfferUrl(), "react-dog-raw", "raw"),
-          connectPeer(enhancedPeer, getDogEnhancedOfferUrl(), "react-dog-enhanced", "enhanced"),
-        ]);
-      } catch (error) {
-        console.error("Synced dog vision WebRTC connection failed", error);
-        if (!disposed) {
-          setRawState((state) => (state === "receiving" ? state : "failed"));
-          setEnhancedState((state) => (state === "receiving" ? state : "failed"));
-        }
-        rawPeer.close();
-        enhancedPeer.close();
-      }
-    };
-
-    connectBoth();
-
-    return () => {
-      disposed = true;
-      [rawVideoRef, enhancedVideoRef].forEach((videoRef) => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = null;
-        }
-      });
-      rawPeer.close();
-      enhancedPeer.close();
-    };
-  }, [ready, streamEpoch]);
-
-  const panels = [
-    { label: "机器狗原始视野", state: rawState, ref: rawVideoRef },
-    { label: "机器狗增强后的视野", state: enhancedState, ref: enhancedVideoRef },
-  ];
+  if (!showEnhanced) {
+    return (
+      <>
+        <DogVisionPanel label="机器狗原始视野" state={raw.state} videoRef={raw.videoRef} />
+        {preloadEnhanced && (
+          <video
+            ref={enhanced.videoRef}
+            className="hidden"
+            autoPlay
+            muted
+            playsInline
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="flex flex-1 min-h-[424px] flex-col gap-2">
-      {panels.map((panel) => {
-        const live = panel.state === "receiving" || panel.state === "connected";
-
-        return (
-          <div key={panel.label} className="relative flex-1 overflow-hidden rounded-xl border border-emerald-400/35 bg-slate-950/45 shadow-[inset_0_0_24px_rgba(16,185,129,0.12),0_0_18px_rgba(34,211,238,0.14)]">
-            <video
-              ref={panel.ref}
-              className="absolute inset-0 h-full w-full object-cover"
-              autoPlay
-              muted
-              playsInline
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:22px_22px] mix-blend-screen" />
-            <div className="absolute inset-0 border border-cyan-300/20" />
-            <div className="absolute left-2 top-2 flex items-center gap-2 rounded border border-emerald-400/45 bg-slate-950/70 px-2 py-1 text-[10px] font-bold tracking-wider text-emerald-200 backdrop-blur-md">
-              <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.9)]" : "bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.9)]"}`} />
-              {panel.label}
-            </div>
-            <div className="absolute bottom-2 left-2 right-2 grid grid-cols-3 gap-2 text-[9px] font-mono text-cyan-100/90">
-              {["DOG-CAM", "MOQT", live ? "SYNCED" : formatVideoState(panel.state)].map((item) => (
-                <div key={item} className="rounded border border-cyan-400/25 bg-slate-950/62 px-2 py-1 text-center backdrop-blur-md">
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
+      <DogVisionPanel label="机器狗原始视野" state={raw.state} videoRef={raw.videoRef} tall />
+      <DogVisionPanel label="机器狗增强后的视野" state={enhanced.state} videoRef={enhanced.videoRef} tall />
     </div>
   );
 };
@@ -2331,10 +2282,11 @@ export default function App() {
                 </h2>
                 
                 <div className="flex flex-col flex-1 gap-2">
-                  {effectiveStageConfig.showEnhancedDogVision ? (
-                    <SyncedDogVisionStream />
-                  ) : effectiveStageConfig.showDogVision ? (
-                    <DogVisionStream />
+                  {effectiveStageConfig.showDogVision || effectiveStageConfig.showEnhancedDogVision ? (
+                    <DogVisionStreams
+                      showEnhanced={Boolean(effectiveStageConfig.showEnhancedDogVision)}
+                      preloadEnhanced={stage >= 7}
+                    />
                   ) : effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.homeDomainDevicesReady === false ? (
                     <div className="flex-1 min-h-[424px] rounded-xl border border-emerald-500/20 bg-slate-950/10 backdrop-blur-md" aria-hidden="true" />
                   ) : effectiveStageConfig.showHomeDomainDevice ? (

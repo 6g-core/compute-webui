@@ -1349,9 +1349,6 @@ const getDogVideoGateState = (health, hasError = false) => {
   if (!health.streamRequested) {
     return "waiting-task";
   }
-  if (!health.dogConnected) {
-    return "waiting-dog";
-  }
   if (!health.videoReady) {
     return "waiting-stream";
   }
@@ -1361,7 +1358,6 @@ const getDogVideoGateState = (health, hasError = false) => {
 const isDogVideoReadyForOffer = (health) => (
   health?.ok === true
   && health?.streamRequested === true
-  && health?.dogConnected === true
   && health?.videoReady === true
 );
 
@@ -1560,7 +1556,6 @@ const useBackendVideoStream = ({
   attachKey,
 }) => {
   const videoRef = useRef(null);
-  const hasReceivedTrackRef = useRef(false);
   const [state, setState] = useState(enabled ? "waiting-task" : "idle");
   const [stream, setStream] = useState(null);
   const [retryToken, setRetryToken] = useState(0);
@@ -1570,7 +1565,6 @@ const useBackendVideoStream = ({
       setState("idle");
       setStream(null);
       setRetryToken(0);
-      hasReceivedTrackRef.current = false;
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
@@ -1581,7 +1575,6 @@ const useBackendVideoStream = ({
       setState(gateState);
       setStream(null);
       setRetryToken(0);
-      hasReceivedTrackRef.current = false;
     }
   }, [enabled, gateState, ready]);
 
@@ -1598,8 +1591,6 @@ const useBackendVideoStream = ({
 
     let disposed = false;
     let retryTimer = null;
-    let receiveTimer = null;
-    hasReceivedTrackRef.current = false;
     const iceServers = getWebRtcIceServers();
     const pc = new RTCPeerConnection({
       iceServers,
@@ -1625,7 +1616,7 @@ const useBackendVideoStream = ({
     pc.onconnectionstatechange = () => {
       if (!disposed) {
         setState(pc.connectionState);
-        if (pc.connectionState === "failed") {
+        if (["disconnected", "failed", "closed"].includes(pc.connectionState)) {
           scheduleRetry();
         }
       }
@@ -1633,11 +1624,6 @@ const useBackendVideoStream = ({
 
     pc.ontrack = (event) => {
       if (!disposed) {
-        if (receiveTimer !== null) {
-          window.clearTimeout(receiveTimer);
-          receiveTimer = null;
-        }
-        hasReceivedTrackRef.current = true;
         setStream(event.streams[0]);
         setState("receiving");
       }
@@ -1657,20 +1643,11 @@ const useBackendVideoStream = ({
     };
 
     connect();
-    receiveTimer = window.setTimeout(() => {
-      if (!disposed && !hasReceivedTrackRef.current) {
-        setState("failed");
-        scheduleRetry();
-      }
-    }, 5000);
 
     return () => {
       disposed = true;
       if (retryTimer !== null) {
         window.clearTimeout(retryTimer);
-      }
-      if (receiveTimer !== null) {
-        window.clearTimeout(receiveTimer);
       }
       setStream(null);
       if (videoRef.current) {
@@ -2641,7 +2618,7 @@ export default function App() {
                   {effectiveStageConfig.showDogVision || effectiveStageConfig.showEnhancedDogVision ? (
                     <DogVisionStreams
                       showEnhanced={Boolean(effectiveStageConfig.showEnhancedDogVision)}
-                      preloadEnhanced={stage >= 7}
+                      preloadEnhanced={stage >= 5}
                     />
                   ) : effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.homeDomainDevicesReady === false ? (
                     <div className="flex-1 min-h-[424px] rounded-xl border border-emerald-500/20 bg-slate-950/10 backdrop-blur-md" aria-hidden="true" />

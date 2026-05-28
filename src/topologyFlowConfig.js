@@ -13,7 +13,7 @@ export const TOPOLOGY_STAGE_FLOW_CONFIG = {
       lines: [
         { key: "RobotDog->gNB", latencyMs: latency(4, 8) },
         { key: "gNB->SRF", latencyMs: latency(7, 12) },
-        { key: "SRF->ACN", latencyMs: latency(5, 10) },
+        { key: "SRF->ConnectionAgent", latencyMs: latency(5, 10) },
       ],
     },
   },
@@ -23,7 +23,7 @@ export const TOPOLOGY_STAGE_FLOW_CONFIG = {
       lines: [
         { key: "RobotDog->gNB", latencyMs: latency(4, 8) },
         { key: "gNB->SRF", latencyMs: latency(7, 12) },
-        { key: "SRF->ACN", latencyMs: latency(5, 10) },
+        { key: "SRF->ConnectionAgent", latencyMs: latency(5, 10) },
       ],
     },
   },
@@ -56,6 +56,7 @@ export const TOPOLOGY_STAGE_FLOW_CONFIG = {
         { key: "UE->gNB", latencyMs: latency(3, 7) },
         { key: "gNB->UPF", latencyMs: latency(8, 14), labelPosition: "below" },
         { key: "UPF->AgentGW", latencyMs: latency(9, 16) },
+        { key: "AgentGW->MarketAgent", latencyMs: latency(4, 8) },
       ],
     },
     a2aTrust: {
@@ -85,7 +86,7 @@ export const TOPOLOGY_STAGE_FLOW_CONFIG = {
         { key: "RobotDog->gNB", latencyMs: latency(4, 8) },
         { key: "UE->gNB", latencyMs: latency(3, 7) },
         { key: "gNB->UPF", latencyMs: latency(8, 14), labelPosition: "below" },
-        { key: "UPF->Gateway", latencyMs: latency(6, 11) },
+        { key: "UPF->Gateway", latencyMs: latency(6, 11), labelPosition: "below" },
       ],
     },
   },

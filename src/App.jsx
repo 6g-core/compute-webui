@@ -13,10 +13,15 @@ import {
   Share2,
   LoaderCircle,
   CircleDot,
-  Cpu
+  Cpu,
+  Radio
 } from 'lucide-react';
 import { getTopologyFlowConfig } from './topologyFlowConfig';
+import acnImage from './ACN.png';
+import computingImage from './Computing.png';
 import computingNodeImage from './Computing_Node.png';
+import connectionImage from './Connetction.png';
+import marketImage from './Market.png';
 import upfImage from './upfnew.png';
 
 const STAGE4_WORKFLOW = [
@@ -25,13 +30,32 @@ const STAGE4_WORKFLOW = [
   { label: "下发UPF配置:", value: "Pending", status: "pending" },
 ];
 
+const STAGE4_TOOL_BUBBLES = {
+  "签约数据更新:": {
+    lines: ["调用UDM Tool", "更新签约数据"],
+    targetNode: "ACN",
+    placement: "right",
+  },
+  "下发域接入凭证:": {
+    lines: ["调用IDM Tool", "下发域接入凭证"],
+    targetNode: "ACN",
+    placement: "right",
+  },
+  "下发UPF配置:": {
+    lines: ["调用SMF Tool", "下发物理组网配置"],
+    targetNode: "ConnectionAgent",
+    placement: "right",
+  },
+};
+
 const STAGE6_WORKFLOW = [
   {
     label: "ID寻址路由:",
     flowType: "a2aGateway",
     bubble: {
       lines: ["ID寻址路由"],
-      className: "left-[84%] top-[55%]",
+      targetNode: "AgentGW",
+      placement: "above",
     },
   },
   {
@@ -39,6 +63,8 @@ const STAGE6_WORKFLOW = [
     flowType: "a2aTrust",
     bubble: {
       lines: ["身份可信认证"],
+      targetNode: "ACN",
+      placement: "right",
     },
   },
   {
@@ -46,7 +72,8 @@ const STAGE6_WORKFLOW = [
     flowType: "a2aGateway",
     bubble: {
       lines: ["Agent协议转换"],
-      className: "left-[84%] top-[55%]",
+      targetNode: "AgentGW",
+      placement: "above",
     },
   },
 ];
@@ -57,7 +84,8 @@ const STAGE7_WORKFLOW = [
     flowType: "computeSandbox",
     bubble: {
       lines: ["创建算力会话"],
-      className: "left-[82%] top-[13%]",
+      targetNode: "Computing",
+      placement: "right",
     },
   },
   {
@@ -65,81 +93,72 @@ const STAGE7_WORKFLOW = [
     flowType: "computeSandbox",
     bubble: {
       lines: ["分配算力资源"],
-      className: "left-[82%] top-[13%]",
+      targetNode: "Computing",
+      placement: "right",
     },
   },
 ];
 
 const STAGE2_WORKFLOW = [
   {
-    label: "System Agent路由请求:",
-    bubble: {
-      lines: ["解析用户意图", "路由请求"],
-      className: "left-[40%] top-[13%]",
-      arrow: "down",
-    },
-  },
-  {
     label: "IDM颁发数字身份:",
     bubble: {
       lines: ["调用IDM Tool:", "颁发数字身份"],
+      targetNode: "ACN",
+      placement: "right",
     },
   },
   {
     label: "能力注册:",
     bubble: {
       lines: ["调用ARF Tool", "发布能力卡片"],
+      targetNode: "ACN",
+      placement: "right",
     },
   },
   {
     label: "接入网络:",
     bubble: {
-      lines: ["接入网络"],
-      className: "left-[8%] top-[3%]",
-      arrow: "down",
+      lines: ["机器狗接入网络"],
+      targetNode: "ConnectionAgent",
+      placement: "right",
     },
   },
 ];
 
 const BASE_AGENT_LOGS = [
-  ["10:31:00", "System Agent", "初始化完成，监听 /api/stage 与 /api/v1/intent"],
-  ["10:31:01", "System Agent", "加载Skill: intent-router, stage-controller, visual-task-gate"],
-  ["10:31:02", "System Agent", "思考摘要: 等待ACN/Computing/视觉任务事件形成闭环"],
-  ["10:31:03", "Computing Agent", "初始化完成，注册能力 visual-recog-sandbox"],
-  ["10:31:04", "Computing Agent", "ToolRegistry: CMFTool, SandboxHealthTool, VisualTaskEventTool"],
-  ["10:31:05", "ACN Agent", "加载完成，注册IDMTool/ARFTool/SMTool/PathProbeTool"],
+  ["10:31:00", "业务目标", "建立机器狗与AR眼镜之间的可信协作入口"],
+  ["10:31:01", "系统决策", "识别当前演示处于接入准备阶段，等待数字身份和网络能力就绪"],
+  ["10:31:02", "核心网能力", "数字身份、可信接入、智能体发现能力处于待编排状态"],
+  ["10:31:03", "当前结果", "机器狗、AR眼镜、核心网智能体已进入协同准备态"],
 ];
 
 const STAGE2_COMPLETION_LOGS = [
-  ["10:31:10", "ACN Agent", "ToolCall IDMTool.verifyAccess params={networkSlice:'6G-ACN', subject:'AR_GLASSES'}"],
-  ["10:31:11", "ACN Agent", "ToolCall ARFTool.attestAgents params={agents:['System','ACN','RobotDog']}"],
-  ["10:31:12", "ACN Agent", "发布智能体卡片 capability={dogVision, voiceIntent, searchObject}"],
-  ["10:31:13", "System Agent", "思考摘要: 数字身份与能力卡片已就绪，可以进入家庭域接入"],
+  ["10:31:10", "核心网能力", "机器狗数字身份完成签发，接入凭证进入可用状态"],
+  ["10:31:11", "系统决策", "将机器狗能力注册为可发现服务，开放给后续网络编排使用"],
+  ["10:31:12", "当前结果", "机器狗身份、能力卡片和接入路径已完成准备"],
+  ["10:31:13", "业务目标", "数字身份申请阶段完成，可以进入家庭域网络创建"],
 ];
 
 const STAGE6_LOGS = [
-  ["10:31:16", "Agent GW", "ToolCall Directory.lookup params={did:'DID:2168nLB3G@CMCC.org'}"],
-  ["10:31:17", "ACN Agent", "校验对端身份凭证 credentialScope={homeDomain:true, dogVision:true}"],
-  ["10:31:18", "Agent GW", "建立任务级会话 session={type:'A2A', qos:'low-latency'}"],
-  ["10:31:19", "Agent GW", "协议转换 request={from:'glasses-intent', to:'sandbox-voice'}"],
-  ["10:31:20", "System Agent", "思考摘要: A2A链路可用，等待真实视觉任务触发算力入网"],
+  ["10:31:16", "业务目标", "建立跨域智能体协作链路，让眼镜意图可被远端能力承接"],
+  ["10:31:17", "系统决策", "通过Agent GW完成跨域寻址，并由ACN确认对端身份可信"],
+  ["10:31:18", "核心网能力", "跨域认证、任务级会话和协议转换能力已生效"],
+  ["10:31:19", "当前结果", "跨域A2A链路已建立，后续视觉任务可进入算力资源编排"],
 ];
 
 const STAGE7_LOGS = [
-  ["10:31:21", "Sandbox", "收到眼镜意图 intent_payload='寻找紫色瓶子'"],
-  ["10:31:22", "Sandbox", "SemanticRoute response={scene:'search_object', normalized_argument:'purple bottle'}"],
-  ["10:31:23", "Sandbox", "ToolCall Detector.update_prompts params={prompts:['purple bottle']}"],
-  ["10:31:24", "Sandbox", "POST /api/v1/system/visual_task/event body={event:'started', task_type:'search_object'}"],
-  ["10:31:25", "System Agent", "思考摘要: media_established=true 且 visual_task=search_object，允许进入Stage7"],
-  ["10:31:26", "Computing Agent", "ToolCall CMFTool.createSession params={sandbox:'visual-recog', target:'purple bottle'}"],
-  ["10:31:27", "Computing Agent", "分配算力资源 gpuProfile={model:'YOLO', stream:'dog_camera'}"],
+  ["10:31:21", "业务目标", "将机器狗实时视野接入视觉识别任务，响应用户寻找目标物的意图"],
+  ["10:31:22", "系统决策", "判断当前视频链路稳定，触发算力资源分配"],
+  ["10:31:23", "核心网能力", "为视觉识别任务分配低时延算力资源和推理会话"],
+  ["10:31:24", "当前结果", "识别任务进入运行态，视频流开始进入算力节点处理"],
 ];
 
 const STAGE5_LOGS = [
-  ["10:31:14", "System Agent", "收到Computing意图 intent_type=COMPUTING payload='启动视觉识别沙箱'"],
-  ["10:31:15", "System Agent", "ToolCall Router.match params={intent_type:'COMPUTING', candidates:['cmf']}"],
-  ["10:31:16", "System Agent", "思考摘要: 视觉识别需要拉起sandbox并等待狗视频按需推流"],
-  ["10:31:17", "Computing Agent", "ToolCall CMFTool.startSandbox params={name:'visual-recog', mode:'on-demand'}"],
+  ["10:31:14", "业务目标", "把机器狗第一视角视频接入家庭域，形成可用实时视野"],
+  ["10:31:15", "系统决策", "选择低时延视频路径，优先保障眼镜端观看体验"],
+  ["10:31:16", "核心网能力", "家庭域连接、UPF路径和视频通道已完成联动"],
+  ["10:31:17", "当前结果", "机器狗原始视野已稳定输出，等待后续增强识别任务"],
 ];
 
 const STAGE_ANIMATION_TIMING = {
@@ -147,6 +166,30 @@ const STAGE_ANIMATION_TIMING = {
   4: { workingMs: 500, successMs: 150 },
   6: { workingMs: 800, successMs: 180 },
   7: { workingMs: 1280, successMs: 180 },
+};
+
+const SYSTEM_AGENT_BUBBLE_ANCHOR = {
+  targetNode: "SRF",
+  placement: "upperLeft",
+  arrow: "down-right",
+};
+
+const normalizeWorkflowLabel = (label = "") => label.replace(/:$/, "");
+
+const formatSystemAgentBubbleLabel = (label = "") => (
+  normalizeWorkflowLabel(label).replace(/(Agent[:：])/, "$1\n")
+);
+
+const getCombinedWorkflowStatus = (items = []) => {
+  if (items.some((item) => item?.status === "working")) {
+    return "working";
+  }
+
+  if (items.length && items.every((item) => item?.status === "success")) {
+    return "success";
+  }
+
+  return items.some((item) => item?.status === "success") ? "working" : "pending";
 };
 
 const STAGE_CONFIG = {
@@ -177,10 +220,10 @@ const STAGE_CONFIG = {
       { label: "能力注册:", value: "Pending", status: "pending" },
     ],
     steps: [
-      { id: "01", icon: ShieldCheck, title: "申请Digital ID", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "02", icon: Globe, title: "L3Networking", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "03", icon: Share2, title: "A2A认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "04", icon: Cpu, title: "创建智算沙箱", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "01", icon: ShieldCheck, title: "数字身份申请", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "02", icon: Globe, title: "生成式网络", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "03", icon: Share2, title: "跨域智能体认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "04", icon: Cpu, title: "分配算力资源", subtitle: "即将开始 / Upcoming", status: "pending" },
       { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
     ],
   },
@@ -205,28 +248,27 @@ const STAGE_CONFIG = {
     },
     logs: [
       ...BASE_AGENT_LOGS,
-      ["10:31:06", "System Agent", "解析用户意图 intent_type=ACN_NETWORKING payload='联系我的狗'"],
-      ["10:31:07", "System Agent", "ToolCall Router.match params={intent_type:'ACN_NETWORKING', candidates:['acn']}"],
-      ["10:31:08", "System Agent", "思考摘要: 需要先完成身份签发，再开放家庭域网络"],
-      ["10:31:09", "ACN Agent", "ToolCall IDMTool.createDigitalID params={device:'AR_GLASSES', scope:'home-domain'}"],
+      ["10:31:06", "业务目标", "为机器狗申请可验证数字身份，建立后续网络接入前提"],
+      ["10:31:07", "系统决策", "将用户意图拆分为身份签发、能力注册和网络接入准备"],
+      ["10:31:08", "核心网能力", "启用统一数字身份管理和可信接入控制能力"],
+      ["10:31:09", "当前结果", "数字身份申请正在处理，机器狗能力等待发布"],
     ],
     workflow: [
-      { label: "System Agent路由请求:", value: "Working", status: "working" },
       { label: "IDM颁发数字身份:", value: "Pending", status: "pending" },
       { label: "能力注册:", value: "Pending", status: "pending" },
       { label: "接入网络:", value: "Pending", status: "pending" },
     ],
     steps: [
-      { id: "01", icon: ShieldCheck, title: "申请Digital ID", subtitle: "进行中 / Working", status: "working" },
-      { id: "02", icon: Globe, title: "L3Networking", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "03", icon: Share2, title: "A2A认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "04", icon: Cpu, title: "创建智算沙箱", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "01", icon: ShieldCheck, title: "数字身份申请", subtitle: "进行中 / Working", status: "working" },
+      { id: "02", icon: Globe, title: "生成式网络", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "03", icon: Share2, title: "跨域智能体认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "04", icon: Cpu, title: "分配算力资源", subtitle: "即将开始 / Upcoming", status: "pending" },
       { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
     ],
   },
   4: {
     leftPanelTitle: "家庭域创建",
-    topologyTitle: "6G核心网：L3动态组网",
+    topologyTitle: "6G核心网：生成式网络",
     activeFlowType: "domain",
     showRegisteredDevice: true,
     hideDeviceArrow: true,
@@ -243,16 +285,15 @@ const STAGE_CONFIG = {
     ],
     logs: [
       ...BASE_AGENT_LOGS,
-      ["10:31:06", "System Agent", "解析用户意图 intent_type=ACN_NETWORKING payload='联系我的狗'"],
-      ["10:31:07", "System Agent", "ToolCall Router.match params={intent_type:'ACN_NETWORKING', candidates:['acn']}"],
-      ["10:31:08", "System Agent", "思考摘要: 需要先完成身份签发，再开放家庭域网络"],
-      ["10:31:09", "ACN Agent", "ToolCall IDMTool.createDigitalID params={device:'AR_GLASSES', scope:'home-domain'}"],
-      ["10:31:10", "ACN Agent", "ToolCall IDMTool.verifyAccess params={networkSlice:'6G-ACN', subject:'AR_GLASSES'}"],
-      ["10:31:11", "ACN Agent", "ToolCall ARFTool.attestAgents params={agents:['System','ACN','RobotDog']}"],
-      ["10:31:12", "ACN Agent", "发布智能体卡片 capability={dogVision, voiceIntent, searchObject}"],
-      ["10:31:13", "ACN Agent", "ToolCall IDMTool.issueDomainCredential params={domain:'home', ttl:'session'}"],
-      ["10:31:14", "ACN Agent", "ToolCall SMTool.configureUPF params={qos:'low-latency', route:'dog-video'}"],
-      ["10:31:15", "ACN Agent", "ToolCall PathProbeTool.select params={metric:'latency', target:'sandbox'}"],
+      ["10:31:06", "业务目标", "创建家庭域连接，让AR眼镜能够低时延访问机器狗"],
+      ["10:31:07", "系统决策", "将家庭域创建拆分为域管理、接入凭证和物理组网配置"],
+      ["10:31:08", "核心网能力", "生成式网络开始为家庭域计算接入路径"],
+      ["10:31:09", "当前结果", "家庭域网络正在创建，端侧连接参数开始生效"],
+      ["10:31:10", "核心网能力", "签约数据和接入凭证已进入家庭域管理流程"],
+      ["10:31:11", "系统决策", "优先选择低时延路径承载机器狗视频能力"],
+      ["10:31:12", "当前结果", "机器狗能力已在家庭域内可发现"],
+      ["10:31:13", "核心网能力", "UPF路径配置开始下发，视频流量进入专用转发路径"],
+      ["10:31:14", "当前结果", "家庭域连接建立中，端侧带宽和时延进入目标范围"],
     ],
     workflow: [
       { label: "签约数据更新:", value: "Working", status: "working" },
@@ -260,10 +301,10 @@ const STAGE_CONFIG = {
       { label: "下发UPF配置:", value: "Pending", status: "pending" },
     ],
     steps: [
-      { id: "01", icon: ShieldCheck, title: "申请Digital ID", subtitle: "已完成 / Completed", status: "success" },
-      { id: "02", icon: Globe, title: "L3Networking", subtitle: "进行中 / Working", status: "working" },
-      { id: "03", icon: Share2, title: "A2A认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "04", icon: Cpu, title: "创建智算沙箱", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "01", icon: ShieldCheck, title: "数字身份申请", subtitle: "已完成 / Completed", status: "success" },
+      { id: "02", icon: Globe, title: "生成式网络", subtitle: "进行中 / Working", status: "working" },
+      { id: "03", icon: Share2, title: "跨域智能体认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "04", icon: Cpu, title: "分配算力资源", subtitle: "即将开始 / Upcoming", status: "pending" },
       { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
     ],
   },
@@ -319,7 +360,7 @@ STAGE_CONFIG[6] = {
 
 STAGE_CONFIG[7] = {
   ...STAGE_CONFIG[6],
-  topologyTitle: "6G核心网：算力入网",
+  topologyTitle: "6G核心网：分配算力资源",
   activeFlowType: "computeSandbox",
   coreFunctions: [
     "网络提供强大算力",
@@ -350,6 +391,7 @@ STAGE_CONFIG[7] = {
 STAGE_CONFIG[8] = {
   ...STAGE_CONFIG[7],
   leftPanelTitle: "机器狗视野增强",
+  topologyTitle: "6G核心网：算力卸载",
   activeFlowType: "dogVision",
   showDogVision: false,
   showEnhancedDogVision: true,
@@ -390,6 +432,13 @@ const getStageApiUrl = () => {
   return runtimeConfig.stageApiUrl
     || import.meta.env.VITE_STAGE_API_URL
     || buildRuntimeBackendUrl("sysAgentApiUrl", "sysAgentPort", 8000, "/api/stage");
+};
+
+const getArStatusApiUrl = () => {
+  const runtimeConfig = getRuntimeConfig();
+  return runtimeConfig.arStatusApiUrl
+    || import.meta.env.VITE_AR_STATUS_API_URL
+    || buildRuntimeBackendUrl("sysAgentApiUrl", "sysAgentPort", 9100, "/api/v1/system/ar/status");
 };
 
 const getLatencyApiUrl = () => {
@@ -693,83 +742,69 @@ const StatusRow = ({ label, value, status = "success", isMono = false, valueClas
   );
 };
 
-const AgentLogPanel = ({ logs }) => {
-  const scrollRef = useRef(null);
-  const logSignature = logs.map(([time, agent, message]) => `${time}|${agent}|${message}`).join(";");
-  const getLogTone = (message) => {
-    if (String(message).includes("ToolCall")) {
-      return {
-        row: "border-cyan-400/18 bg-cyan-400/[0.055] shadow-[inset_2px_0_0_rgba(34,211,238,0.65)]",
-        badge: "border-cyan-300/45 bg-cyan-400/10 text-cyan-200",
-        label: "TOOL",
-        text: "text-cyan-50/90",
-      };
-    }
-
-    if (String(message).includes("思考摘要")) {
-      return {
-        row: "border-amber-300/20 bg-amber-300/[0.07] shadow-[inset_2px_0_0_rgba(251,191,36,0.72)]",
-        badge: "border-amber-200/45 bg-amber-300/10 text-amber-100",
-        label: "PLAN",
-        text: "text-amber-50/90 italic",
-      };
-    }
-
-    return {
-      row: "border-transparent bg-transparent",
-      badge: "border-blue-300/25 bg-blue-400/5 text-blue-200/80",
-      label: "LOG",
-      text: "text-blue-100/80",
-    };
-  };
-
-  useEffect(() => {
-    const scrollElement = scrollRef.current;
-    if (!scrollElement) {
-      return undefined;
-    }
-
-    const frameId = window.requestAnimationFrame(() => {
-      scrollElement.scrollTop = scrollElement.scrollHeight;
-    });
-
-    return () => window.cancelAnimationFrame(frameId);
-  }, [logSignature]);
+const TaskBriefPanel = ({ logs }) => {
+  const briefByCategory = logs.reduce((acc, [, category, message]) => ({
+    ...acc,
+    [category]: message,
+  }), {});
+  const cards = [
+    {
+      category: "业务目标",
+      label: "目标",
+      value: briefByCategory["业务目标"] || "等待当前任务目标",
+      className: "border-cyan-300/35 bg-cyan-400/[0.08] text-cyan-50 shadow-[inset_0_0_18px_rgba(34,211,238,0.08)]",
+      badgeClassName: "border-cyan-200/50 bg-cyan-300/15 text-cyan-100",
+    },
+    {
+      category: "核心网能力",
+      label: "能力",
+      value: briefByCategory["核心网能力"] || "等待核心网能力生效",
+      className: "border-emerald-300/35 bg-emerald-400/[0.075] text-emerald-50 shadow-[inset_0_0_18px_rgba(52,211,153,0.08)]",
+      badgeClassName: "border-emerald-200/50 bg-emerald-300/15 text-emerald-100",
+    },
+    {
+      category: "系统决策",
+      label: "决策",
+      value: briefByCategory["系统决策"] || "等待系统编排决策",
+      className: "border-amber-300/35 bg-amber-300/[0.08] text-amber-50 shadow-[inset_0_0_18px_rgba(251,191,36,0.08)]",
+      badgeClassName: "border-amber-200/50 bg-amber-300/15 text-amber-100",
+    },
+    {
+      category: "当前结果",
+      label: "结果",
+      value: briefByCategory["当前结果"] || "等待阶段结果生成",
+      className: "border-blue-300/35 bg-blue-400/[0.08] text-blue-50 shadow-[inset_0_0_18px_rgba(96,165,250,0.08)]",
+      badgeClassName: "border-blue-200/50 bg-blue-300/15 text-blue-100",
+    },
+  ];
 
   return (
-    <div
-      ref={scrollRef}
-      className="agent-log-scroll h-[128px] overflow-auto rounded border border-blue-500/20 bg-slate-950/35 px-2 py-1.5"
-    >
-      <div className="flex min-w-full flex-col gap-1 text-[10px] lg:text-xs font-mono leading-snug text-blue-100/90">
-        {logs.map(([time, agent, message]) => {
-          const tone = getLogTone(message);
-
-          return (
-            <div
-              key={`${time}-${agent}-${message}`}
-              className={`rounded-md border px-2 py-1.5 transition-colors ${tone.row}`}
-            >
-              <div className="mb-0.5 flex min-w-0 items-center gap-1.5 text-[9px] leading-none text-blue-200/65">
-                <span className="shrink-0 text-cyan-300/80">{time}</span>
-                <span className={`shrink-0 rounded border px-1 py-0.5 text-[8px] font-bold tracking-[0.08em] ${tone.badge}`}>
-                  {tone.label}
-                </span>
-                <span className="min-w-0 truncate text-emerald-300/85">{agent}</span>
-              </div>
-              <div className={`whitespace-normal break-words pl-0.5 ${tone.text}`}>
-                {message}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    <div className="flex flex-col gap-2">
+      {cards.map((card) => (
+        <div
+          key={card.category}
+          className={`flex min-h-[48px] items-start gap-2 rounded-lg border px-2.5 py-2 ${card.className}`}
+        >
+          <div className={`flex h-6 w-9 shrink-0 items-center justify-center rounded border text-[10px] font-black leading-none tracking-wide ${card.badgeClassName}`}>
+            {card.label}
+          </div>
+          <div className="min-w-0 flex-1 text-[10px] font-bold leading-snug lg:text-[11px]">
+            {card.value}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
 
-const ARGlasses = ({ className = "" }) => (
+const ARGlasses = ({ className = "", speechText = "" }) => (
   <div className={`relative flex items-center justify-center ${className}`}>
+    {speechText && (
+      <div className="absolute -left-1 top-0 z-20 max-w-[150px] -translate-y-1/2 rounded-lg border border-cyan-300/45 bg-slate-950/88 px-2.5 py-1.5 text-[10px] font-bold leading-snug text-cyan-50 shadow-[0_0_18px_rgba(34,211,238,0.2)] backdrop-blur-md">
+        <span className="block break-words">{speechText}</span>
+        <span className="absolute bottom-[-4px] left-6 h-2 w-2 rotate-45 border-b border-r border-cyan-300/45 bg-slate-950/88" />
+      </div>
+    )}
     <div className="absolute w-3/4 h-2 bottom-3 rounded-full blur-md opacity-45 bg-cyan-500 shadow-[0_0_15px_#06b6d4]" />
     <img
       src="/topology/glasses_transparent.png"
@@ -785,23 +820,63 @@ const AgentSpeechBubble = ({ bubble }) => {
     return null;
   }
 
+  const items = Array.isArray(bubble.items) ? bubble.items : null;
   const lines = Array.isArray(bubble.lines) ? bubble.lines : [bubble.text];
-  const arrowClassName = bubble.arrow === "down"
-    ? "absolute bottom-[-5px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
-    : "absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 border-b border-l border-cyan-400/45 bg-slate-950/86";
+  const isVoiceIntent = bubble.variant === "voiceIntent";
+  const positionClassName = bubble.style ? (bubble.className || "") : (bubble.className || "left-[83%] top-[36%]");
+  const arrowClassName = bubble.arrow === "down-right"
+    ? "absolute bottom-[-5px] right-4 h-2 w-2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
+    : bubble.arrow === "down-left"
+    ? "absolute bottom-[-5px] left-[72%] h-2 w-2 -translate-x-1/2 rotate-[28deg] border-b border-r border-cyan-400/45 bg-slate-950/86"
+    : bubble.arrow === "down"
+      ? "absolute bottom-[-5px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
+      : bubble.arrow === "right"
+        ? "absolute -right-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 border-r border-t border-cyan-400/45 bg-slate-950/86"
+      : "absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 border-b border-l border-cyan-400/45 bg-slate-950/86";
+  const bubbleClassName = isVoiceIntent
+    ? "border-cyan-200/75 bg-cyan-950/92 text-cyan-50 shadow-[0_0_20px_rgba(34,211,238,0.36),inset_0_0_14px_rgba(34,211,238,0.12)] ring-1 ring-cyan-300/35"
+    : "border-cyan-400/45 bg-slate-950/86 text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)]";
 
   return (
-    <div className={`absolute z-30 flex max-w-[175px] items-center gap-1.5 rounded-full border border-cyan-400/45 bg-slate-950/86 px-2.5 py-1.5 text-[9px] font-bold text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)] backdrop-blur-md ${bubble.className || "left-[83%] top-[36%]"}`}>
-      {bubble.status === "success" ? (
-        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
+    <div
+      className={`absolute z-30 flex ${items ? "w-[175px] flex-col items-stretch gap-1 rounded-lg" : "max-w-[175px] items-center gap-1.5 rounded-full"} border px-2.5 py-1.5 text-[9px] font-bold backdrop-blur-md ${bubbleClassName} ${positionClassName}`}
+      style={bubble.style}
+    >
+      {items ? (
+        items.map((item) => (
+          <div key={item.label} className="flex min-w-0 items-center gap-1.5 leading-tight">
+            {item.status === "success" ? (
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
+            ) : item.status === "working" ? (
+              <LoaderCircle className="h-3.5 w-3.5 shrink-0 animate-spin text-cyan-100" />
+            ) : (
+              <CircleDot className="h-3.5 w-3.5 shrink-0 text-slate-400/75" />
+            )}
+            <span className={`min-w-0 flex-1 whitespace-normal break-words ${item.status === "pending" ? "text-blue-100/60" : ""}`}>
+              {(item.isSystemAgentItem ? formatSystemAgentBubbleLabel(item.label) : normalizeWorkflowLabel(item.label))
+                .split("\n")
+                .map((line) => (
+                  <span key={line} className="block">{line}</span>
+                ))}
+            </span>
+          </div>
+        ))
       ) : (
-        <LoaderCircle className="h-3.5 w-3.5 shrink-0 animate-spin text-slate-300" />
+        <>
+          {isVoiceIntent ? (
+            <Radio className="h-3.5 w-3.5 shrink-0 animate-pulse text-cyan-100" />
+          ) : bubble.status === "success" ? (
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
+          ) : (
+            <LoaderCircle className="h-3.5 w-3.5 shrink-0 animate-spin text-slate-300" />
+          )}
+          <span className={`flex min-w-0 flex-col leading-tight ${isVoiceIntent ? "whitespace-normal break-words" : "whitespace-nowrap"}`}>
+            {lines.map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </span>
+        </>
       )}
-      <span className="flex min-w-0 flex-col whitespace-nowrap leading-tight">
-        {lines.map((line) => (
-          <span key={line}>{line}</span>
-        ))}
-      </span>
       <span className={arrowClassName} />
     </div>
   );
@@ -811,17 +886,19 @@ const randomLatency = ({ min, max }) => (
   Math.floor(Math.random() * (max - min + 1)) + min
 );
 
-const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, title = "6G 核心网：数字身份申请" }) => {
+const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, agentBubbles = [], arSpeechText = "", title = "6G 核心网：数字身份申请" }) => {
   const nodes = {
     UE: { name: "AR Glasses (6G终端)", x: 12, y: 74, color: "#22f5ff", image: "/topology/glasses_transparent.png", size: "w-16 md:w-20" },
     RobotDog: { name: "Robot Dog", x: 12, y: 28, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-20 md:w-24" },
     gNB: { name: "6G RAN", x: 28, y: 51, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-24 md:w-28" },
     SRF: { name: "SystemAgent", x: 47, y: 36, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24" },
     UPF: { name: "UPF", x: 47, y: 76, color: "#34d399", image: upfImage, size: "w-20 md:w-24" },
-    Computing: { name: "Computing Agent", x: 78, y: 18, color: "#fbbf24", image: "/topology/computing_transparent.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
-    ACN: { name: "ACN Agent", x: 78, y: 41, color: "#f472b6", image: "/topology/acn_transparent.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
-    AgentGW: { name: "Agent GW", x: 78, y: 63, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
-    Gateway: { name: "Computing Node", x: 78, y: 84, color: "#38bdf8", image: computingNodeImage, size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
+    ConnectionAgent: { name: "Connection Agent", x: 81, y: 10, color: "#22d3ee", image: connectionImage, size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
+    Computing: { name: "Computing Agent", x: 81, y: 29, color: "#fbbf24", image: computingImage, size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
+    ACN: { name: "ACN Agent", x: 81, y: 48, color: "#f472b6", image: acnImage, size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
+    AgentGW: { name: "Agent GW", x: 62.5, y: 63, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
+    MarketAgent: { name: "Market Agent", x: 81, y: 67, color: "#38bdf8", image: marketImage, size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
+    Gateway: { name: "Computing Node", x: 81, y: 86, color: "#38bdf8", image: computingNodeImage, size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
   };
 
   const connections = [
@@ -831,11 +908,61 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
     ["gNB", "UPF"],
     ["UPF", "Gateway"],
     ["UPF", "AgentGW"],
+    ["AgentGW", "MarketAgent"],
+    ["SRF", "ConnectionAgent"],
     ["SRF", "ACN"],
     ["SRF", "Computing"],
   ];
 
   const activeFlowConfig = getTopologyFlowConfig(stage, activeFlowType);
+  const resolveAgentBubblePosition = (bubble) => {
+    if (!bubble?.targetNode) {
+      return bubble;
+    }
+
+    const target = nodes[bubble.targetNode];
+
+    if (!target) {
+      return bubble;
+    }
+
+    const offsetX = bubble.offsetX || 0;
+    const offsetY = bubble.offsetY || 0;
+    const placement = bubble.placement || "above";
+    const basePosition = {
+      left: `${target.x + offsetX}%`,
+      top: `${target.y + offsetY}%`,
+    };
+    const placementStyle = placement === "right"
+      ? { ...basePosition, top: `${target.y - 5 + offsetY}%`, transform: "translate(22%, -50%)" }
+      : placement === "left"
+        ? { ...basePosition, transform: "translate(-108%, -50%)" }
+      : placement === "upperLeft"
+        ? { left: `${target.x + 4 + offsetX}%`, top: `${target.y - 15 + offsetY}%`, transform: "translate(-100%, -100%)" }
+        : { ...basePosition, top: `${target.y - 6 + offsetY}%`, transform: "translate(-50%, -100%)" };
+
+    return {
+      ...bubble,
+      arrow: bubble.arrow || (placement === "right" ? undefined : placement === "left" ? "right" : "down"),
+      style: {
+        ...placementStyle,
+        ...(bubble.style || {}),
+      },
+    };
+  };
+
+  const arSpeechBubble = arSpeechText
+      ? {
+        lines: [arSpeechText],
+        status: "success",
+        variant: "voiceIntent",
+        arrow: "down-left",
+        className: "left-[0.5%] top-[59%] w-[10.5em]",
+      }
+    : null;
+  const positionedAgentBubbles = [agentBubble, ...agentBubbles]
+    .filter(Boolean)
+    .map((bubble) => resolveAgentBubblePosition(bubble));
   const [latencySampleTick, setLatencySampleTick] = useState(0);
 
   useEffect(() => {
@@ -906,7 +1033,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
         </div>
       </div>
 
-      <div className="flex-[1.55] w-full min-h-[300px] lg:min-h-[340px] relative rounded-lg overflow-hidden border border-blue-900/30 bg-slate-950/20">
+      <div className="flex-[1.55] w-full min-h-[390px] lg:min-h-[460px] relative rounded-lg overflow-visible border border-blue-900/30 bg-slate-950/20">
         <svg className="absolute inset-0 z-10 h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
             <filter id="topology-line-glow" x="-30%" y="-30%" width="160%" height="160%">
@@ -1017,7 +1144,13 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
             </div>
           ))}
         </div>
-        <AgentSpeechBubble bubble={agentBubble} />
+        {positionedAgentBubbles.map((bubble, index) => (
+          <AgentSpeechBubble
+            key={`${bubble.targetNode || "agent"}-${bubble.placement || "bubble"}-${index}`}
+            bubble={bubble}
+          />
+        ))}
+        <AgentSpeechBubble bubble={arSpeechBubble} />
 
       </div>
 
@@ -1589,6 +1722,53 @@ const useStagePolling = () => {
   return { stage, connectionState, error };
 };
 
+const useArLastWhisper = () => {
+  const [lastWhisper, setLastWhisper] = useState("");
+
+  useEffect(() => {
+    let disposed = false;
+    let isPolling = false;
+
+    const pollArStatus = async () => {
+      if (isPolling) {
+        return;
+      }
+
+      isPolling = true;
+
+      try {
+        const response = await fetch(getArStatusApiUrl(), {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`AR status API failed: ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const nextWhisper = String(payload.last_whisper || payload.lastWhisper || "").trim();
+        if (!disposed && nextWhisper) {
+          setLastWhisper(nextWhisper);
+        }
+      } catch (arStatusError) {
+        console.error("AR status polling failed", arStatusError);
+      } finally {
+        isPolling = false;
+      }
+    };
+
+    pollArStatus();
+    const interval = window.setInterval(pollArStatus, 1000);
+
+    return () => {
+      disposed = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  return lastWhisper;
+};
+
 const useLatencySeries = (enabled) => {
   const [points, setPoints] = useState([]);
   const [error, setError] = useState(null);
@@ -1742,8 +1922,116 @@ const LatencyChart = ({ points, error }) => {
   );
 };
 
+const getWorkflowBubbleFromRows = (workflow = [], stage) => {
+  if (!workflow.length) {
+    return null;
+  }
+
+  if (stage === 2) {
+    const acnRows = workflow.filter((item) => (
+      item.label === "IDM颁发数字身份:" || item.label === "能力注册:"
+    ));
+    const connectionRow = workflow.find((item) => item.label === "接入网络:");
+    const items = [
+      acnRows.length
+        ? {
+            label: "ACN Agent:签发数字身份",
+            status: getCombinedWorkflowStatus(acnRows),
+          }
+        : null,
+      connectionRow
+        ? {
+            label: "Connection Agent:接入网络",
+            status: connectionRow.status,
+          }
+        : null,
+    ].filter(Boolean);
+
+    return {
+      items,
+      status: getCombinedWorkflowStatus(items),
+    };
+  }
+
+  if (stage === 4 || stage === 5) {
+    const acnRows = workflow.filter((item) => (
+      item.label === "签约数据更新:" || item.label === "下发域接入凭证:"
+    ));
+    const connectionRow = workflow.find((item) => item.label === "下发UPF配置:");
+    const items = [
+      acnRows.length
+        ? {
+            label: "ACN Agent:创建管理家庭域",
+            status: getCombinedWorkflowStatus(acnRows),
+          }
+        : null,
+      connectionRow
+        ? {
+            label: "Connection Agent：下发物理组网配置",
+            status: connectionRow.status,
+          }
+        : null,
+    ].filter(Boolean);
+
+    return {
+      items,
+      status: getCombinedWorkflowStatus(items),
+    };
+  }
+
+  if (stage === 6) {
+    return null;
+  }
+
+  if (stage === 7) {
+    const computingRows = workflow.filter((item) => (
+      item.label === "创建算力会话:" || item.label === "分配算力资源:"
+    ));
+    const items = computingRows.length
+      ? [
+          {
+            label: "Computing Agent:分配算力资源",
+            status: getCombinedWorkflowStatus(computingRows),
+          },
+        ]
+      : [];
+
+    return {
+      items,
+      status: getCombinedWorkflowStatus(items),
+    };
+  }
+
+  if (stage === 8) {
+    return null;
+  }
+
+  return {
+    items: workflow.map((item) => ({
+      label: item.label,
+      status: item.status,
+    })),
+    status: workflow.some((item) => item.status === "working") ? "working" : "success",
+  };
+};
+
+const pinBubbleToSystemAgent = (bubble) => (
+  bubble
+    ? {
+        ...bubble,
+        items: bubble.items?.map((item) => ({
+          ...item,
+          isSystemAgentItem: true,
+        })),
+        ...SYSTEM_AGENT_BUBBLE_ANCHOR,
+        className: "",
+      }
+    : null
+);
+
 export default function App() {
   const { stage, connectionState, error } = useStagePolling();
+  const arSpeechText = useArLastWhisper();
   const stageConfig = STAGE_CONFIG[stage] || STAGE_CONFIG[1];
   const latencySeries = useLatencySeries(stage === 8);
   const [stage2Progress, setStage2Progress] = useState({
@@ -1983,7 +2271,7 @@ export default function App() {
 
       const allDone = stage2Progress.completedCount >= STAGE2_WORKFLOW.length;
       const activeWorkflow = allDone ? null : STAGE2_WORKFLOW[stage2Progress.activeTask];
-      const completionLogCount = Math.max(0, Math.min(stage2Progress.completedCount - 1, STAGE2_COMPLETION_LOGS.length));
+      const completionLogCount = Math.max(0, Math.min(stage2Progress.completedCount, STAGE2_COMPLETION_LOGS.length));
       const logs = [
         ...stageConfig.logs,
         ...STAGE2_COMPLETION_LOGS.slice(0, completionLogCount),
@@ -1995,8 +2283,8 @@ export default function App() {
         statusRows: [
           {
             label: "凭证:",
-            value: stage2Progress.completedCount >= 2 ? "已颁发" : "未颁发",
-            status: stage2Progress.completedCount >= 2 ? "success" : "pending",
+            value: stage2Progress.completedCount >= 1 ? "已颁发" : "未颁发",
+            status: stage2Progress.completedCount >= 1 ? "success" : "pending",
           },
           {
             label: "机器狗ID:",
@@ -2007,8 +2295,8 @@ export default function App() {
         ],
         userStatus: {
           credential: {
-            value: stage2Progress.completedCount >= 2 ? "已颁发" : "未颁发",
-            status: stage2Progress.completedCount >= 2 ? "success" : "pending",
+            value: stage2Progress.completedCount >= 1 ? "已颁发" : "未颁发",
+            status: stage2Progress.completedCount >= 1 ? "success" : "pending",
           },
           robotDogId: {
             value: allDone ? "DID:2168nLB3G@CMCC.org" : "None",
@@ -2161,6 +2449,7 @@ export default function App() {
     ));
 
     const activeWorkflow = allDone ? null : workflow[stage4Progress.activeTask];
+    const toolBubble = activeWorkflow ? STAGE4_TOOL_BUBBLES[activeWorkflow.label] : null;
 
     return {
       ...stageConfig,
@@ -2170,12 +2459,18 @@ export default function App() {
       steps,
       agentBubble: activeWorkflow
         ? {
-            text: activeWorkflow.label.replace(/:$/, ""),
+            ...(toolBubble || { text: normalizeWorkflowLabel(activeWorkflow.label) }),
             status: stage4Progress.bubbleStatus,
           }
         : null,
     };
   })();
+  const topologyAgentBubble = pinBubbleToSystemAgent(
+    getWorkflowBubbleFromRows(effectiveStageConfig.workflow, stage)
+  );
+  const childAgentBubbles = effectiveStageConfig.agentBubble
+    ? [effectiveStageConfig.agentBubble]
+    : [];
 
   return (
     <div className="video-backed-ui min-h-screen text-white p-4 md:p-8 font-sans overflow-x-hidden flex items-center justify-center relative isolate">
@@ -2223,28 +2518,6 @@ export default function App() {
         @keyframes topology-flow {
           0% { stroke-dashoffset: 12; }
           100% { stroke-dashoffset: 0; }
-        }
-        .agent-log-scroll {
-          overflow-x: hidden;
-          scrollbar-color: transparent transparent;
-          scrollbar-width: thin;
-        }
-        .agent-log-scroll::-webkit-scrollbar {
-          width: 8px;
-        }
-        .agent-log-scroll::-webkit-scrollbar-track,
-        .agent-log-scroll::-webkit-scrollbar-thumb {
-          background: transparent;
-        }
-        .agent-log-module:hover .agent-log-scroll {
-          scrollbar-color: rgba(34,211,238,0.65) rgba(15,23,42,0.7);
-        }
-        .agent-log-module:hover .agent-log-scroll::-webkit-scrollbar-track {
-          background: rgba(15,23,42,0.7);
-        }
-        .agent-log-module:hover .agent-log-scroll::-webkit-scrollbar-thumb {
-          background: rgba(34,211,238,0.65);
-          border-radius: 999px;
         }
       `}} />
 
@@ -2552,7 +2825,9 @@ export default function App() {
               stage={stage}
               activeFlowType={effectiveStageConfig.activeFlowType}
               coreFunctions={effectiveStageConfig.coreFunctions}
-              agentBubble={effectiveStageConfig.agentBubble}
+              agentBubble={topologyAgentBubble}
+              agentBubbles={childAgentBubbles}
+              arSpeechText={arSpeechText}
               title={effectiveStageConfig.topologyTitle}
             />
           </div>
@@ -2565,7 +2840,7 @@ export default function App() {
                   实时状态
                 </h2>
                 
-                <div className="flex flex-col flex-1 gap-4 justify-between">
+                <div className="flex flex-col flex-1 gap-3">
                   {/* 子栏目 1: 实时状态 */}
                   <div className="border border-blue-500/30 rounded-lg p-2.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
                     {stage === 8 ? (
@@ -2594,15 +2869,15 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* 子栏目 2: 智能体日志 */}
-                  <div className="agent-log-module border border-blue-500/30 rounded-lg p-3 bg-slate-900/30 backdrop-blur-md flex flex-col shadow-md">
+                  {/* 子栏目 2: 当前任务摘要 */}
+                  <div className="border border-blue-500/30 rounded-lg p-3 bg-slate-900/30 backdrop-blur-md flex flex-col shadow-md">
                     <div className="flex items-center gap-2.5 mb-2">
                       <div className="w-7 h-7 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
                         <Network className="w-3.5 h-3.5 text-blue-300" />
                       </div>
-                      <h3 className="text-white font-bold text-sm lg:text-base">智能体日志</h3>
+                      <h3 className="text-white font-bold text-sm lg:text-base">当前任务摘要</h3>
                     </div>
-                    <AgentLogPanel logs={effectiveStageConfig.logs} />
+                    <TaskBriefPanel logs={effectiveStageConfig.logs} />
                   </div>
 
                   {/* 子栏目 3: 工作流 */}

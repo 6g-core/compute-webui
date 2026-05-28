@@ -1349,6 +1349,9 @@ const getDogVideoGateState = (health, hasError = false) => {
   if (!health.streamRequested) {
     return "waiting-task";
   }
+  if (!health.dogConnected) {
+    return "waiting-dog";
+  }
   if (!health.videoReady) {
     return "waiting-stream";
   }
@@ -1358,6 +1361,7 @@ const getDogVideoGateState = (health, hasError = false) => {
 const isDogVideoReadyForOffer = (health) => (
   health?.ok === true
   && health?.streamRequested === true
+  && health?.dogConnected === true
   && health?.videoReady === true
 );
 
@@ -1693,10 +1697,11 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
         {preloadEnhanced && (
           <video
             ref={enhanced.videoRef}
-            className="hidden"
+            className="pointer-events-none absolute h-px w-px opacity-0"
             autoPlay
             muted
             playsInline
+            aria-hidden="true"
           />
         )}
       </>
@@ -2618,7 +2623,7 @@ export default function App() {
                   {effectiveStageConfig.showDogVision || effectiveStageConfig.showEnhancedDogVision ? (
                     <DogVisionStreams
                       showEnhanced={Boolean(effectiveStageConfig.showEnhancedDogVision)}
-                      preloadEnhanced={stage >= 5}
+                      preloadEnhanced={Number(stage) >= 5}
                     />
                   ) : effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.homeDomainDevicesReady === false ? (
                     <div className="flex-1 min-h-[424px] rounded-xl border border-emerald-500/20 bg-slate-950/10 backdrop-blur-md" aria-hidden="true" />

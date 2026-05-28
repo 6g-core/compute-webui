@@ -1602,7 +1602,14 @@ const useBackendVideoStream = ({
     });
     setState("connecting");
 
-    const scheduleRetry = () => {
+    const clearScheduledRetry = () => {
+      if (retryTimer !== null) {
+        window.clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+    };
+
+    const scheduleRetry = (delayMs = 1200) => {
       if (disposed || retryTimer !== null) {
         return;
       }
@@ -1612,7 +1619,7 @@ const useBackendVideoStream = ({
         if (!disposed) {
           setRetryToken((token) => token + 1);
         }
-      }, 1200);
+      }, delayMs);
     };
 
     pc.addTransceiver("video", { direction: "recvonly" });
@@ -1620,7 +1627,11 @@ const useBackendVideoStream = ({
     pc.onconnectionstatechange = () => {
       if (!disposed) {
         setState(pc.connectionState);
-        if (["disconnected", "failed", "closed"].includes(pc.connectionState)) {
+        if (["connected", "connecting"].includes(pc.connectionState)) {
+          clearScheduledRetry();
+        } else if (pc.connectionState === "disconnected") {
+          scheduleRetry(10000);
+        } else if (["failed", "closed"].includes(pc.connectionState)) {
           scheduleRetry();
         }
       }
@@ -1650,9 +1661,7 @@ const useBackendVideoStream = ({
 
     return () => {
       disposed = true;
-      if (retryTimer !== null) {
-        window.clearTimeout(retryTimer);
-      }
+      clearScheduledRetry();
       setStream(null);
       if (videoRef.current) {
         videoRef.current.srcObject = null;
@@ -1666,10 +1675,21 @@ const useBackendVideoStream = ({
 
 const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
   const { health, ready, state: gateState } = useDogVideoOfferGate(true);
+  const [gateOpened, setGateOpened] = useState(false);
   const streamEpoch = health?.streamEpoch ?? null;
+
+  useEffect(() => {
+    if (ready) {
+      setGateOpened(true);
+    } else if (health?.streamRequested === false) {
+      setGateOpened(false);
+    }
+  }, [health?.streamRequested, ready]);
+
+  const streamReady = gateOpened || ready;
   const raw = useBackendVideoStream({
     enabled: true,
-    ready,
+    ready: streamReady,
     gateState,
     streamEpoch,
     offerUrl: getDogVisionOfferUrl(),
@@ -1680,7 +1700,7 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
   });
   const enhanced = useBackendVideoStream({
     enabled: preloadEnhanced,
-    ready,
+    ready: streamReady,
     gateState,
     streamEpoch,
     offerUrl: getDogEnhancedOfferUrl(),

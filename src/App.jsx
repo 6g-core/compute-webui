@@ -56,6 +56,7 @@ const STAGE6_WORKFLOW = [
       lines: ["ID寻址路由"],
       targetNode: "AgentGW",
       placement: "above",
+      offsetY: -3,
     },
   },
   {
@@ -74,6 +75,7 @@ const STAGE6_WORKFLOW = [
       lines: ["Agent协议转换"],
       targetNode: "AgentGW",
       placement: "above",
+      offsetY: -3,
     },
   },
 ];
@@ -192,6 +194,16 @@ const getCombinedWorkflowStatus = (items = []) => {
   return items.some((item) => item?.status === "success") ? "working" : "pending";
 };
 
+const STAGE_STORY_LINES = {
+  1: "用户拥有两个智能终端，AR眼镜和机器狗。本Case将展示在网络的帮助下，用户在家戴着AR眼镜，指示机器狗去超市协助购买物品的未来生活场景。",
+  2: "用户AR眼镜获取机器狗的基础信息，上传网络，获得网络颁发的数字身份并发布智能体卡片。网络向机器狗使用获取的数字身份接入网络。",
+  4: "用户AR眼镜向网络下发L3组网需求，并添加成员机器狗。核心网为AR眼镜和机器狗创建家庭域，包括更新签约数据，下发物理组网配置，并为二者下发接入凭证。域内通信，数据不出运营商。AR眼镜将去商店的任务通过A2A发给机器狗，机器狗自行前往商店。",
+  5: "机器狗抵达商店门口，向用户回传实时视野。",
+  6: "机器狗获取商店数字智能体的数字身份。在网络的帮助下，机器狗和AR眼镜分别与商店数字智能体双向认证，建立实时通信。",
+  7: "由于机器狗上算力不足，无法独立完成物品识别的任务，于是将算力卸载到网络。网络为机器狗分配算力资源。",
+  8: "机器狗的感知设备作为输入，网络内算力节点计算输出物体的识别标注结果，回传AR眼镜，方便用户确认想要购买的物品。",
+};
+
 const STAGE_CONFIG = {
   1: {
     leftPanelTitle: "机器狗接入",
@@ -214,10 +226,9 @@ const STAGE_CONFIG = {
     },
     logs: BASE_AGENT_LOGS,
     workflow: [
-      { label: "System Agent路由请求:", value: "Pending", status: "pending" },
       { label: "IDM颁发数字身份:", value: "Pending", status: "pending" },
-      { label: "接入网络:", value: "Pending", status: "pending" },
       { label: "能力注册:", value: "Pending", status: "pending" },
+      { label: "接入网络:", value: "Pending", status: "pending" },
     ],
     steps: [
       { id: "01", icon: ShieldCheck, title: "数字身份申请", subtitle: "即将开始 / Upcoming", status: "pending" },
@@ -797,6 +808,28 @@ const TaskBriefPanel = ({ logs }) => {
   );
 };
 
+const StoryTicker = ({ stage }) => {
+  const story = STAGE_STORY_LINES[stage] || "";
+
+  if (!story) {
+    return null;
+  }
+
+  return (
+    <div className="relative z-10 mt-4 overflow-hidden rounded-lg border border-cyan-300/45 bg-slate-950/82 shadow-[0_0_24px_rgba(34,211,238,0.18)] backdrop-blur-md">
+      <div className="absolute inset-y-0 left-0 z-20 flex w-20 items-center justify-center border-r border-cyan-300/35 bg-cyan-950/90 text-[11px] font-black tracking-[0.18em] text-cyan-100 shadow-[8px_0_18px_rgba(8,47,73,0.85)]">
+        故事线
+      </div>
+      <div className="relative ml-20 h-10 overflow-hidden">
+        <div className="story-ticker-track absolute flex h-full items-center gap-12 whitespace-nowrap text-sm font-bold text-cyan-50">
+          <span>{story}</span>
+          <span aria-hidden="true">{story}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ARGlasses = ({ className = "", speechText = "" }) => (
   <div className={`relative flex items-center justify-center ${className}`}>
     {speechText && (
@@ -825,7 +858,7 @@ const AgentSpeechBubble = ({ bubble }) => {
   const isVoiceIntent = bubble.variant === "voiceIntent";
   const positionClassName = bubble.style ? (bubble.className || "") : (bubble.className || "left-[83%] top-[36%]");
   const arrowClassName = bubble.arrow === "down-right"
-    ? "absolute bottom-[-5px] right-4 h-2 w-2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
+    ? "absolute bottom-[-5px] right-6 h-2 w-2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
     : bubble.arrow === "down-left"
     ? "absolute bottom-[-5px] left-[72%] h-2 w-2 -translate-x-1/2 rotate-[28deg] border-b border-r border-cyan-400/45 bg-slate-950/86"
     : bubble.arrow === "down"
@@ -1527,13 +1560,17 @@ const useBackendVideoStream = ({
   attachKey,
 }) => {
   const videoRef = useRef(null);
+  const hasReceivedTrackRef = useRef(false);
   const [state, setState] = useState(enabled ? "waiting-task" : "idle");
   const [stream, setStream] = useState(null);
+  const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     if (!enabled) {
       setState("idle");
       setStream(null);
+      setRetryToken(0);
+      hasReceivedTrackRef.current = false;
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
@@ -1543,6 +1580,8 @@ const useBackendVideoStream = ({
     if (!ready) {
       setState(gateState);
       setStream(null);
+      setRetryToken(0);
+      hasReceivedTrackRef.current = false;
     }
   }, [enabled, gateState, ready]);
 
@@ -1558,6 +1597,9 @@ const useBackendVideoStream = ({
     }
 
     let disposed = false;
+    let retryTimer = null;
+    let receiveTimer = null;
+    hasReceivedTrackRef.current = false;
     const iceServers = getWebRtcIceServers();
     const pc = new RTCPeerConnection({
       iceServers,
@@ -1565,16 +1607,37 @@ const useBackendVideoStream = ({
     });
     setState("connecting");
 
+    const scheduleRetry = () => {
+      if (disposed || retryTimer !== null) {
+        return;
+      }
+
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        if (!disposed) {
+          setRetryToken((token) => token + 1);
+        }
+      }, 1200);
+    };
+
     pc.addTransceiver("video", { direction: "recvonly" });
 
     pc.onconnectionstatechange = () => {
       if (!disposed) {
         setState(pc.connectionState);
+        if (pc.connectionState === "failed") {
+          scheduleRetry();
+        }
       }
     };
 
     pc.ontrack = (event) => {
       if (!disposed) {
+        if (receiveTimer !== null) {
+          window.clearTimeout(receiveTimer);
+          receiveTimer = null;
+        }
+        hasReceivedTrackRef.current = true;
         setStream(event.streams[0]);
         setState("receiving");
       }
@@ -1587,22 +1650,35 @@ const useBackendVideoStream = ({
         console.error(`${label} WebRTC connection failed`, error);
         if (!disposed) {
           setState("failed");
+          scheduleRetry();
         }
         pc.close();
       }
     };
 
     connect();
+    receiveTimer = window.setTimeout(() => {
+      if (!disposed && !hasReceivedTrackRef.current) {
+        setState("failed");
+        scheduleRetry();
+      }
+    }, 5000);
 
     return () => {
       disposed = true;
+      if (retryTimer !== null) {
+        window.clearTimeout(retryTimer);
+      }
+      if (receiveTimer !== null) {
+        window.clearTimeout(receiveTimer);
+      }
       setStream(null);
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
       pc.close();
     };
-  }, [clientId, enabled, gateState, label, offerUrl, ready, streamEpoch, streamType]);
+  }, [clientId, enabled, gateState, label, offerUrl, ready, retryToken, streamEpoch, streamType]);
 
   return { state, videoRef };
 };
@@ -1927,7 +2003,7 @@ const getWorkflowBubbleFromRows = (workflow = [], stage) => {
     return null;
   }
 
-  if (stage === 2) {
+  if (stage === 1 || stage === 2) {
     const acnRows = workflow.filter((item) => (
       item.label === "IDM颁发数字身份:" || item.label === "能力注册:"
     ));
@@ -2024,7 +2100,7 @@ const pinBubbleToSystemAgent = (bubble) => (
           isSystemAgentItem: true,
         })),
         ...SYSTEM_AGENT_BUBBLE_ANCHOR,
-        className: "",
+        className: "w-[150px]",
       }
     : null
 );
@@ -2519,6 +2595,13 @@ export default function App() {
           0% { stroke-dashoffset: 12; }
           100% { stroke-dashoffset: 0; }
         }
+        @keyframes story-ticker-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .story-ticker-track {
+          animation: story-ticker-scroll 42s linear infinite;
+        }
       `}} />
 
       {/* 主屏幕容器 - 整体升级为全毛玻璃HUD悬浮舱 */}
@@ -2943,6 +3026,7 @@ export default function App() {
             );
           })}
         </div>
+        <StoryTicker stage={stage} />
       </div>
       
       {/* 底部反光效果 */}

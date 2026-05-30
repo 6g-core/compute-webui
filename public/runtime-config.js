@@ -1,1 +1,18 @@
-window.__RUNTIME_CONFIG__ = window.__RUNTIME_CONFIG__ || {};
+(() => {
+  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  const host = window.location.hostname;
+  const mockBase = `${protocol}//${host}:8787`;
+
+  window.__RUNTIME_CONFIG__ = {
+    ...(window.__RUNTIME_CONFIG__ || {}),
+    sysAgentApiUrl: mockBase,
+    sandboxApiUrl: mockBase,
+    stageApiUrl: `${mockBase}/api/stage`,
+    arStatusApiUrl: `${mockBase}/api/v1/system/ar/status`,
+    sandboxHealthApiUrl: `${mockBase}/api/health`,
+    latencyApiUrl: `${mockBase}/api/latency`,
+    webRtcSignalUrl: `${mockBase}/api/v1/web/sdp/offer`,
+    dogWebRtcSignalUrl: `${mockBase}/api/v1/web/sdp/offer`,
+    dogEnhancedWebRtcSignalUrl: `${mockBase}/api/v1/web/sdp/offer`,
+  };
+})();

@@ -95,6 +95,17 @@ export const TOPOLOGY_STAGE_FLOW_CONFIG = {
       ],
     },
   },
+  9: {
+    handoff: {
+      color: "#f97316",
+      lines: [
+        { key: "RobotDog->gNB", latencyMs: latency(4, 8) },
+        { key: "gNB->UPF", latencyMs: latency(8, 14) },
+        { key: "UPF->AgentGW", latencyMs: latency(6, 12) },
+        { key: "AgentGW->MarketAgent", latencyMs: latency(5, 10) },
+      ],
+    },
+  },
 };
 
 export const getTopologyFlowConfig = (stage, activeFlowType) => {

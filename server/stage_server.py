@@ -76,8 +76,8 @@ class StageRequestHandler(BaseHTTPRequestHandler):
         if next_stage == 3:
             next_stage = 2
 
-        if next_stage not in (1, 2, 4, 5, 6, 7, 8):
-            write_json(self, {"error": "stage must be one of 1, 2, 4, 5, 6, 7, 8"}, status=400)
+        if next_stage not in (1, 2, 4, 5, 6, 7, 8, 9):
+            write_json(self, {"error": "stage must be one of 1, 2, 4, 5, 6, 7, 8, 9"}, status=400)
             return
 
         self.server.state.stage = next_stage
@@ -97,8 +97,8 @@ def main():
     if args.stage == 3:
         args.stage = 2
 
-    if args.stage not in (1, 2, 4, 5, 6, 7, 8):
-        raise SystemExit("--stage must be one of 1, 2, 4, 5, 6, 7, 8")
+    if args.stage not in (1, 2, 4, 5, 6, 7, 8, 9):
+        raise SystemExit("--stage must be one of 1, 2, 4, 5, 6, 7, 8, 9")
 
     server = ThreadingHTTPServer((args.host, args.port), StageRequestHandler)
     server.state = StageState(args.stage)

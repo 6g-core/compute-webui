@@ -110,6 +110,39 @@ const STAGE7_WORKFLOW = [
   },
 ];
 
+const STAGE9_WORKFLOW = [
+  { label: "数字身份申请:", value: "IDM颁发数字身份；能力注册；接入网络", status: "success", stacked: true },
+  { label: "生成式网络:", value: "创建家庭域；更新签约数据；下发域接入凭证；下发物理组网配置", status: "success", stacked: true },
+  { label: "机器狗实时视野:", value: "机器狗抵达商店并回传实时视野", status: "success", stacked: true },
+  { label: "跨域智能体认证交互:", value: "获取超市智能体数字身份；AR眼镜、机器狗与超市智能体双向认证", status: "success", stacked: true },
+  { label: "分配算力资源:", value: "创建算力会话；分配算力资源", status: "success", stacked: true },
+  { label: "算力卸载:", value: "机器狗感知输入；网络算力节点识别标注；结果回传AR眼镜", status: "success", stacked: true },
+  { label: "物品交接:", value: "机器狗与超市智能体交接物品；算力卸载已完成", status: "success", stacked: true },
+];
+
+const STAGE9_COMPLETED_TASKS = [
+  {
+    title: "数字身份申请",
+    tasks: ["IDM颁发数字身份", "能力注册", "接入网络"],
+  },
+  {
+    title: "生成式网络",
+    tasks: ["创建家庭域", "更新签约数据", "下发域接入凭证", "下发物理组网配置"],
+  },
+  {
+    title: "跨域智能体认证交互",
+    tasks: ["获取超市智能体数字身份", "AR眼镜与超市智能体双向认证", "机器狗与超市智能体双向认证"],
+  },
+  {
+    title: "分配算力资源",
+    tasks: ["创建算力会话", "分配算力资源"],
+  },
+  {
+    title: "算力卸载",
+    tasks: ["机器狗感知设备输入", "网络算力节点识别标注", "标注结果回传AR眼镜"],
+  },
+];
+
 const STAGE2_WORKFLOW = [
   {
     label: "IDM颁发数字身份:",
@@ -215,19 +248,21 @@ const getCombinedWorkflowStatus = (items = []) => {
 };
 
 const STAGE_STORY_LINES = {
-  1: "用户拥有两个智能终端，AR眼镜和机器狗。本Case将展示在网络的帮助下，用户在家戴着AR眼镜，指示机器狗去超市协助购买物品的未来生活场景。",
-  2: "用户AR眼镜获取机器狗的基础信息，上传网络，获得网络颁发的数字身份并发布智能体卡片。网络向机器狗使用获取的数字身份接入网络。",
-  4: "用户AR眼镜向网络下发L3组网需求，并添加成员机器狗。核心网为AR眼镜和机器狗创建家庭域，包括更新签约数据，下发物理组网配置，并为二者下发接入凭证。域内通信，数据不出运营商。AR眼镜将去商店的任务通过A2A发给机器狗，机器狗自行前往商店。",
-  5: "机器狗抵达商店门口，向用户回传实时视野。",
-  6: "机器狗获取商店数字智能体的数字身份。在网络的帮助下，机器狗和AR眼镜分别与商店数字智能体双向认证，建立实时通信。",
-  7: "由于机器狗上算力不足，无法独立完成物品识别的任务，于是将算力卸载到网络。网络为机器狗分配算力资源。",
-  8: "机器狗的感知设备作为输入，网络内算力节点计算输出物体的识别标注结果，回传AR眼镜，方便用户确认想要购买的物品。",
+  1: "AR眼镜与机器狗就绪，用户在家发起超市代购任务。",
+  2: "AR眼镜上传机器狗信息，网络签发数字身份并完成接入。",
+  4: "网络创建家庭域，AR眼镜通过A2A指示机器狗前往商店。",
+  5: "机器狗抵达商店门口，回传实时视野。",
+  6: "机器狗、AR眼镜与商店智能体完成双向认证。",
+  7: "机器狗寻找目标物品，算力不足无法识别，申请算力卸载到网络。",
+  8: "网络算力节点识别商品并回传标注结果。",
+  9: "机器狗与超市智能体完成商品交接。",
 };
 
 const STAGE_CONFIG = {
   1: {
-    leftPanelTitle: "机器狗接入",
+    leftPanelTitle: "AR眼镜已接入",
     activeFlowType: null,
+    showArRegistration: true,
     showRegisteredDevice: false,
     coreFunctions: [
       "统一数字身份管理",
@@ -312,7 +347,7 @@ const STAGE_CONFIG = {
     statusTitle: "端侧状态",
     statusRows: [
       { label: "端侧带宽:", value: "5Mbps", status: "success" },
-      { label: "平均时延:", value: "10ms", status: "success" },
+      { label: "平均时延:", value: "25ms", status: "success" },
     ],
     logs: [
       ...BASE_AGENT_LOGS,
@@ -440,6 +475,86 @@ STAGE_CONFIG[8] = {
 
     return step;
   }),
+};
+
+STAGE_CONFIG[9] = {
+  ...STAGE_CONFIG[8],
+  leftPanelTitle: "物品交接",
+  topologyTitle: "6G核心网：算力卸载",
+  activeFlowType: "handoff",
+  showHandoff: true,
+  showEnhancedDogVision: false,
+  showDogVision: false,
+  showHomeDomainDevice: false,
+  showRegisteredDevice: false,
+  showArRegistration: false,
+  statusTitle: "已完成任务",
+  statusRows: [
+    {
+      label: "数字身份申请:",
+      value: "IDM颁发数字身份；能力注册；接入网络",
+      status: "success",
+      stacked: true,
+      valueClassName: "break-words",
+    },
+    {
+      label: "生成式网络:",
+      value: "创建家庭域；更新签约数据；下发域接入凭证；下发物理组网配置",
+      status: "success",
+      stacked: true,
+      valueClassName: "break-words",
+    },
+    {
+      label: "机器狗实时视野:",
+      value: "机器狗抵达商店并回传实时视野",
+      status: "success",
+      stacked: true,
+      valueClassName: "break-words",
+    },
+    {
+      label: "跨域智能体认证交互:",
+      value: "获取超市智能体数字身份；AR眼镜、机器狗与超市智能体双向认证",
+      status: "success",
+      stacked: true,
+      valueClassName: "break-words",
+    },
+    {
+      label: "分配算力资源:",
+      value: "创建算力会话；分配算力资源",
+      status: "success",
+      stacked: true,
+      valueClassName: "break-words",
+    },
+    {
+      label: "算力卸载:",
+      value: "机器狗感知输入；网络算力节点识别标注；结果回传AR眼镜",
+      status: "success",
+      stacked: true,
+      valueClassName: "break-words",
+    },
+    {
+      label: "物品交接:",
+      value: "机器狗与超市智能体交接物品；算力卸载已完成",
+      status: "success",
+      stacked: true,
+      valueClassName: "break-words",
+    },
+  ],
+  userStatus: {
+    credential: { value: "已完成", status: "success" },
+    robotDogId: { value: "1saR84Q2Z@market.com", status: "success", isMono: true },
+  },
+  logs: [
+    ...STAGE_CONFIG[8].logs,
+    ["10:31:25", "业务目标", "机器狗与超市智能体完成商品取件交接动作"],
+    ["10:31:26", "系统决策", "将识别结果与交接任务结果同步回系统门户"],
+    ["10:31:27", "核心网能力", "RAN->UPF->Agent GW->Market Agent 任务链路完成调度"],
+    ["10:31:28", "当前结果", "阶段9任务完成，整条作业闭环成功"],
+  ],
+  workflow: STAGE9_WORKFLOW,
+  steps: STAGE_CONFIG[8].steps.map((step) => (
+    { ...step, subtitle: "已完成 / Completed", status: "success" }
+  )),
 };
 
 const getRuntimeConfig = () => window.__RUNTIME_CONFIG__ || {};
@@ -748,7 +863,7 @@ const SciFiPanel = ({ children, className = "", title = "" }) => (
 );
 
 // 状态行组件
-const StatusRow = ({ label, value, status = "success", isMono = false, valueClassName = "" }) => {
+const StatusRow = ({ label, value, status = "success", isMono = false, valueClassName = "", stacked = false }) => {
   const getStatusColor = () => {
     switch (status) {
       case 'success': return 'text-emerald-400';
@@ -759,6 +874,22 @@ const StatusRow = ({ label, value, status = "success", isMono = false, valueClas
       default: return 'text-gray-300';
     }
   };
+
+  if (stacked) {
+    return (
+      <div className="py-2 border-b border-blue-950/40 last:border-0 text-sm">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-semibold text-blue-100/95">{label}</span>
+          {status === 'success' && <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />}
+          {status === 'working' && <CircleDot className="w-4 h-4 shrink-0 text-amber-300 animate-pulse" />}
+          {status === 'pending' && <CircleDot className="w-4 h-4 shrink-0 text-blue-500" />}
+        </div>
+        <div className={`mt-1 font-bold leading-snug ${getStatusColor()} ${isMono ? 'font-mono' : ''} ${valueClassName}`}>
+          {value}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-between items-center py-2.5 border-b border-blue-950/40 last:border-0 text-sm lg:text-base">
@@ -772,6 +903,38 @@ const StatusRow = ({ label, value, status = "success", isMono = false, valueClas
     </div>
   );
 };
+
+const CompletedTasksPanel = () => (
+  <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-emerald-400/35 bg-slate-950/42 shadow-[0_0_22px_rgba(16,185,129,0.12)]">
+    <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+      <div className="flex flex-col gap-2.5">
+        {STAGE9_COMPLETED_TASKS.map((group, index) => (
+          <section
+            key={group.title}
+            className="rounded-md border border-blue-400/20 bg-blue-950/18 px-3 py-3 shadow-[inset_0_0_14px_rgba(59,130,246,0.06)]"
+          >
+            <div className="mb-2 flex items-center gap-2.5">
+              <span className="flex h-6 min-w-6 items-center justify-center rounded border border-emerald-300/45 bg-emerald-400/10 px-1.5 text-xs font-black text-emerald-200">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <h3 className="min-w-0 text-base font-black leading-tight text-blue-50">
+                {group.title}
+              </h3>
+            </div>
+            <ul className="space-y-1">
+              {group.tasks.map((task) => (
+                <li key={task} className="flex gap-2.5 text-sm font-bold leading-snug text-emerald-300">
+                  <span className="mt-[0.45em] h-2 w-2 shrink-0 rounded-full bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.75)]" />
+                  <span className="min-w-0 break-words">{task}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
 const TaskBriefPanel = ({ logs }) => {
   const briefByCategory = logs.reduce((acc, [, category, message]) => ({
@@ -828,7 +991,7 @@ const TaskBriefPanel = ({ logs }) => {
   );
 };
 
-const StoryTicker = ({ stage }) => {
+const StageStorySummary = ({ stage }) => {
   const story = STAGE_STORY_LINES[stage] || "";
 
   if (!story) {
@@ -836,15 +999,14 @@ const StoryTicker = ({ stage }) => {
   }
 
   return (
-    <div className="relative z-10 mt-4 overflow-hidden rounded-lg border border-cyan-300/45 bg-slate-950/82 shadow-[0_0_24px_rgba(34,211,238,0.18)] backdrop-blur-md">
-      <div className="absolute inset-y-0 left-0 z-20 flex w-20 items-center justify-center border-r border-cyan-300/35 bg-cyan-950/90 text-[11px] font-black tracking-[0.18em] text-cyan-100 shadow-[8px_0_18px_rgba(8,47,73,0.85)]">
+    <div className="relative z-10 mt-6 flex justify-center">
+      <div className="flex max-w-[980px] items-center justify-center gap-3 rounded-lg border border-cyan-300/45 bg-slate-950/78 px-5 py-2.5 text-center shadow-[0_0_24px_rgba(34,211,238,0.16)] backdrop-blur-md">
+        <span className="shrink-0 rounded border border-cyan-300/35 bg-cyan-950/70 px-2.5 py-1 text-[10px] font-black tracking-[0.18em] text-cyan-100">
         故事线
-      </div>
-      <div className="relative ml-20 h-10 overflow-hidden">
-        <div className="story-ticker-track absolute flex h-full items-center gap-12 whitespace-nowrap text-sm font-bold text-cyan-50">
-          <span>{story}</span>
-          <span aria-hidden="true">{story}</span>
-        </div>
+        </span>
+        <span className="text-sm font-bold leading-snug text-cyan-50 lg:text-base">
+          {story}
+        </span>
       </div>
     </div>
   );
@@ -865,6 +1027,282 @@ const ARGlasses = ({ className = "", speechText = "" }) => (
       className="w-full h-full object-contain transition-all duration-300 drop-shadow-[0_0_14px_rgba(34,211,238,0.35)]"
       draggable="false"
     />
+  </div>
+);
+
+const ArAccessStateCard = ({ registered = false }) => {
+  const stateStyles = registered
+    ? {
+        card: "border-emerald-500/30 bg-slate-950/10",
+        header: "text-emerald-400",
+        icon: <ShieldCheck className="w-5 h-5 animate-pulse" />,
+        title: "已注册设备",
+        subtitle: "Registered Device",
+        gradientId: "stage1-ar-registered-beam",
+        beamStart: "rgba(16, 185, 129, 0.35)",
+        beamLine: "rgba(52, 211, 153, 0.4)",
+        beamDot: "#10b981",
+        cardPanel: "bg-emerald-950/80 border-cyan-400/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]",
+        panelTitle: "Digital ID",
+        panelTitleClass: "text-cyan-300 border-cyan-500/20",
+        deviceName: "3lt1zY73G@CMCC.org",
+        detail: "Capabilities:",
+        detailValue: "[Device-Network Synergy, AR]",
+        statusLabel: "Active",
+        statusClass: "text-emerald-400",
+      }
+    : {
+        card: "border-red-500/30 bg-red-950/10",
+        header: "text-red-400",
+        icon: <ShieldAlert className="w-5 h-5 animate-bounce" />,
+        title: "未注册设备",
+        subtitle: "Unknown Device",
+        gradientId: "stage1-ar-unregistered-beam",
+        beamStart: "rgba(239, 68, 68, 0.35)",
+        beamLine: "rgba(248, 113, 113, 0.4)",
+        beamDot: "#ef4444",
+        cardPanel: "bg-red-950/80 border-red-500/50 text-red-300 shadow-[0_0_15px_rgba(239,68,68,0.25)]",
+        panelTitle: "Device Warning",
+        panelTitleClass: "text-red-400 border-red-500/20",
+        deviceName: "AR Glasses",
+        detail: "Status:",
+        detailValue: "待注册 / Unregistered",
+        statusLabel: "Blocked",
+        statusClass: "text-red-400 animate-pulse",
+      };
+
+  return (
+    <div className={`border backdrop-blur-md flex flex-1 flex-col overflow-hidden rounded-xl p-3 relative ${stateStyles.card}`}>
+      <div className={`flex items-center gap-2 mb-2 relative z-20 ${stateStyles.header}`}>
+        {stateStyles.icon}
+        <div>
+          <div className="font-bold text-xs lg:text-sm">{stateStyles.title}</div>
+          <div className="text-[10px] opacity-70">{stateStyles.subtitle}</div>
+        </div>
+      </div>
+
+      <div className="flex-1 w-full relative mt-1">
+        <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id={stateStyles.gradientId} x1="0" y1="0.8" x2="0.8" y2="0.2">
+              <stop offset="0%" stopColor={stateStyles.beamStart} stopOpacity="0.7" />
+              <stop offset="100%" stopColor={stateStyles.beamStart} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <polygon points="34,65 65,15 95,50" fill={`url(#${stateStyles.gradientId})`} className="opacity-40 animate-pulse" />
+          <line x1="34" y1="65" x2="65" y2="15" stroke={stateStyles.beamLine} strokeWidth="0.5" strokeDasharray="2 2" />
+          <line x1="34" y1="65" x2="95" y2="50" stroke={stateStyles.beamLine} strokeWidth="0.5" strokeDasharray="2 2" />
+          <circle cx="34" cy="65" r="1.5" fill={stateStyles.beamDot} className="animate-ping" />
+        </svg>
+
+        <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+          <ARGlasses className="w-full h-full object-contain" />
+        </div>
+
+        <div className={`absolute top-1 right-1 w-[52%] max-w-[150px] border p-1.5 sm:p-2 rounded-lg backdrop-blur-md z-20 ${registered ? "animate-hologram" : "animate-hologram-red"} [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight ${stateStyles.cardPanel}`}>
+          <div className={`font-black mb-1 border-b pb-1 uppercase tracking-wide text-[8px] sm:text-[9px] ${stateStyles.panelTitleClass}`}>
+            {stateStyles.panelTitle}
+          </div>
+          <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
+            {stateStyles.deviceName}
+          </div>
+          <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
+            <div className="flex flex-col gap-0.5">
+              <span className="opacity-75">{stateStyles.detail}</span>
+              <span className="font-bold text-cyan-300 leading-tight break-words">
+                {stateStyles.detailValue}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="opacity-75">Status:</span>
+              <span className={`font-bold flex items-center gap-0.5 ${stateStyles.statusClass}`}>
+                {stateStyles.statusLabel}
+                {registered && <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ArRegistrationPanel = () => (
+  <div className="flex min-h-[424px] flex-1 flex-col gap-2">
+    <ArAccessStateCard registered={false} />
+    <ArAccessStateCard registered />
+  </div>
+);
+
+const RegisteredRobotDogCard = ({ className = "flex-1 h-[180px] lg:h-[210px]" }) => (
+  <div className={`border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex flex-col overflow-hidden rounded-xl p-3 relative ${className}`}>
+    <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
+      <ShieldCheck className="w-5 h-5 animate-pulse" />
+      <div>
+        <div className="font-bold text-xs lg:text-sm">已注册设备</div>
+        <div className="text-[10px] opacity-70">Registered Device</div>
+      </div>
+    </div>
+
+    <div className="flex-1 w-full relative mt-1">
+      <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="handoff-robot-reg-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
+            <stop offset="0%" stopColor="rgba(16, 185, 129, 0.35)" stopOpacity="0.7" />
+            <stop offset="100%" stopColor="rgba(16, 185, 129, 0)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points="34,65 65,15 95,50" fill="url(#handoff-robot-reg-cone-beam)" className="opacity-40 animate-pulse" />
+        <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+        <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+        <circle cx="34" cy="65" r="1.5" fill="#10b981" className="animate-ping" />
+      </svg>
+
+      <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+        <UnitreeGo2Vector
+          className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(52,211,153,0.35)]"
+          status="registered"
+          colors={{
+            glow: "#10b981",
+            led: "#34d399",
+            accent: "#10b981",
+          }}
+        />
+      </div>
+
+      <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
+        <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
+          Digital ID
+        </div>
+        <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
+          DID:2168nLB3G@CMCC.org
+        </div>
+        <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
+          <div className="flex flex-col gap-0.5">
+            <span className="opacity-75">Capabilities:</span>
+            <span className="font-bold text-cyan-300 leading-tight break-words">
+              [4 Legs, Camera, Payload:10KG/10KM]
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="opacity-75">Status:</span>
+            <span className="font-bold flex items-center gap-0.5 text-emerald-400">
+              Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const RobotArm = ({ className = "" }) => (
+  <svg
+    viewBox="0 0 160 130"
+    className={`transition-all duration-300 ${className}`}
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+      <linearGradient id="arm-shell" x1="20" y1="20" x2="140" y2="110" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#f8fafc" />
+        <stop offset="46%" stopColor="#cbd5e1" />
+        <stop offset="100%" stopColor="#64748b" />
+      </linearGradient>
+      <linearGradient id="arm-dark" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#334155" />
+        <stop offset="100%" stopColor="#020617" />
+      </linearGradient>
+      <filter id="arm-cyan-glow" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="2.2" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>
+
+    <ellipse cx="72" cy="116" rx="45" ry="7" fill="#020617" opacity="0.45" />
+    <g filter="url(#arm-cyan-glow)">
+      <ellipse cx="50" cy="104" rx="25" ry="11" fill="#0f172a" stroke="#22d3ee" strokeWidth="2" />
+      <ellipse cx="50" cy="101" rx="17" ry="7" fill="url(#arm-shell)" stroke="#94a3b8" strokeWidth="1.2" />
+      <rect x="42" y="70" width="16" height="32" rx="7" fill="url(#arm-shell)" stroke="#94a3b8" strokeWidth="1.2" />
+      <circle cx="50" cy="69" r="13" fill="url(#arm-shell)" stroke="#22d3ee" strokeWidth="2" />
+      <circle cx="50" cy="69" r="5" fill="#22d3ee" />
+      <path d="M58 65 L90 42" stroke="url(#arm-shell)" strokeWidth="18" strokeLinecap="round" />
+      <path d="M58 65 L90 42" stroke="#ffffff" strokeWidth="6" strokeLinecap="round" opacity="0.45" />
+      <circle cx="94" cy="40" r="13" fill="url(#arm-shell)" stroke="#22d3ee" strokeWidth="2" />
+      <circle cx="94" cy="40" r="5" fill="#22d3ee" />
+      <path d="M102 45 L125 72" stroke="url(#arm-shell)" strokeWidth="16" strokeLinecap="round" />
+      <path d="M102 45 L125 72" stroke="#ffffff" strokeWidth="5" strokeLinecap="round" opacity="0.42" />
+      <circle cx="128" cy="76" r="10" fill="url(#arm-shell)" stroke="#22d3ee" strokeWidth="1.8" />
+      <path d="M136 77 L148 68" stroke="url(#arm-dark)" strokeWidth="5" strokeLinecap="round" />
+      <path d="M136 80 L150 84" stroke="url(#arm-dark)" strokeWidth="5" strokeLinecap="round" />
+      <circle cx="128" cy="76" r="3.5" fill="#22d3ee" />
+    </g>
+
+    <path d="M50 69 L18 40" stroke="rgba(34,211,238,0.6)" strokeWidth="1.8" strokeDasharray="3 3" />
+    <path d="M94 40 L130 22" stroke="rgba(34,211,238,0.55)" strokeWidth="1.8" strokeDasharray="3 3" />
+    <circle cx="18" cy="40" r="3" fill="#22d3ee" filter="url(#arm-cyan-glow)" />
+    <circle cx="130" cy="22" r="3" fill="#22d3ee" filter="url(#arm-cyan-glow)" />
+  </svg>
+);
+
+const HandoffPanel = () => (
+  <div className="flex flex-col flex-1 gap-2">
+    <RegisteredRobotDogCard className="flex-1 h-[180px] lg:h-[210px]" />
+
+    <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex flex-col flex-1 min-h-[220px] overflow-hidden rounded-xl p-3 relative">
+      <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
+        <ShieldCheck className="w-5 h-5 animate-pulse" />
+        <div>
+          <div className="font-bold text-xs lg:text-sm">已注册设备</div>
+          <div className="text-[10px] opacity-70">Registered Device</div>
+        </div>
+      </div>
+
+      <div className="flex-1 w-full relative mt-1">
+        <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="arm-handoff-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
+              <stop offset="0%" stopColor="rgba(34, 211, 238, 0.35)" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="rgba(34, 211, 238, 0)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <polygon points="35,66 65,18 96,48" fill="url(#arm-handoff-cone-beam)" className="opacity-40 animate-pulse" />
+          <line x1="35" y1="66" x2="65" y2="18" stroke="rgba(34, 211, 238, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+          <line x1="35" y1="66" x2="96" y2="48" stroke="rgba(34, 211, 238, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
+          <circle cx="35" cy="66" r="1.5" fill="#22d3ee" className="animate-ping" />
+        </svg>
+
+        <div className="absolute bottom-8 left-2 w-32 h-28 z-10">
+          <RobotArm className="w-full h-full object-contain opacity-95 drop-shadow-[0_0_14px_rgba(34,211,238,0.3)]" />
+        </div>
+
+        <div className="absolute top-1 right-1 w-[58%] max-w-[170px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
+          <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
+            Digital ID
+          </div>
+          <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 break-all text-[9px] sm:text-[10px]">
+            1saR84Q2Z@market.com
+          </div>
+          <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
+            <div className="flex flex-col gap-0.5">
+              <span className="opacity-75">Capabilities:</span>
+              <span className="font-bold text-cyan-300 leading-tight break-words">
+                [Automatic sorting, Object grasping.]
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="opacity-75">Status:</span>
+              <span className="font-bold flex items-center gap-0.5 text-emerald-400">
+                Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 );
 
@@ -999,6 +1437,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
   ];
 
   const activeFlowConfig = getTopologyFlowConfig(stage, activeFlowType);
+  const [isBlinkActive, setIsBlinkActive] = useState(false);
   const resolveAgentBubblePosition = (bubble) => {
     if (!bubble?.targetNode) {
       return bubble;
@@ -1051,8 +1490,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
         lines: [arSpeechText],
         status: "success",
         variant: "voiceIntent",
-        arrow: "down-left",
-        className: "left-[0.5%] top-[59%] w-[10.5em]",
+        className: "left-[9.5%] top-[74%] w-[13.5em]",
       }
     : null;
   const activeToolBubbleByTarget = Object.fromEntries(
@@ -1093,6 +1531,20 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
     }, 1200);
 
     return () => window.clearInterval(timer);
+  }, [stage, activeFlowType, activeFlowConfig.lines.length]);
+
+  useEffect(() => {
+    if (!activeFlowConfig.lines.length) {
+      setIsBlinkActive(false);
+      return undefined;
+    }
+
+    setIsBlinkActive(true);
+    const timer = window.setTimeout(() => {
+      setIsBlinkActive(false);
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
   }, [stage, activeFlowType, activeFlowConfig.lines.length]);
 
   const activeLineConfigByKey = useMemo(() => (
@@ -1165,7 +1617,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
           </defs>
           {connections.map((connection) => {
             const key = `${connection[0]}->${connection[1]}`;
-            const active = isActive(key);
+                const active = isBlinkActive && isActive(key);
             const color = activeFlowConfig.color || "#22f5ff";
             const path = buildPath(connection);
 
@@ -1212,7 +1664,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
         <div className="pointer-events-none absolute inset-0 z-[18]">
           {connections.map((connection) => {
             const key = `${connection[0]}->${connection[1]}`;
-            const lineConfig = activeLineConfigByKey[key];
+            const lineConfig = isBlinkActive ? activeLineConfigByKey[key] : null;
 
             if (!lineConfig) {
               return null;
@@ -1553,71 +2005,7 @@ const formatVideoState = (state) => {
 };
 
 const WebRtcBackground = () => {
-  const videoRef = useRef(null);
-  const [state, setState] = useState("connecting");
-
-  useEffect(() => {
-    let disposed = false;
-    const iceServers = getWebRtcIceServers();
-    const pc = new RTCPeerConnection({
-      iceServers,
-      iceTransportPolicy: iceServers.length ? "relay" : "all",
-    });
-
-    pc.addTransceiver("video", { direction: "recvonly" });
-
-    pc.onconnectionstatechange = () => {
-      if (!disposed) {
-        setState(pc.connectionState);
-      }
-    };
-
-    pc.ontrack = (event) => {
-      if (!disposed && videoRef.current) {
-        videoRef.current.srcObject = event.streams[0];
-        setState("receiving");
-      }
-    };
-
-    const connect = async () => {
-      try {
-        await connectBackendVideoPeer(pc, getWebRtcOfferUrl(), "react-background");
-      } catch (error) {
-        console.error("WebRTC background connection failed", error);
-        if (!disposed) {
-          setState("failed");
-        }
-        pc.close();
-      }
-    };
-
-    connect();
-
-    return () => {
-      disposed = true;
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-      pc.close();
-    };
-  }, []);
-
-  return (
-    <>
-      <video
-        ref={videoRef}
-        className="fixed inset-0 -z-20 h-full w-full object-cover"
-        autoPlay
-        muted
-        playsInline
-      />
-      {state !== "connected" && state !== "receiving" && (
-        <div className="fixed bottom-3 left-3 z-50 rounded border border-cyan-400/40 bg-slate-950/55 px-3 py-2 text-xs text-cyan-100 backdrop-blur-md">
-          WebRTC background: {state}
-        </div>
-      )}
-    </>
-  );
+  return <div className="fixed inset-0 -z-20 bg-black" />;
 };
 
 const DogVisionPanel = ({ label, state, videoRef, tall = false }) => {
@@ -2142,7 +2530,11 @@ const getWorkflowBubbleFromRows = (workflow = [], stage) => {
     return null;
   }
 
-  if (stage === 1 || stage === 2) {
+  if (stage === 1) {
+    return null;
+  }
+
+  if (stage === 2) {
     const acnRows = workflow.filter((item) => (
       item.label === "IDM颁发数字身份:" || item.label === "能力注册:"
     ));
@@ -2244,9 +2636,20 @@ const pinBubbleToSystemAgent = (bubble) => (
     : null
 );
 
+const FIXED_AR_SPEECH_BY_STAGE = {
+  1: "Let my dog go to the supermarket",
+  2: "Let my dog go to the supermarket",
+  4: "Let my dog go to the supermarket",
+  5: "Share Dog's vision and enter the supermarket",
+  6: "Share Dog's vision and enter the supermarket",
+  7: "Find the yellow bottle",
+  8: "Find the yellow bottle",
+  9: "Grasp the yellow bottle",
+};
+
 export default function App() {
   const { stage, connectionState, error } = useStagePolling();
-  const arSpeechText = useArLastWhisper();
+  const arSpeechText = FIXED_AR_SPEECH_BY_STAGE[stage] || "";
   const stageConfig = STAGE_CONFIG[stage] || STAGE_CONFIG[1];
   const latencySeries = useLatencySeries(stage === 8);
   const [stage2Progress, setStage2Progress] = useState({
@@ -2680,9 +3083,11 @@ export default function App() {
         : null,
     };
   })();
-  const topologyAgentBubble = pinBubbleToSystemAgent(
-    getWorkflowBubbleFromRows(effectiveStageConfig.workflow, stage)
-  );
+  const topologyAgentBubble = stage === 9
+    ? null
+    : pinBubbleToSystemAgent(
+        getWorkflowBubbleFromRows(effectiveStageConfig.workflow, stage)
+      );
   const childAgentBubbles = effectiveStageConfig.agentBubble
     ? [effectiveStageConfig.agentBubble]
     : [];
@@ -2734,13 +3139,6 @@ export default function App() {
           0% { stroke-dashoffset: 12; }
           100% { stroke-dashoffset: 0; }
         }
-        @keyframes story-ticker-scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .story-ticker-track {
-          animation: story-ticker-scroll 42s linear infinite;
-        }
       `}} />
 
       {/* 主屏幕容器 - 整体升级为全毛玻璃HUD悬浮舱 */}
@@ -2777,7 +3175,11 @@ export default function App() {
                 </h2>
                 
                 <div className="flex flex-col flex-1 gap-2">
-                  {effectiveStageConfig.showDogVision || effectiveStageConfig.showEnhancedDogVision ? (
+                  {effectiveStageConfig.showArRegistration ? (
+                    <ArRegistrationPanel />
+                  ) : effectiveStageConfig.showHandoff ? (
+                    <HandoffPanel />
+                  ) : effectiveStageConfig.showDogVision || effectiveStageConfig.showEnhancedDogVision ? (
                     <DogVisionStreams
                       showEnhanced={Boolean(effectiveStageConfig.showEnhancedDogVision)}
                       preloadEnhanced={Number(stage) >= 5}
@@ -3059,71 +3461,87 @@ export default function App() {
             <SciFiPanel className="h-full">
               <div className="flex flex-col h-full">
                 <h2 className="text-blue-200 text-base lg:text-lg font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
-                  实时状态
+                  {stage === 9 ? "已完成任务" : "实时状态"}
                 </h2>
-                
-                <div className="flex flex-col flex-1 gap-4">
-                  {/* 子栏目 1: 实时状态 */}
-                  <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
-                    {stage === 8 ? (
-                      <LatencyChart points={latencySeries.points} error={latencySeries.error} />
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-8 h-8 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
-                            <User className="w-4 h-4 text-blue-300" />
+                {stage === 9 ? (
+                  <CompletedTasksPanel />
+                ) : (
+                  <div className="flex flex-col flex-1 gap-4">
+                    {/* 子栏目 1: 实时状态 */}
+                    <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
+                      {stage === 8 ? (
+                        <LatencyChart points={latencySeries.points} error={latencySeries.error} />
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-8 h-8 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
+                              <User className="w-4 h-4 text-blue-300" />
+                            </div>
+                            <h3 className="text-white font-bold text-base lg:text-lg">{effectiveStageConfig.statusTitle}</h3>
                           </div>
-                          <h3 className="text-white font-bold text-base lg:text-lg">{effectiveStageConfig.statusTitle}</h3>
-                        </div>
-                        <div className="flex flex-col">
-                          {effectiveStageConfig.statusRows.map((item) => (
-                            <StatusRow
-                              key={item.label}
-                              label={item.label}
-                              value={item.value}
-                              status={item.status}
-                              isMono={item.isMono}
-                              valueClassName={item.isMono ? "leading-tight text-right break-all" : ""}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                          <div className="flex flex-col">
+                            {effectiveStageConfig.statusRows.map((item) => (
+                              <StatusRow
+                                key={item.label}
+                                label={item.label}
+                                value={item.value}
+                                status={item.status}
+                                isMono={item.isMono}
+                                stacked={item.stacked}
+                                valueClassName={[
+                                  item.valueClassName || "",
+                                  item.isMono ? "leading-tight text-right break-all" : "",
+                                ].filter(Boolean).join(" ")}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
 
-                  {/* 子栏目 2: 当前任务摘要 */}
-                  <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-[1.35] flex-col shadow-md">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-8 h-8 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
-                        <Network className="w-4 h-4 text-blue-300" />
+                    {/* 子栏目 2: 当前任务摘要 */}
+                    <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-[1.35] flex-col shadow-md">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
+                          <Network className="w-4 h-4 text-blue-300" />
+                        </div>
+                        <h3 className="text-white font-bold text-base lg:text-lg">当前任务摘要</h3>
                       </div>
-                      <h3 className="text-white font-bold text-base lg:text-lg">当前任务摘要</h3>
+                      <TaskBriefPanel logs={effectiveStageConfig.logs} />
                     </div>
-                    <TaskBriefPanel logs={effectiveStageConfig.logs} />
-                  </div>
 
-                  {/* 子栏目 3: 工作流 */}
-                  <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
-                    <div className="flex items-center gap-3 mb-3 opacity-80">
-                      <div className="w-8 h-8 rounded bg-blue-900/15 border border-blue-500/20 flex items-center justify-center">
-                        <ArrowRightCircle className="w-4 h-4 text-blue-300" />
+                    {/* 子栏目 3: 工作流 */}
+                    <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
+                      <div className="flex items-center gap-3 mb-3 opacity-80">
+                        <div className="w-8 h-8 rounded bg-blue-900/15 border border-blue-500/20 flex items-center justify-center">
+                          <ArrowRightCircle className="w-4 h-4 text-blue-300" />
+                        </div>
+                        <h3 className="text-white font-bold text-base lg:text-lg">工作流</h3>
                       </div>
-                      <h3 className="text-white font-bold text-base lg:text-lg">工作流</h3>
-                    </div>
-                    <div className="flex flex-col">
-                      {effectiveStageConfig.workflow.map((item) => (
-                        <StatusRow key={item.label} label={item.label} value={item.value} status={item.status} />
-                      ))}
+                      <div className="flex flex-col">
+                        {effectiveStageConfig.workflow.map((item) => (
+                          <StatusRow
+                            key={item.label}
+                            label={item.label}
+                            value={item.value}
+                            status={item.status}
+                            stacked={item.stacked}
+                            valueClassName={item.valueClassName || ""}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </SciFiPanel>
           </div>
         </div>
 
+        <StageStorySummary stage={stage} />
+
         {/* 底部步骤条 - 升级为精致高对比度毛玻璃条 */}
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
+        <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
           {effectiveStageConfig.steps.map((step) => {
             const StepIcon = step.icon;
             const isDone = step.status === "success";
@@ -3165,7 +3583,6 @@ export default function App() {
             );
           })}
         </div>
-        <StoryTicker stage={stage} />
       </div>
       
       {/* 底部反光效果 */}

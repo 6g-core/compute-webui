@@ -22,6 +22,7 @@ import computingImage from './Computing.png';
 import computingNodeImage from './Computing_Node.png';
 import connectionImage from './Connetction.png';
 import marketImage from './Market.png';
+import srfImage from './SRF.png';
 import upfImage from './upfnew.png';
 
 const STAGE4_WORKFLOW = [
@@ -35,16 +36,19 @@ const STAGE4_TOOL_BUBBLES = {
     lines: ["调用UDM Tool", "更新签约数据"],
     targetNode: "ACN",
     placement: "right",
+    activeTools: ["UDM Tool"],
   },
   "下发域接入凭证:": {
     lines: ["调用IDM Tool", "下发域接入凭证"],
     targetNode: "ACN",
     placement: "right",
+    activeTools: ["IDM Tool"],
   },
   "下发UPF配置:": {
     lines: ["调用SMF Tool", "下发物理组网配置"],
     targetNode: "ConnectionAgent",
     placement: "right",
+    activeTools: ["6G SM Tool"],
   },
 };
 
@@ -57,6 +61,7 @@ const STAGE6_WORKFLOW = [
       targetNode: "AgentGW",
       placement: "above",
       offsetY: -3,
+      activeTools: ["A2A GW Tool"],
     },
   },
   {
@@ -66,6 +71,7 @@ const STAGE6_WORKFLOW = [
       lines: ["身份可信认证"],
       targetNode: "ACN",
       placement: "right",
+      activeTools: ["IDM Tool"],
     },
   },
   {
@@ -76,6 +82,7 @@ const STAGE6_WORKFLOW = [
       targetNode: "AgentGW",
       placement: "above",
       offsetY: -3,
+      activeTools: ["A2A GW Tool"],
     },
   },
 ];
@@ -85,18 +92,20 @@ const STAGE7_WORKFLOW = [
     label: "创建算力会话:",
     flowType: "computeSandbox",
     bubble: {
-      lines: ["创建算力会话"],
+      lines: ["调用CMF Tool", "创建算力会话"],
       targetNode: "Computing",
       placement: "right",
+      activeTools: ["CMF Tool"],
     },
   },
   {
     label: "分配算力资源:",
     flowType: "computeSandbox",
     bubble: {
-      lines: ["分配算力资源"],
+      lines: ["调用CMF Tool", "分配算力资源"],
       targetNode: "Computing",
       placement: "right",
+      activeTools: ["CMF Tool"],
     },
   },
 ];
@@ -108,6 +117,7 @@ const STAGE2_WORKFLOW = [
       lines: ["调用IDM Tool:", "颁发数字身份"],
       targetNode: "ACN",
       placement: "right",
+      activeTools: ["IDM Tool"],
     },
   },
   {
@@ -116,6 +126,7 @@ const STAGE2_WORKFLOW = [
       lines: ["调用ARF Tool", "发布能力卡片"],
       targetNode: "ACN",
       placement: "right",
+      activeTools: ["ARF Tool"],
     },
   },
   {
@@ -124,9 +135,16 @@ const STAGE2_WORKFLOW = [
       lines: ["机器狗接入网络"],
       targetNode: "ConnectionAgent",
       placement: "right",
+      activeTools: ["6G AM Tool", "6G SM Tool", "6G Policy Tool"],
     },
   },
 ];
+
+const AGENT_TOOL_SETS = {
+  ACN: ["IDM Tool", "ARF Tool", "UDM Tool"],
+  ConnectionAgent: ["6G AM Tool", "6G SM Tool", "6G Policy Tool"],
+  Computing: ["CMF Tool"],
+};
 
 const BASE_AGENT_LOGS = [
   ["10:31:00", "业务目标", "建立机器狗与AR眼镜之间的可信协作入口"],
@@ -171,9 +189,11 @@ const STAGE_ANIMATION_TIMING = {
 };
 
 const SYSTEM_AGENT_BUBBLE_ANCHOR = {
-  targetNode: "SRF",
+  targetNode: "SystemAgent",
   placement: "upperLeft",
   arrow: "down-right",
+  offsetX: -3,
+  offsetY: 4,
 };
 
 const normalizeWorkflowLabel = (label = "") => label.replace(/:$/, "");
@@ -741,13 +761,13 @@ const StatusRow = ({ label, value, status = "success", isMono = false, valueClas
   };
 
   return (
-    <div className="flex justify-between items-center py-1.5 border-b border-blue-950/40 last:border-0 text-xs lg:text-sm">
-      <span className="text-blue-200/90">{label}</span>
+    <div className="flex justify-between items-center py-2.5 border-b border-blue-950/40 last:border-0 text-sm lg:text-base">
+      <span className="font-semibold text-blue-100/95">{label}</span>
       <div className="flex min-w-0 items-center gap-1.5">
-        <span className={`${getStatusColor()} ${isMono ? 'font-mono' : ''} ${valueClassName}`}>{value}</span>
-        {status === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-        {status === 'working' && <CircleDot className="w-3.5 h-3.5 text-amber-300 animate-pulse" />}
-        {status === 'pending' && <CircleDot className="w-3.5 h-3.5 text-blue-500" />}
+        <span className={`font-bold ${getStatusColor()} ${isMono ? 'font-mono' : ''} ${valueClassName}`}>{value}</span>
+        {status === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+        {status === 'working' && <CircleDot className="w-4 h-4 text-amber-300 animate-pulse" />}
+        {status === 'pending' && <CircleDot className="w-4 h-4 text-blue-500" />}
       </div>
     </div>
   );
@@ -790,16 +810,16 @@ const TaskBriefPanel = ({ logs }) => {
   ];
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-1 flex-col gap-3">
       {cards.map((card) => (
         <div
           key={card.category}
-          className={`flex min-h-[48px] items-start gap-2 rounded-lg border px-2.5 py-2 ${card.className}`}
+          className={`flex min-h-[64px] flex-1 items-start gap-2.5 rounded-lg border px-3 py-2.5 ${card.className}`}
         >
-          <div className={`flex h-6 w-9 shrink-0 items-center justify-center rounded border text-[10px] font-black leading-none tracking-wide ${card.badgeClassName}`}>
+          <div className={`flex h-7 w-10 shrink-0 items-center justify-center rounded border text-[11px] font-black leading-none tracking-wide ${card.badgeClassName}`}>
             {card.label}
           </div>
-          <div className="min-w-0 flex-1 text-[10px] font-bold leading-snug lg:text-[11px]">
+          <div className="min-w-0 flex-1 text-[12px] font-bold leading-snug lg:text-[13px]">
             {card.value}
           </div>
         </div>
@@ -854,8 +874,11 @@ const AgentSpeechBubble = ({ bubble }) => {
   }
 
   const items = Array.isArray(bubble.items) ? bubble.items : null;
-  const lines = Array.isArray(bubble.lines) ? bubble.lines : [bubble.text];
+  const lines = (Array.isArray(bubble.lines) ? bubble.lines : [bubble.text]).filter(Boolean);
   const isVoiceIntent = bubble.variant === "voiceIntent";
+  const tools = !items && !isVoiceIntent ? AGENT_TOOL_SETS[bubble.targetNode] : null;
+  const activeTools = new Set(Array.isArray(bubble.activeTools) ? bubble.activeTools : []);
+  const hasToolPanel = Array.isArray(tools) && tools.length > 0;
   const positionClassName = bubble.style ? (bubble.className || "") : (bubble.className || "left-[83%] top-[36%]");
   const arrowClassName = bubble.arrow === "down-right"
     ? "absolute bottom-[-5px] right-6 h-2 w-2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
@@ -872,7 +895,7 @@ const AgentSpeechBubble = ({ bubble }) => {
 
   return (
     <div
-      className={`absolute z-30 flex ${items ? "w-[175px] flex-col items-stretch gap-1 rounded-lg" : "max-w-[175px] items-center gap-1.5 rounded-full"} border px-2.5 py-1.5 text-[9px] font-bold backdrop-blur-md ${bubbleClassName} ${positionClassName}`}
+      className={`absolute z-30 flex ${items ? "w-[175px] flex-col items-stretch gap-1 rounded-lg" : hasToolPanel ? "w-[150px] flex-col items-stretch rounded-md border-dashed" : "max-w-[175px] items-center gap-1.5 rounded-full"} border ${hasToolPanel ? "px-0 py-0" : "px-2.5 py-1.5"} text-[9px] font-bold backdrop-blur-md ${bubbleClassName} ${positionClassName}`}
       style={bubble.style}
     >
       {items ? (
@@ -894,6 +917,32 @@ const AgentSpeechBubble = ({ bubble }) => {
             </span>
           </div>
         ))
+      ) : hasToolPanel ? (
+        <>
+          <div className="flex flex-col gap-1.5 px-3 py-2">
+            {tools.map((tool) => {
+              const isWorking = activeTools.has(tool) && bubble.status === "working";
+
+              return (
+                <div key={tool} className="grid grid-cols-[1fr_auto] items-center gap-3 text-[10px] leading-tight">
+                  <span className="truncate text-blue-50">{tool}</span>
+                  <span className={isWorking ? "text-amber-200" : "text-blue-300"}>
+                    {isWorking ? "working" : "idle"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          {lines.length > 0 && (
+            <div className="border-t border-dashed border-cyan-300/50 px-3 py-2 text-[10px] leading-tight text-cyan-50">
+              {lines.map((line) => (
+                <span key={line} className="block whitespace-normal break-words">
+                  {normalizeWorkflowLabel(line)}
+                </span>
+              ))}
+            </div>
+          )}
+        </>
       ) : (
         <>
           {isVoiceIntent ? (
@@ -910,7 +959,7 @@ const AgentSpeechBubble = ({ bubble }) => {
           </span>
         </>
       )}
-      <span className={arrowClassName} />
+      {!hasToolPanel && <span className={arrowClassName} />}
     </div>
   );
 };
@@ -921,30 +970,32 @@ const randomLatency = ({ min, max }) => (
 
 const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, agentBubbles = [], arSpeechText = "", title = "6G 核心网：数字身份申请" }) => {
   const nodes = {
-    UE: { name: "AR Glasses (6G终端)", x: 12, y: 74, color: "#22f5ff", image: "/topology/glasses_transparent.png", size: "w-16 md:w-20" },
-    RobotDog: { name: "Robot Dog", x: 12, y: 28, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-20 md:w-24" },
-    gNB: { name: "6G RAN", x: 28, y: 51, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-24 md:w-28" },
-    SRF: { name: "SystemAgent", x: 47, y: 36, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24" },
-    UPF: { name: "UPF", x: 47, y: 76, color: "#34d399", image: upfImage, size: "w-20 md:w-24" },
-    ConnectionAgent: { name: "Connection Agent", x: 81, y: 10, color: "#22d3ee", image: connectionImage, size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
-    Computing: { name: "Computing Agent", x: 81, y: 29, color: "#fbbf24", image: computingImage, size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
-    ACN: { name: "ACN Agent", x: 81, y: 48, color: "#f472b6", image: acnImage, size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
-    AgentGW: { name: "Agent GW", x: 62.5, y: 63, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
-    MarketAgent: { name: "Market Agent", x: 81, y: 67, color: "#38bdf8", image: marketImage, size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
-    Gateway: { name: "Computing Node", x: 81, y: 86, color: "#38bdf8", image: computingNodeImage, size: "w-16 md:w-20", labelClassName: "absolute left-[76%] top-[68%]" },
+    UE: { name: "AR Glasses (6G终端)", x: 7, y: 78, color: "#22f5ff", image: "/topology/glasses_transparent.png", size: "w-16 md:w-20" },
+    RobotDog: { name: "Robot Dog", x: 7, y: 32, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-20 md:w-24" },
+    gNB: { name: "6G RAN", x: 22, y: 55, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-24 md:w-28" },
+    SRF: { name: "SRF", x: 36, y: 43, color: "#38bdf8", image: srfImage, size: "w-20 md:w-24" },
+    SystemAgent: { name: "SystemAgent", x: 56.5, y: 40, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24" },
+    UPF: { name: "UPF", x: 36, y: 82, color: "#34d399", image: upfImage, size: "w-20 md:w-24" },
+    ConnectionAgent: { name: "Connection Agent", x: 78, y: 12, color: "#22d3ee", image: connectionImage, size: "w-16 md:w-20" },
+    Computing: { name: "Computing Agent", x: 78, y: 30, color: "#fbbf24", image: computingImage, size: "w-16 md:w-20" },
+    ACN: { name: "ACN Agent", x: 78, y: 52, color: "#f472b6", image: acnImage, size: "w-16 md:w-20" },
+    AgentGW: { name: "Agent GW", x: 62.5, y: 91, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20" },
+    MarketAgent: { name: "Market Agent", x: 84, y: 81, color: "#38bdf8", image: marketImage, size: "w-16 md:w-20" },
+    Gateway: { name: "Computing Node", x: 62.5, y: 72, color: "#38bdf8", image: computingNodeImage, size: "w-16 md:w-20" },
   };
 
   const connections = [
     ["UE", "gNB"],
     ["RobotDog", "gNB"],
     ["gNB", "SRF"],
+    ["SRF", "SystemAgent"],
     ["gNB", "UPF"],
     ["UPF", "Gateway"],
     ["UPF", "AgentGW"],
     ["AgentGW", "MarketAgent"],
-    ["SRF", "ConnectionAgent"],
-    ["SRF", "ACN"],
-    ["SRF", "Computing"],
+    ["SystemAgent", "ConnectionAgent"],
+    ["SystemAgent", "ACN"],
+    ["SystemAgent", "Computing"],
   ];
 
   const activeFlowConfig = getTopologyFlowConfig(stage, activeFlowType);
@@ -966,8 +1017,19 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
       left: `${target.x + offsetX}%`,
       top: `${target.y + offsetY}%`,
     };
+    const hasToolPanel = Boolean(AGENT_TOOL_SETS[bubble.targetNode]);
     const placementStyle = placement === "right"
-      ? { ...basePosition, top: `${target.y - 5 + offsetY}%`, transform: "translate(22%, -50%)" }
+      ? {
+          ...basePosition,
+          top: hasToolPanel && bubble.targetNode === "ConnectionAgent"
+            ? `${target.y - 9 + offsetY}%`
+            : `${target.y - 5 + offsetY}%`,
+          transform: hasToolPanel && bubble.targetNode === "ConnectionAgent"
+            ? "translate(30%, 0)"
+            : hasToolPanel
+              ? "translate(30%, -50%)"
+              : "translate(22%, -50%)",
+        }
       : placement === "left"
         ? { ...basePosition, transform: "translate(-108%, -50%)" }
       : placement === "upperLeft"
@@ -993,7 +1055,28 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
         className: "left-[0.5%] top-[59%] w-[10.5em]",
       }
     : null;
-  const positionedAgentBubbles = [agentBubble, ...agentBubbles]
+  const activeToolBubbleByTarget = Object.fromEntries(
+    agentBubbles
+      .filter((bubble) => bubble?.targetNode && AGENT_TOOL_SETS[bubble.targetNode])
+      .map((bubble) => [bubble.targetNode, bubble])
+  );
+  const persistentToolBubbles = Object.keys(AGENT_TOOL_SETS).map((targetNode) => {
+    const activeBubble = activeToolBubbleByTarget[targetNode];
+    const defaultPlacement = targetNode === "AgentGW" ? "above" : "right";
+
+    return {
+      targetNode,
+      placement: activeBubble?.placement || defaultPlacement,
+      offsetY: activeBubble?.offsetY || (targetNode === "AgentGW" ? -3 : 0),
+      lines: activeBubble?.lines || [],
+      activeTools: activeBubble?.activeTools || [],
+      status: activeBubble?.status || "idle",
+    };
+  });
+  const nonToolAgentBubbles = agentBubbles.filter((bubble) => (
+    !bubble?.targetNode || !AGENT_TOOL_SETS[bubble.targetNode]
+  ));
+  const positionedAgentBubbles = [agentBubble, ...persistentToolBubbles, ...nonToolAgentBubbles]
     .filter(Boolean)
     .map((bubble) => resolveAgentBubblePosition(bubble));
   const [latencySampleTick, setLatencySampleTick] = useState(0);
@@ -1030,9 +1113,12 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
     const start = from === "RobotDog" && to === "gNB"
       ? { x: a.x + 6, y: a.y - 2 }
       : { x: a.x, y: a.y };
-    const cx = (start.x + b.x) / 2;
-    const cy = Math.min(start.y, b.y) - 10;
-    return { start, control: { x: cx, y: cy }, end: { x: b.x, y: b.y } };
+    const end = from === "SystemAgent" && to === "Computing"
+      ? { x: b.x, y: b.y - 6 }
+      : { x: b.x, y: b.y };
+    const cx = (start.x + end.x) / 2;
+    const cy = Math.min(start.y, end.y) - 10;
+    return { start, control: { x: cx, y: cy }, end };
   };
 
   const buildPath = (connection) => {
@@ -1066,7 +1152,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
         </div>
       </div>
 
-      <div className="flex-[1.55] w-full min-h-[390px] lg:min-h-[460px] relative rounded-lg overflow-visible border border-blue-900/30 bg-slate-950/20">
+      <div className="flex-[2.05] w-full min-h-[525px] lg:min-h-[640px] relative rounded-lg overflow-visible border border-blue-900/30 bg-slate-950/20">
         <svg className="absolute inset-0 z-10 h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
             <filter id="topology-line-glow" x="-30%" y="-30%" width="160%" height="160%">
@@ -1152,6 +1238,24 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
           })}
         </div>
 
+        <div className="pointer-events-none absolute left-[32%] top-[1%] z-[19] h-[60%] w-[66%] rounded-lg border-2 border-dashed border-orange-300/90 bg-orange-500/[0.08] shadow-[0_0_22px_rgba(251,146,60,0.28)]">
+          <div className="absolute left-2 top-2 rounded-md border border-orange-200/80 bg-slate-950/92 px-3 py-1 text-xl font-black leading-none tracking-tight text-orange-100 shadow-[0_0_18px_rgba(251,146,60,0.35)]">
+            CP
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute left-[32%] top-[63%] z-[19] h-[36%] w-[39%] rounded-lg border-2 border-dashed border-emerald-300/90 bg-emerald-500/[0.08] shadow-[0_0_22px_rgba(16,185,129,0.25)]">
+          <div className="absolute bottom-2 left-2 rounded-md border border-emerald-200/80 bg-slate-950/92 px-3 py-1 text-xl font-black leading-none tracking-tight text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.32)]">
+            UP
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute left-[73%] top-[63%] z-[19] h-[36%] w-[25%] rounded-lg border-2 border-dashed border-sky-300/85 bg-sky-500/[0.08] shadow-[0_0_18px_rgba(56,189,248,0.18)]">
+          <div className="absolute bottom-2 right-2 rounded-md border border-sky-200/70 bg-slate-950/92 px-3 py-1 text-xl font-black leading-none tracking-tight text-sky-100 shadow-[0_0_14px_rgba(56,189,248,0.22)]">
+            OTT
+          </div>
+        </div>
+
         <div className="absolute inset-0 z-20">
           {Object.entries(nodes).map(([key, value]) => (
             <div
@@ -1187,16 +1291,16 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
 
       </div>
 
-      <div className="mt-4 border-t border-blue-500/25 pt-4">
-        <div className="flex items-center justify-between gap-3 mb-3">
+      <div className="mt-1.5 border-t border-blue-500/25 pt-1.5">
+        <div className="flex items-center justify-between gap-3 mb-1">
           <h3 className="text-sm font-bold text-blue-100 tracking-wide">6G核心网作用</h3>
           <span className="text-[10px] text-cyan-300 font-mono">Core Network Functions</span>
         </div>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-4 gap-2">
           {coreFunctions.map((item) => (
             <div
               key={item}
-              className="flex items-center gap-2 rounded border border-blue-500/25 bg-slate-900/20 px-3 py-2 text-xs text-blue-100/90 backdrop-blur-sm"
+              className="flex items-center gap-2 rounded border border-blue-500/25 bg-slate-900/20 px-2.5 py-1.5 text-xs text-blue-100/90 backdrop-blur-sm"
             >
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-cyan-300" />
               <span className="font-medium">{item}</span>
@@ -1338,6 +1442,7 @@ const connectBackendVideoPeer = async (pc, offerUrl, clientId, streamType) => {
 };
 
 const DOG_VIDEO_HEALTH_POLL_MS = 500;
+const DOG_VIDEO_CONNECT_TIMEOUT_MS = 10000;
 
 const getDogVideoGateState = (health, hasError = false) => {
   if (hasError) {
@@ -1349,9 +1454,6 @@ const getDogVideoGateState = (health, hasError = false) => {
   if (!health.streamRequested) {
     return "waiting-task";
   }
-  if (!health.dogConnected) {
-    return "waiting-dog";
-  }
   if (!health.videoReady) {
     return "waiting-stream";
   }
@@ -1361,7 +1463,6 @@ const getDogVideoGateState = (health, hasError = false) => {
 const isDogVideoReadyForOffer = (health) => (
   health?.ok === true
   && health?.streamRequested === true
-  && health?.dogConnected === true
   && health?.videoReady === true
 );
 
@@ -1595,6 +1696,8 @@ const useBackendVideoStream = ({
 
     let disposed = false;
     let retryTimer = null;
+    let connectTimeout = null;
+    let receivedTrack = false;
     const iceServers = getWebRtcIceServers();
     const pc = new RTCPeerConnection({
       iceServers,
@@ -1606,6 +1709,13 @@ const useBackendVideoStream = ({
       if (retryTimer !== null) {
         window.clearTimeout(retryTimer);
         retryTimer = null;
+      }
+    };
+
+    const clearConnectTimeout = () => {
+      if (connectTimeout !== null) {
+        window.clearTimeout(connectTimeout);
+        connectTimeout = null;
       }
     };
 
@@ -1622,6 +1732,23 @@ const useBackendVideoStream = ({
       }, delayMs);
     };
 
+    const closeAndRetry = (reason, delayMs = 1200) => {
+      if (disposed) {
+        return;
+      }
+
+      console.warn(`${label} WebRTC retrying: ${reason}`, {
+        clientId,
+        connectionState: pc.connectionState,
+        iceConnectionState: pc.iceConnectionState,
+        signalingState: pc.signalingState,
+      });
+      clearConnectTimeout();
+      setState("failed");
+      scheduleRetry(delayMs);
+      pc.close();
+    };
+
     pc.addTransceiver("video", { direction: "recvonly" });
 
     pc.onconnectionstatechange = () => {
@@ -1632,6 +1759,7 @@ const useBackendVideoStream = ({
         } else if (pc.connectionState === "disconnected") {
           scheduleRetry(10000);
         } else if (["failed", "closed"].includes(pc.connectionState)) {
+          clearConnectTimeout();
           scheduleRetry();
         }
       }
@@ -1639,10 +1767,18 @@ const useBackendVideoStream = ({
 
     pc.ontrack = (event) => {
       if (!disposed) {
+        receivedTrack = true;
+        clearConnectTimeout();
         setStream(event.streams[0]);
         setState("receiving");
       }
     };
+
+    connectTimeout = window.setTimeout(() => {
+      if (!receivedTrack) {
+        closeAndRetry("timed out before video track arrived");
+      }
+    }, DOG_VIDEO_CONNECT_TIMEOUT_MS);
 
     const connect = async () => {
       try {
@@ -1662,6 +1798,7 @@ const useBackendVideoStream = ({
     return () => {
       disposed = true;
       clearScheduledRetry();
+      clearConnectTimeout();
       setStream(null);
       if (videoRef.current) {
         videoRef.current.srcObject = null;
@@ -2068,7 +2205,7 @@ const getWorkflowBubbleFromRows = (workflow = [], stage) => {
     const items = computingRows.length
       ? [
           {
-            label: "Computing Agent:分配算力资源",
+            label: "Computing Agent:创建算力会话\n分配算力资源",
             status: getCombinedWorkflowStatus(computingRows),
           },
         ]
@@ -2607,7 +2744,7 @@ export default function App() {
       `}} />
 
       {/* 主屏幕容器 - 整体升级为全毛玻璃HUD悬浮舱 */}
-      <div className="w-full max-w-[1600px] bg-slate-950/38 backdrop-blur-xl rounded-3xl border-2 border-cyan-300/55 shadow-[0_0_0_1px_rgba(15,23,42,0.85),0_0_34px_rgba(34,211,238,0.18),0_28px_90px_rgba(0,0,0,0.72)] relative overflow-hidden flex flex-col p-6 md:p-8 ring-1 ring-white/10">
+      <div className="w-full max-w-[1960px] bg-slate-950/38 backdrop-blur-xl rounded-3xl border-2 border-cyan-300/55 shadow-[0_0_0_1px_rgba(15,23,42,0.85),0_0_34px_rgba(34,211,238,0.18),0_28px_90px_rgba(0,0,0,0.72)] relative overflow-hidden flex flex-col p-6 md:p-8 ring-1 ring-white/10">
         <div className="absolute inset-0 rounded-3xl border border-slate-950/80 pointer-events-none" />
         <div className="absolute inset-[3px] rounded-[1.35rem] border border-blue-200/15 pointer-events-none" />
         
@@ -2629,13 +2766,13 @@ export default function App() {
         </header>
 
         {/* 核心内容区 (三列布局) */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-[2.5fr_6.5fr_2.5fr] gap-6 flex-1 relative z-10">
           
           {/* 左列：机器狗接入 */}
-          <div className="md:col-span-3">
+          <div>
             <SciFiPanel className="h-full">
               <div className="flex flex-col h-full">
-                <h2 className="text-blue-200 text-base lg:text-lg font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
+                <h2 className="text-blue-100 text-lg lg:text-xl font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
                   {effectiveStageConfig.leftPanelTitle}
                 </h2>
                 
@@ -2905,7 +3042,7 @@ export default function App() {
           </div>
 
           {/* 中间列：6G核心网 3D 拓扑与平面网元、上方弧线数据流 */}
-          <div className="md:col-span-6">
+          <div>
             <NetworkTopology3D
               stage={stage}
               activeFlowType={effectiveStageConfig.activeFlowType}
@@ -2918,25 +3055,25 @@ export default function App() {
           </div>
 
           {/* 右列：实时状态 */}
-          <div className="md:col-span-3">
+          <div>
             <SciFiPanel className="h-full">
               <div className="flex flex-col h-full">
                 <h2 className="text-blue-200 text-base lg:text-lg font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
                   实时状态
                 </h2>
                 
-                <div className="flex flex-col flex-1 gap-3">
+                <div className="flex flex-col flex-1 gap-4">
                   {/* 子栏目 1: 实时状态 */}
-                  <div className="border border-blue-500/30 rounded-lg p-2.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
+                  <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
                     {stage === 8 ? (
                       <LatencyChart points={latencySeries.points} error={latencySeries.error} />
                     ) : (
                       <>
-                        <div className="flex items-center gap-2.5 mb-2">
-                          <div className="w-7 h-7 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
-                            <User className="w-3.5 h-3.5 text-blue-300" />
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-8 h-8 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
+                            <User className="w-4 h-4 text-blue-300" />
                           </div>
-                          <h3 className="text-white font-bold text-sm lg:text-base">{effectiveStageConfig.statusTitle}</h3>
+                          <h3 className="text-white font-bold text-base lg:text-lg">{effectiveStageConfig.statusTitle}</h3>
                         </div>
                         <div className="flex flex-col">
                           {effectiveStageConfig.statusRows.map((item) => (
@@ -2955,23 +3092,23 @@ export default function App() {
                   </div>
 
                   {/* 子栏目 2: 当前任务摘要 */}
-                  <div className="border border-blue-500/30 rounded-lg p-3 bg-slate-900/30 backdrop-blur-md flex flex-col shadow-md">
-                    <div className="flex items-center gap-2.5 mb-2">
-                      <div className="w-7 h-7 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
-                        <Network className="w-3.5 h-3.5 text-blue-300" />
+                  <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-[1.35] flex-col shadow-md">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
+                        <Network className="w-4 h-4 text-blue-300" />
                       </div>
-                      <h3 className="text-white font-bold text-sm lg:text-base">当前任务摘要</h3>
+                      <h3 className="text-white font-bold text-base lg:text-lg">当前任务摘要</h3>
                     </div>
                     <TaskBriefPanel logs={effectiveStageConfig.logs} />
                   </div>
 
                   {/* 子栏目 3: 工作流 */}
-                  <div className="border border-blue-500/30 rounded-lg p-3 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
-                    <div className="flex items-center gap-2.5 mb-2 opacity-80">
-                      <div className="w-7 h-7 rounded bg-blue-900/15 border border-blue-500/20 flex items-center justify-center">
-                        <ArrowRightCircle className="w-3.5 h-3.5 text-blue-300" />
+                  <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
+                    <div className="flex items-center gap-3 mb-3 opacity-80">
+                      <div className="w-8 h-8 rounded bg-blue-900/15 border border-blue-500/20 flex items-center justify-center">
+                        <ArrowRightCircle className="w-4 h-4 text-blue-300" />
                       </div>
-                      <h3 className="text-white font-bold text-sm lg:text-base">工作流</h3>
+                      <h3 className="text-white font-bold text-base lg:text-lg">工作流</h3>
                     </div>
                     <div className="flex flex-col">
                       {effectiveStageConfig.workflow.map((item) => (

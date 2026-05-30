@@ -1437,7 +1437,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
   ];
 
   const activeFlowConfig = getTopologyFlowConfig(stage, activeFlowType);
-  const [isBlinkActive, setIsBlinkActive] = useState(false);
+  const [stage9BlinkActive, setStage9BlinkActive] = useState(false);
   const resolveAgentBubblePosition = (bubble) => {
     if (!bubble?.targetNode) {
       return bubble;
@@ -1534,14 +1534,14 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
   }, [stage, activeFlowType, activeFlowConfig.lines.length]);
 
   useEffect(() => {
-    if (!activeFlowConfig.lines.length) {
-      setIsBlinkActive(false);
+    if (stage !== 9 || !activeFlowConfig.lines.length) {
+      setStage9BlinkActive(false);
       return undefined;
     }
 
-    setIsBlinkActive(true);
+    setStage9BlinkActive(true);
     const timer = window.setTimeout(() => {
-      setIsBlinkActive(false);
+      setStage9BlinkActive(false);
     }, 5000);
 
     return () => window.clearTimeout(timer);
@@ -1617,7 +1617,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
           </defs>
           {connections.map((connection) => {
             const key = `${connection[0]}->${connection[1]}`;
-                const active = isBlinkActive && isActive(key);
+            const active = isActive(key) && (stage !== 9 || stage9BlinkActive);
             const color = activeFlowConfig.color || "#22f5ff";
             const path = buildPath(connection);
 
@@ -1664,7 +1664,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
         <div className="pointer-events-none absolute inset-0 z-[18]">
           {connections.map((connection) => {
             const key = `${connection[0]}->${connection[1]}`;
-            const lineConfig = isBlinkActive ? activeLineConfigByKey[key] : null;
+            const lineConfig = stage !== 9 || stage9BlinkActive ? activeLineConfigByKey[key] : null;
 
             if (!lineConfig) {
               return null;

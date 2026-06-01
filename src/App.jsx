@@ -25,6 +25,267 @@ import marketImage from './Market.png';
 import srfImage from './SRF.png';
 import upfImage from './upfnew.png';
 
+const LANGUAGE_STORAGE_KEY = "compute-webui-language";
+
+const UI_TRANSLATIONS = {
+  "机器狗寻找目标物品，算力不足无法识别，申请算力卸载到网络。": "The robot dog searches for the target item, cannot identify it locally, and requests compute offload from the network.",
+  "机器狗上传基础信息，获得网络签发数字身份，完成接入。": "The robot dog uploads basic information, receives a network-issued digital identity, and completes access.",
+  "AR眼镜指示机器狗前往商店，网络为其创建家庭域。": "The AR glasses instruct the robot dog to go to the store, and the network creates a home domain for it.",
+  "机器狗、AR眼镜与商店智能体完成双向认证。": "The robot dog, AR glasses, and store agent complete mutual authentication.",
+  "网络算力节点识别商品并回传标注结果。": "The network compute node identifies goods and returns annotated results.",
+  "机器狗与超市智能体完成商品交接。": "The robot dog completes item handover with the supermarket agent.",
+  "机器狗抵达商店门口，回传实时视野。": "The robot dog reaches the store entrance and streams live vision.",
+  "机器狗开箱，申请数字身份。": "The robot dog is powered on and applies for a digital identity.",
+  "建立机器狗与AR眼镜之间的可信协作入口": "Establish a trusted collaboration entry between the robot dog and AR glasses",
+  "识别当前演示处于接入准备阶段，等待数字身份和网络能力就绪": "Identify the current demo as access preparation and wait for identity and network capabilities",
+  "数字身份、可信接入、智能体发现能力处于待编排状态": "Digital identity, trusted access, and agent discovery capabilities are ready to be orchestrated",
+  "机器狗、AR眼镜、核心网智能体已进入协同准备态": "The robot dog, AR glasses, and core network agents are in collaborative standby",
+  "机器狗数字身份完成签发，接入凭证进入可用状态": "The robot dog's digital identity is issued and access credentials are available",
+  "将机器狗能力注册为可发现服务，开放给后续网络编排使用": "Register robot dog capabilities as discoverable services for network orchestration",
+  "机器狗身份、能力卡片和接入路径已完成准备": "Robot dog identity, capability card, and access path are ready",
+  "数字身份申请阶段完成，可以进入家庭域网络创建": "Digital identity application is complete; home-domain networking can start",
+  "建立跨域智能体协作链路，让眼镜意图可被远端能力承接": "Build a cross-domain agent collaboration link so glasses intent can be handled remotely",
+  "通过Agent GW完成跨域寻址，并由ACN确认对端身份可信": "Complete cross-domain addressing through Agent GW and verify peer identity through ACN",
+  "跨域认证、任务级会话和协议转换能力已生效": "Cross-domain authentication, task session, and protocol conversion are active",
+  "跨域A2A链路已建立，后续视觉任务可进入算力资源编排": "The cross-domain A2A link is established; vision tasks can enter compute orchestration",
+  "把机器狗第一视角视频接入家庭域，形成可用实时视野": "Connect first-person robot dog video to the home domain as live vision",
+  "选择低时延视频路径，优先保障眼镜端观看体验": "Select a low-latency video path for the AR glasses viewing experience",
+  "家庭域连接、UPF路径和视频通道已完成联动": "Home-domain connection, UPF path, and video channel are linked",
+  "机器狗原始视野已稳定输出，等待后续增强识别任务": "Raw robot dog vision is stable and waiting for enhanced recognition",
+  "将机器狗实时视野接入视觉识别任务，响应用户寻找目标物的意图": "Feed live robot dog vision into recognition for the user's target-item request",
+  "判断当前视频链路稳定，触发算力资源分配": "Confirm the video link is stable and trigger compute allocation",
+  "为视觉识别任务分配低时延算力资源和推理会话": "Allocate low-latency compute resources and an inference session for vision recognition",
+  "识别任务进入运行态，视频流开始进入算力节点处理": "The recognition task is running and the video stream enters compute-node processing",
+  "将识别结果与交接任务结果同步回系统门户": "Synchronize recognition and handover results back to the system portal",
+  "阶段9任务完成，整条作业闭环成功": "Stage 9 is complete and the full task loop is closed",
+  "机器狗与超市智能体完成商品取件交接动作": "The robot dog completes item pickup and handover with the supermarket agent",
+  "为机器狗申请可验证数字身份，建立后续网络接入前提": "Apply for a verifiable digital identity for the robot dog",
+  "启用统一数字身份管理和可信接入控制能力": "Enable unified digital identity management and trusted access control",
+  "将用户意图拆分为身份签发、能力注册和网络接入准备": "Split user intent into identity issuance, capability registration, and access preparation",
+  "数字身份申请正在处理，机器狗能力等待发布": "Digital identity application is processing; robot dog capabilities wait for publishing",
+  "创建家庭域连接，让AR眼镜能够低时延访问机器狗": "Create a home-domain connection for low-latency AR glasses access to the robot dog",
+  "将家庭域创建拆分为域管理、接入凭证和物理组网配置": "Split home-domain creation into domain management, credentials, and physical networking",
+  "签约数据和接入凭证已进入家庭域管理流程": "Subscription data and access credentials enter home-domain management",
+  "家庭域网络正在创建，端侧连接参数开始生效": "Home-domain networking is being created and device-side parameters are taking effect",
+  "优先选择低时延路径承载机器狗视频能力": "Prioritize a low-latency path for robot dog video",
+  "路径配置开始下发，视频流量进入专用转发路径": "Path configuration is being delivered and video traffic enters a dedicated forwarding path",
+  "家庭域连接建立中，端侧带宽和时延进入目标范围": "Home-domain connection is establishing; bandwidth and latency enter target ranges",
+  "生成式网络开始为家庭域计算接入路径": "Generative networking starts computing an access path for the home domain",
+  "任务链路完成调度": "Task link scheduling is complete",
+  "调用CMF Tool创建算力会话": "Call CMF Tool to create a compute session",
+  "调用CMF Tool分配算力资源": "Call CMF Tool to allocate compute resources",
+  "6G核心网：Agent GW跨域互联": "6G Core Network: Agent GW Cross-Domain Interconnect",
+  "6G核心网：分配算力资源": "6G Core Network: Compute Resource Allocation",
+  "6G核心网：数字身份申请": "6G Core Network: Digital Identity Application",
+  "6G核心网：生成式网络": "6G Core Network: Generative Networking",
+  "6G核心网：算力卸载": "6G Core Network: Compute Offload",
+  "6G核心网作用": "6G Core Network Functions",
+  "L3按需组网": "L3 On-Demand Networking",
+  "ACN Agent:创建管理家庭域": "ACN Agent:\nCreate and manage home domain",
+  "Connection Agent：下发物理组网配置": "Connection Agent:\nDeliver physical networking config",
+  "Connection Agent:接入网络": "Connection Agent:\nAccess network",
+  "Computing Agent:创建算力会话": "Computing Agent:\nCreate compute session",
+  "ACN Agent:签发数字身份": "ACN Agent:\nIssue digital identity",
+  "IDM颁发数字身份": "IDM issues digital identity",
+  "AR眼镜、机器狗与超市智能体双向认证": "AR glasses, robot dog, and supermarket agent mutual authentication",
+  "AR Glasses (6G终端)": "AR Glasses (6G Terminal)",
+  "机器狗与超市智能体交接物品": "Robot dog and supermarket agent hand over item",
+  "机器狗与超市智能体双向认证": "Robot dog and supermarket agent mutual authentication",
+  "眼镜与超市智能体双向认证": "AR glasses and supermarket agent mutual authentication",
+  "智能体通信网络": "Agent Communication Network",
+  "AR眼镜已接入": "AR Glasses Connected",
+  "机器狗抵达商店并回传实时视野": "Robot dog reaches the store and streams live vision",
+  "获取超市智能体数字身份": "Get supermarket agent digital identity",
+  "机器狗感知设备输入": "Robot dog sensor input",
+  "标注结果回传AR眼镜": "Return annotations to AR glasses",
+  "网络算力节点识别标注": "Network compute node recognition and annotation",
+  "机器狗感知输入": "Robot dog perception input",
+  "结果回传AR眼镜": "Return result to AR glasses",
+  "跨域智能体认证交互": "Cross-Domain Agent Authentication",
+  "机器狗实时视野": "Robot Dog Live Vision",
+  "数字身份申请": "Digital Identity Application",
+  "签约数据更新": "Subscription Data Update",
+  "下发域接入凭证": "Deliver Domain Access Credentials",
+  "下发物理组网配置": "Deliver Physical Network Config",
+  "下发UPF配置": "Deliver UPF Config",
+  "更新签约数据": "Update Subscription Data",
+  "创建管理家庭域": "Create and Manage Home Domain",
+  "创建家庭域": "Create Home Domain",
+  "创建算力会话": "Create Compute Session",
+  "分配算力资源": "Compute Resource Allocation",
+  "算力卸载已完成": "Compute Offload Completed",
+  "算力卸载": "Compute Offload",
+  "生成式网络": "Generative Networking",
+  "身份可信认证": "Trusted Identity Authentication",
+  "ID寻址路由": "ID Addressing Route",
+  "Agent协议转换": "Agent Protocol Conversion",
+  "协议转换": "Protocol Conversion",
+  "寻址路由": "Addressing Route",
+  "颁发数字身份": "Issue Digital Identity",
+  "发布能力卡片": "Publish Capability Card",
+  "接入网络": "Access Network",
+  "能力注册": "Capability Registration",
+  "业务授权": "Service Authorization",
+  "身份申请": "Identity Application",
+  "能力发布": "Capability Publishing",
+  "可信身份背书": "Trusted Identity Endorsement",
+  "按需组网": "On-Demand Networking",
+  "安全接入控制": "Secure Access Control",
+  "域内连接最优选路": "Optimal In-Domain Routing",
+  "统一数字身份管理": "Unified Digital Identity Management",
+  "通信凭证签发": "Communication Credential Issuance",
+  "可信接入控制": "Trusted Access Control",
+  "智能体发布发现": "Agent Publishing and Discovery",
+  "网络提供强大算力": "Network Provides Strong Compute",
+  "算力随路卸载": "Compute Offloaded Along the Path",
+  "传输低时延": "Low-Latency Transport",
+  "算力入网实际应用": "Compute-Network Application",
+  "机器狗共享实时视野": "Robot Dog Shares Live Vision",
+  "机器狗视野增强": "Enhanced Robot Dog Vision",
+  "机器狗原始视野": "Raw Robot Dog Vision",
+  "机器狗增强后的视野": "Enhanced Robot Dog Vision",
+  "物品交接": "Item Handover",
+  "家庭域创建": "Home Domain Creation",
+  "机器狗接入": "Robot Dog Access",
+  "眼镜已接入": "AR Glasses Connected",
+  "用户状态": "User Status",
+  "端侧状态": "Device Status",
+  "端侧带宽": "Device Bandwidth",
+  "平均时延": "Average Latency",
+  "端到端时延": "End-to-End Latency",
+  "实时状态": "Real-Time Status",
+  "当前任务摘要": "Current Task Summary",
+  "工作流": "Workflow",
+  "故事线": "Storyline",
+  "业务目标": "Objective",
+  "核心网能力": "Core Network Capabilities",
+  "系统决策": "Decision",
+  "当前结果": "Result",
+  "等待当前任务目标": "Waiting for current objective",
+  "等待核心网能力生效": "Waiting for core network capability",
+  "等待系统编排决策": "Waiting for orchestration decision",
+  "等待阶段结果生成": "Waiting for stage result",
+  "已完成任务": "Completed Tasks",
+  "已注册设备": "Registered Device",
+  "未注册设备": "Unregistered Device",
+  "已颁发": "Issued",
+  "未颁发": "Not Issued",
+  "凭证": "Credential",
+  "机器狗ID": "Robot Dog ID",
+  "当前": "Current",
+  "时间窗口: 最近": "Time Window: Last",
+  "目标": "Objective",
+  "能力": "Capability",
+  "决策": "Decision",
+  "结果": "Result",
+  "已完成": "Completed",
+  "进行中": "Working",
+  "即将开始": "Upcoming",
+  "待注册": "Unregistered",
+  "AR眼镜": "AR Glasses",
+  "超市智能体": "Supermarket Agent",
+  "商店智能体": "Store Agent",
+  "核心网作用": "Core Network Functions",
+  "智能体网络": "Agentic Network",
+  "智能体": "Agent",
+  "机器狗": "Robot Dog",
+  "核心网": "Core Network",
+  "家庭域": "Home Domain",
+  "数字身份": "Digital Identity",
+  "接入凭证": "Access Credentials",
+  "签约数据": "Subscription Data",
+  "物理组网配置": "Physical Network Config",
+  "低时延": "Low Latency",
+  "超市": "Supermarket",
+  "商店": "Store",
+  "网络": "Network",
+  "投影": "Projection",
+  "终端": "Terminal",
+};
+
+const TRANSLATION_ENTRIES = Object.entries(UI_TRANSLATIONS).sort((a, b) => b[0].length - a[0].length);
+const originalTextByNode = new WeakMap();
+const containsHan = (text) => /[\u3400-\u9fff]/.test(text);
+
+const translateTextNodeValue = (text) => {
+  let nextText = text;
+  TRANSLATION_ENTRIES.forEach(([source, target]) => {
+    nextText = nextText.split(source).join(target);
+  });
+  return nextText;
+};
+
+const walkTextNodes = (root, visitor) => {
+  if (!root || typeof document === "undefined") {
+    return;
+  }
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue?.trim()) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      const parent = node.parentElement;
+      if (!parent || parent.closest("script, style, svg, noscript")) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+
+  const nodes = [];
+  while (walker.nextNode()) {
+    nodes.push(walker.currentNode);
+  }
+  nodes.forEach(visitor);
+};
+
+const applyLanguageToDom = (root, language) => {
+  walkTextNodes(root, (node) => {
+    if (language === "zh") {
+      const original = originalTextByNode.get(node);
+      if (original && node.nodeValue !== original) {
+        node.nodeValue = original;
+      }
+      return;
+    }
+
+    const currentText = node.nodeValue;
+    const original = containsHan(currentText)
+      ? currentText
+      : originalTextByNode.get(node) || currentText;
+
+    if (containsHan(currentText)) {
+      originalTextByNode.set(node, currentText);
+    }
+
+    if (containsHan(original)) {
+      const translated = translateTextNodeValue(original);
+      if (node.nodeValue !== translated) {
+        node.nodeValue = translated;
+      }
+    }
+  });
+};
+
+const useLanguageOverlay = (rootRef, language) => {
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof MutationObserver === "undefined") {
+      return undefined;
+    }
+
+    const apply = () => {
+      window.requestAnimationFrame(() => applyLanguageToDom(root, language));
+    };
+
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(root, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
+  }, [language, rootRef]);
+};
+
 const STAGE4_WORKFLOW = [
   { label: "签约数据更新:", value: "Pending", status: "pending" },
   { label: "下发域接入凭证:", value: "Pending", status: "pending" },
@@ -248,9 +509,9 @@ const getCombinedWorkflowStatus = (items = []) => {
 };
 
 const STAGE_STORY_LINES = {
-  1: "AR眼镜与机器狗就绪，用户在家发起超市代购任务。",
-  2: "AR眼镜上传机器狗信息，网络签发数字身份并完成接入。",
-  4: "网络创建家庭域，AR眼镜通过A2A指示机器狗前往商店。",
+  1: "机器狗开箱，申请数字身份。",
+  2: "机器狗上传基础信息，获得网络签发数字身份，完成接入。",
+  4: "AR眼镜指示机器狗前往商店，网络为其创建家庭域。",
   5: "机器狗抵达商店门口，回传实时视野。",
   6: "机器狗、AR眼镜与商店智能体完成双向认证。",
   7: "机器狗寻找目标物品，算力不足无法识别，申请算力卸载到网络。",
@@ -979,10 +1240,10 @@ const TaskBriefPanel = ({ logs }) => {
           key={card.category}
           className={`flex min-h-[64px] flex-1 items-start gap-2.5 rounded-lg border px-3 py-2.5 ${card.className}`}
         >
-          <div className={`flex h-7 w-10 shrink-0 items-center justify-center rounded border text-[11px] font-black leading-none tracking-wide ${card.badgeClassName}`}>
+          <div className={`task-brief-badge flex h-7 w-10 shrink-0 items-center justify-center rounded border text-[11px] font-black leading-none tracking-wide ${card.badgeClassName}`}>
             {card.label}
           </div>
-          <div className="min-w-0 flex-1 text-[12px] font-bold leading-snug lg:text-[13px]">
+          <div className="task-brief-copy min-w-0 flex-1 text-[12px] font-bold leading-snug lg:text-[13px]">
             {card.value}
           </div>
         </div>
@@ -1128,8 +1389,7 @@ const ArAccessStateCard = ({ registered = false }) => {
 };
 
 const ArRegistrationPanel = () => (
-  <div className="flex min-h-[424px] flex-1 flex-col gap-2">
-    <ArAccessStateCard registered={false} />
+  <div className="flex h-[230px] flex-none flex-col gap-2 lg:h-[260px]">
     <ArAccessStateCard registered />
   </div>
 );
@@ -1320,6 +1580,8 @@ const AgentSpeechBubble = ({ bubble }) => {
   const positionClassName = bubble.style ? (bubble.className || "") : (bubble.className || "left-[83%] top-[36%]");
   const arrowClassName = bubble.arrow === "down-right"
     ? "absolute bottom-[-5px] right-6 h-2 w-2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
+    : bubble.arrow === "down-left-corner"
+    ? "absolute bottom-[-5px] left-1 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-l border-cyan-400/45 bg-slate-950/86"
     : bubble.arrow === "down-left"
     ? "absolute bottom-[-5px] left-[72%] h-2 w-2 -translate-x-1/2 rotate-[28deg] border-b border-r border-cyan-400/45 bg-slate-950/86"
     : bubble.arrow === "down"
@@ -1491,6 +1753,15 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
         status: "success",
         variant: "voiceIntent",
         className: "left-[9.5%] top-[74%] w-[13.5em]",
+      }
+    : null;
+  const robotDogSpeechBubble = stage === 2
+    ? {
+        lines: ["Apply for the Digital ID"],
+        status: "success",
+        variant: "voiceIntent",
+        arrow: "down-left-corner",
+        className: "left-[11.5%] top-[18%] w-[12em]",
       }
     : null;
   const activeToolBubbleByTarget = Object.fromEntries(
@@ -1739,6 +2010,7 @@ const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, 
             bubble={bubble}
           />
         ))}
+        <AgentSpeechBubble bubble={robotDogSpeechBubble} />
         <AgentSpeechBubble bubble={arSpeechBubble} />
 
       </div>
@@ -2637,8 +2909,6 @@ const pinBubbleToSystemAgent = (bubble) => (
 );
 
 const FIXED_AR_SPEECH_BY_STAGE = {
-  1: "Let my dog go to the supermarket",
-  2: "Let my dog go to the supermarket",
   4: "Let my dog go to the supermarket",
   5: "Share Dog's vision and enter the supermarket",
   6: "Share Dog's vision and enter the supermarket",
@@ -2648,6 +2918,12 @@ const FIXED_AR_SPEECH_BY_STAGE = {
 };
 
 export default function App() {
+  const appRootRef = useRef(null);
+  const [language, setLanguage] = useState(() => (
+    typeof window === "undefined"
+      ? "zh"
+      : window.localStorage.getItem(LANGUAGE_STORAGE_KEY) || "zh"
+  ));
   const { stage, connectionState, error } = useStagePolling();
   const arSpeechText = FIXED_AR_SPEECH_BY_STAGE[stage] || "";
   const stageConfig = STAGE_CONFIG[stage] || STAGE_CONFIG[1];
@@ -2672,6 +2948,13 @@ export default function App() {
     completedCount: 0,
     bubbleStatus: "working",
   });
+
+  useLanguageOverlay(appRootRef, language);
+
+  useEffect(() => {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+    document.title = language === "en" ? "Agent Communication Network" : "智能体通信网络";
+  }, [language]);
 
   useEffect(() => {
     if (stage !== 2) {
@@ -2897,6 +3180,7 @@ export default function App() {
 
       return {
         ...stageConfig,
+        activeFlowType: allDone ? null : "auth",
         showRegisteredDevice: allDone,
         statusRows: [
           {
@@ -3093,9 +3377,21 @@ export default function App() {
     : [];
 
   return (
-    <div className="video-backed-ui min-h-screen text-white p-4 md:p-8 font-sans overflow-x-hidden flex items-center justify-center relative isolate">
+    <div
+      ref={appRootRef}
+      className={`video-backed-ui min-h-screen text-white p-4 md:p-8 font-sans overflow-x-hidden flex items-center justify-center relative isolate ${language === "en" ? "lang-en" : "lang-zh"}`}
+    >
       <WebRtcBackground />
       <div className="video-dim-overlay fixed inset-0 -z-10 bg-black/35 pointer-events-none" />
+      <button
+        type="button"
+        aria-label="Toggle language"
+        className="fixed right-4 top-4 z-[90] flex items-center gap-1 rounded-full border border-cyan-300/35 bg-slate-950/80 p-1 text-[11px] font-semibold tracking-[0.08em] text-slate-200 shadow-[0_0_18px_rgba(34,211,238,0.22)] backdrop-blur-md transition hover:border-cyan-200/70"
+        onClick={() => setLanguage((current) => (current === "zh" ? "en" : "zh"))}
+      >
+        <span className={`rounded-full px-2 py-1 transition ${language === "zh" ? "bg-cyan-300 text-slate-950" : "text-slate-400"}`}>ZH</span>
+        <span className={`rounded-full px-2 py-1 transition ${language === "en" ? "bg-cyan-300 text-slate-950" : "text-slate-400"}`}>EN</span>
+      </button>
       {connectionState !== "connected" && (
         <div className="fixed bottom-3 right-3 z-50 max-w-[280px] rounded border border-amber-400/40 bg-slate-950/65 px-3 py-2 text-xs text-amber-100 backdrop-blur-md">
           Stage API: {connectionState}
@@ -3128,6 +3424,53 @@ export default function App() {
         .glow-text {
           text-shadow: 0 0 12px rgba(59,130,246,0.9);
         }
+        .lang-en {
+          overflow-wrap: break-word;
+          word-break: normal;
+          hyphens: none;
+        }
+        .lang-en .whitespace-nowrap {
+          white-space: normal;
+        }
+        .lang-en h1,
+        .lang-en h2,
+        .lang-en h3,
+        .lang-en p,
+        .lang-en span,
+        .lang-en div {
+          min-width: 0;
+        }
+        .lang-en .text-\\[13px\\],
+        .lang-en .text-\\[12px\\],
+        .lang-en .text-xs {
+          line-height: 1.18;
+        }
+        .lang-en .tracking-\\[0\\.2em\\],
+        .lang-en .tracking-\\[0\\.18em\\],
+        .lang-en .tracking-\\[0\\.16em\\] {
+          letter-spacing: 0.04em;
+        }
+        .lang-en .max-w-\\[120px\\],
+        .lang-en .max-w-\\[130px\\],
+        .lang-en .max-w-\\[140px\\] {
+          max-width: 160px;
+        }
+        .lang-en .task-brief-badge {
+          width: 4.85rem;
+          padding-left: 0.25rem;
+          padding-right: 0.25rem;
+          font-size: 10px;
+          letter-spacing: 0;
+          overflow-wrap: normal;
+          word-break: normal;
+          hyphens: none;
+          white-space: normal;
+        }
+        .lang-en .task-brief-copy {
+          overflow-wrap: normal;
+          word-break: normal;
+          hyphens: none;
+        }
         @keyframes spin-slow {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
@@ -3153,12 +3496,14 @@ export default function App() {
             <Wifi className="w-8 h-8 animate-pulse" />
           </div>
           <div className="text-center absolute left-1/2 -translate-x-1/2">
-            <h1 className="text-2xl md:text-4xl font-bold tracking-widest text-white glow-text mb-2">
-              6G智能体网络
+            <h1 className={`text-2xl md:text-4xl font-bold tracking-widest text-white glow-text ${language === "zh" ? "mb-2" : "mb-0"}`}>
+              {language === "en" ? "Agent Communication Network" : "智能体通信网络"}
             </h1>
-            <p className="text-blue-200 font-medium text-sm md:text-base">
-              6G Agentic Network
-            </p>
+            {language === "zh" && (
+              <p className="text-blue-200 font-medium text-sm md:text-base">
+                Agent Communication Network
+              </p>
+            )}
           </div>
           <div className="w-24"></div>
         </header>
@@ -3538,10 +3883,8 @@ export default function App() {
           </div>
         </div>
 
-        <StageStorySummary stage={stage} />
-
         {/* 底部步骤条 - 升级为精致高对比度毛玻璃条 */}
-        <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
+        <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
           {effectiveStageConfig.steps.map((step) => {
             const StepIcon = step.icon;
             const isDone = step.status === "success";

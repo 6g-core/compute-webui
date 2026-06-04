@@ -25,7 +25,8 @@ const AgentSpeechBubble = ({ bubble }) => {
   const hasToolPanel = Array.isArray(tools) && tools.length > 0;
   const isSystemAgentBubble = bubble.targetNode === "SystemAgent";
   const isLargeAgentBubble = ["ConnectionAgent", "ACN", "Computing", "AgentGW", "OttAgentGW"].includes(bubble.targetNode) && !items && !hasToolPanel;
-  const baseTextSizeClass = isStage2SystemPlan ? "text-[11px]" : isLargeAgentBubble ? "text-[11px]" : isSystemAgentBubble ? "text-[10px]" : "text-[9px]";
+  const isPrimaryAgentBubble = ["ConnectionAgent", "ACN", "Computing"].includes(bubble.targetNode) && !items && !hasToolPanel;
+  const baseTextSizeClass = isStage2SystemPlan ? "text-[11px]" : isPrimaryAgentBubble ? "text-[12px]" : isLargeAgentBubble ? "text-[11px]" : isSystemAgentBubble ? "text-[10px]" : "text-[9px]";
   const positionClassName = bubble.style ? (bubble.className || "") : (bubble.className || "left-[83%] top-[36%]");
   const arrowClassName = bubble.arrow === "down-right"
     ? "absolute bottom-[-5px] right-6 h-2 w-2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
@@ -175,8 +176,8 @@ const TOPOLOGY_NODES = {
   SRF: { name: "SRF", x: 36, y: 43, color: "#38bdf8", image: srfImage, size: "w-20 md:w-24" },
   SystemAgent: { name: "SystemAgent", x: 53.5, y: 40, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24" },
   UPF: { name: "UPF", x: 36, y: 82, color: "#34d399", image: upfImage, size: "w-20 md:w-24" },
-  ConnectionAgent: { name: "Connection Agent", x: 69, y: 13, color: "#22d3ee", image: connectionImage, size: "w-16 md:w-20", labelTextClassName: "text-[11px] sm:text-[12px]" },
-  ACN: { name: "ACN Agent", x: 69, y: 32, color: "#f472b6", image: acnImage, size: "w-16 md:w-20", labelTextClassName: "text-[11px] sm:text-[12px]" },
+  ConnectionAgent: { name: "Connection Agent", x: 69, y: 13, color: "#22d3ee", image: connectionImage, size: "w-16 md:w-20" },
+  ACN: { name: "ACN Agent", x: 69, y: 32, color: "#f472b6", image: acnImage, size: "w-16 md:w-20" },
   Computing: {
     name: "Computing Agent",
     x: 69,
@@ -185,7 +186,6 @@ const TOPOLOGY_NODES = {
     image: computingImage,
     size: "w-16 md:w-20",
     labelClassName: "absolute top-[80%]",
-    labelTextClassName: "text-[11px] sm:text-[12px]",
     labelStyle: { whiteSpace: "nowrap", width: "max-content", minWidth: "max-content" },
   },
   AgentGW: { name: "Agent GW", x: 62.5, y: 91, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20" },

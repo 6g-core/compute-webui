@@ -1,33 +1,105 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  Wifi, 
-  ShieldAlert, 
-  ShieldCheck, 
-  CheckCircle2, 
-  ChevronRight, 
-  User, 
-  Network, 
-  ArrowRightCircle, 
-  Cloud, 
-  Globe, 
-  Share2,
-  LoaderCircle,
+  Wifi,
+  ShieldAlert,
+  ShieldCheck,
+  CheckCircle2,
   CircleDot,
-  Cpu,
-  Radio
 } from 'lucide-react';
-import { getTopologyFlowConfig } from './topologyFlowConfig';
-import acnImage from './ACN.png';
-import computingImage from './Computing.png';
-import computingNodeImage from './Computing_Node.png';
-import connectionImage from './Connetction.png';
-import marketImage from './Market.png';
-import srfImage from './SRF.png';
-import upfImage from './upfnew.png';
+import { STAGE9_COMPLETED_TASKS, getWorkflowBubbleFromRows, pinBubbleToSystemAgent } from './config/stageConfig.jsx';
+import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, formatVideoState, useBackendVideoStream, useDogVideoOfferGate } from './hooks/useBackendVideo';
+import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
+import { useLatencySeries, useStagePolling } from './hooks/usePolling';
+import { LeftPanel, RightPanel, StepBar } from './components/DemoPanels.jsx';
+import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
+import WebRtcBackground from './components/WebRtcBackground.jsx';
 
 const LANGUAGE_STORAGE_KEY = "compute-webui-language";
 
+const FIXED_AR_SPEECH_BY_STAGE = {
+  4: "Let my dog go to the supermarket",
+  5: "Share Video",
+  6: "Share Dog's vision and enter the supermarket",
+  7: "Find the yellow bottle",
+  8: "Find the yellow bottle",
+  9: "Grasp the yellow bottle",
+};
+
 const UI_TRANSLATIONS = {
+  "意图解析处理摘要": "Intent Parsing Summary",
+  "用户意图：": "User Intent:",
+  "网络任务规划：": "Network Task Plan:",
+  "SystemAgent将意图拆解为三个子任务": "System Agent decomposes the intent into three subtasks",
+  "SystemAgent将意图拆解为两个子任务": "System Agent decomposes the intent into two subtasks",
+  "SystemAgent将意图拆解为一个子任务": "System Agent decomposes the intent into one subtask",
+  "SystemAgent为签发数字身份任务匹配处理Agent -> ACN Agent": "System Agent assigns the digital identity issuance task to ACN Agent",
+  "SystemAgent为接入网络任务匹配处理Agent -> Connection Agent": "System Agent assigns the network access task to Connection Agent",
+  "SystemAgent为创建家庭域凭证任务匹配处理Agent -> ACN Agent": "System Agent assigns the home-domain credential task to ACN Agent",
+  "SystemAgent为下发物理组网配置任务匹配处理Agent -> Connection Agent": "System Agent assigns the physical network configuration task to Connection Agent",
+  "SystemAgent为L1级通信保障任务匹配处理Agent -> Connection Agent": "System Agent assigns the L1 communication assurance task to Connection Agent",
+  "SystemAgent为L2级通信保障任务匹配处理Agent -> Connection Agent": "System Agent assigns the L2 communication assurance task to Connection Agent",
+  "SystemAgent为算力资源编排任务匹配处理Agent -> Computing Agent": "System Agent assigns compute resource orchestration to Computing Agent",
+  "SystemAgent为L3级通信保障任务匹配处理Agent -> Connection Agent": "System Agent assigns the L3 communication assurance task to Connection Agent",
+  "System Agent收到意图：Apply for the Digital ID": "System Agent receives intent: Apply for the Digital ID",
+  "System Agent收到意图：Create Home Domain": "System Agent receives intent: Create Home Domain",
+  "System Agent收到意图：Share Video": "System Agent receives intent: Share Video",
+  "System Agent收到意图：Compute offloading for object recognition": "System Agent receives intent: Compute offloading for object recognition",
+  "ACN Agent收到任务：签发数字身份": "ACN Agent receives task: issue digital identity",
+  "ACN Agent收到任务：创建家庭域凭证": "ACN Agent receives task: create home-domain credentials",
+  "Connection Agent收到任务：接入网络": "Connection Agent receives task: access network",
+  "Connection Agent收到任务：下发物理组网配置": "Connection Agent receives task: deliver physical network configuration",
+  "Connection Agent收到任务：L1级通信保障": "Connection Agent receives task: L1 communication assurance",
+  "Connection Agent收到任务：L2级通信保障": "Connection Agent receives task: L2 communication assurance",
+  "Connection Agent收到任务：L3级通信保障": "Connection Agent receives task: L3 communication assurance",
+  "Computing Agent收到任务：创建算力会话": "Computing Agent receives task: create compute session",
+  "Computing Agent收到任务：分配算力资源": "Computing Agent receives task: allocate compute resources",
+  "ACN Agent调用IDM签发数字身份": "ACN Agent calls IDM to issue digital identity",
+  "ACN Agent调用ARF发布能力卡片": "ACN Agent calls ARF to publish capability card",
+  "ACN Agent调用6G UDM更新签约数据": "ACN Agent calls 6G UDM to update subscription data",
+  "ACN Agent调用IDM下发域接入凭证": "ACN Agent calls IDM to deliver domain access credentials",
+  "Connection Agent调用6G AM注册": "Connection Agent calls 6G AM to register",
+  "Connection Agent调用6G SM创建会话": "Connection Agent calls 6G SM to create a session",
+  "Connection Agent调用6G SM下发物理组网配置": "Connection Agent calls 6G SM to deliver physical network configuration",
+  "Connection Agent调用6G Policy下发保障策略": "Connection Agent calls 6G Policy to deliver assurance policy",
+  "Connection Agent调用6G Policy下发AI推理通信保障策略": "Connection Agent calls 6G Policy to deliver AI inference communication assurance policy",
+  "Computing Agent调用CMF创建算力会话": "Computing Agent calls CMF to create a compute session",
+  "Computing Agent调用CMF分配算力资源": "Computing Agent calls CMF to allocate compute resources",
+  "System Agent确认完成签发数字身份任务": "System Agent confirms digital identity issuance is complete",
+  "System Agent确认完成接入网络任务": "System Agent confirms network access is complete",
+  "System Agent确认完成家庭域凭证任务": "System Agent confirms home-domain credentials are complete",
+  "System Agent确认完成物理组网配置任务": "System Agent confirms physical network configuration is complete",
+  "System Agent确认完成L1级通信保障任务": "System Agent confirms L1 communication assurance is complete",
+  "System Agent确认完成L2级通信保障任务": "System Agent confirms L2 communication assurance is complete",
+  "System Agent确认完成L3级通信保障任务": "System Agent confirms L3 communication assurance is complete",
+  "System Agent确认完成创建算力会话任务": "System Agent confirms compute session creation is complete",
+  "System Agent确认完成分配算力资源任务": "System Agent confirms compute resource allocation is complete",
+  "System Agent任务完成": "System Agent task complete",
+  "收到意图：": "Intent received:",
+  "收到任务：": "Task received:",
+  "完成任务：": "Task complete:",
+  "调用IDM：": "Call IDM:",
+  "调用6G UDM": "Call 6G UDM",
+  "调用6G AM": "Call 6G AM",
+  "调用6G SM": "Call 6G SM",
+  "调用ARF": "Call ARF",
+  "调用CMF": "Call CMF",
+  "调用IDM": "Call IDM",
+  "调用SMF": "Call SMF",
+  "调用UDM": "Call UDM",
+  "签发数字身份": "Issue Digital Identity",
+  "创建家庭域凭证": "Create Home-Domain Credentials",
+  "家庭域凭证": "Home-Domain Credentials",
+  "创建会话": "Create Session",
+  "注册": "Register",
+  "任务": "Task",
+  "意图": "Intent",
+  "拆解": "Decompose",
+  "匹配": "Match",
+  "确认": "Confirm",
+  "摘要": "Summary",
+  "完成": "Complete",
+  "Stage8 实时时延图表": "Stage 8 Real-Time Latency Chart",
+  "机器狗能力已在家庭域内可发现": "Robot dog capability is discoverable in the home domain",
   "机器狗寻找目标物品，算力不足无法识别，申请算力卸载到网络。": "The robot dog searches for the target item, cannot identify it locally, and requests compute offload from the network.",
   "机器狗上传基础信息，获得网络签发数字身份，完成接入。": "The robot dog uploads basic information, receives a network-issued digital identity, and completes access.",
   "AR眼镜指示机器狗前往商店，网络为其创建家庭域。": "The AR glasses instruct the robot dog to go to the store, and the network creates a home domain for it.",
@@ -70,6 +142,20 @@ const UI_TRANSLATIONS = {
   "优先选择低时延路径承载机器狗视频能力": "Prioritize a low-latency path for robot dog video",
   "路径配置开始下发，视频流量进入专用转发路径": "Path configuration is being delivered and video traffic enters a dedicated forwarding path",
   "家庭域连接建立中，端侧带宽和时延进入目标范围": "Home-domain connection is establishing; bandwidth and latency enter target ranges",
+  "端侧状态：L1级通信保障": "Device Status:\nL1 Communication Assurance",
+  "保障效果": "Assurance Effect",
+  "连接无中断": "No connection interruption",
+  "端侧状态：L2级通信保障": "Device Status:\nL2 Communication Assurance",
+  "视频传输流畅": "Smooth video transmission",
+  "L2级通信保障": "L2 Communication Assurance",
+  "端侧状态：L3级通信保障": "Device Status:\nL3 Communication Assurance",
+  "L3级通信保障": "L3 Communication Assurance",
+  "AI推理链路稳定，结果回传抖动低于5ms": "AI inference link is stable; result return jitter is below 5 ms",
+  "下发AI推理通信保障策略": "Deliver AI inference communication assurance policy",
+  "Share Video": "Share Video",
+  "L1级通信保障": "L1 Communication Assurance",
+  "下发保障策略": "Deliver Assurance Policy",
+  "调用6G Policy": "Call 6G Policy",
   "生成式网络开始为家庭域计算接入路径": "Generative networking starts computing an access path for the home domain",
   "任务链路完成调度": "Task link scheduling is complete",
   "调用CMF Tool创建算力会话": "Call CMF Tool to create a compute session",
@@ -101,7 +187,7 @@ const UI_TRANSLATIONS = {
   "网络算力节点识别标注": "Network compute node recognition and annotation",
   "机器狗感知输入": "Robot dog perception input",
   "结果回传AR眼镜": "Return result to AR glasses",
-  "跨域智能体认证交互": "Cross-Domain Agent Authentication",
+  "跨域智能体认证交互": "Agent Authentication",
   "机器狗实时视野": "Robot Dog Live Vision",
   "数字身份申请": "Digital Identity Application",
   "签约数据更新": "Subscription Data Update",
@@ -132,7 +218,8 @@ const UI_TRANSLATIONS = {
   "按需组网": "On-Demand Networking",
   "安全接入控制": "Secure Access Control",
   "域内连接最优选路": "Optimal In-Domain Routing",
-  "统一数字身份管理": "Unified Digital Identity Management",
+  "用户体验保障": "User Experience Assurance",
+  "统一数字身份管理": "Digital Identity Management",
   "通信凭证签发": "Communication Credential Issuance",
   "可信接入控制": "Trusted Access Control",
   "智能体发布发现": "Agent Publishing and Discovery",
@@ -144,6 +231,7 @@ const UI_TRANSLATIONS = {
   "机器狗视野增强": "Enhanced Robot Dog Vision",
   "机器狗原始视野": "Raw Robot Dog Vision",
   "机器狗增强后的视野": "Enhanced Robot Dog Vision",
+  "机械臂视频流": "Robotic Arm Video Stream",
   "物品交接": "Item Handover",
   "家庭域创建": "Home Domain Creation",
   "机器狗接入": "Robot Dog Access",
@@ -165,6 +253,10 @@ const UI_TRANSLATIONS = {
   "等待核心网能力生效": "Waiting for core network capability",
   "等待系统编排决策": "Waiting for orchestration decision",
   "等待阶段结果生成": "Waiting for stage result",
+  "已完成 / Completed": "Completed",
+  "进行中 / Working": "Working",
+  "即将开始 / Upcoming": "Upcoming",
+  "待注册 / Unregistered": "Unregistered",
   "已完成任务": "Completed Tasks",
   "已注册设备": "Registered Device",
   "未注册设备": "Unregistered Device",
@@ -286,595 +378,6 @@ const useLanguageOverlay = (rootRef, language) => {
   }, [language, rootRef]);
 };
 
-const STAGE4_WORKFLOW = [
-  { label: "签约数据更新:", value: "Pending", status: "pending" },
-  { label: "下发域接入凭证:", value: "Pending", status: "pending" },
-  { label: "下发UPF配置:", value: "Pending", status: "pending" },
-];
-
-const STAGE4_TOOL_BUBBLES = {
-  "签约数据更新:": {
-    lines: ["调用UDM Tool", "更新签约数据"],
-    targetNode: "ACN",
-    placement: "right",
-    activeTools: ["UDM Tool"],
-  },
-  "下发域接入凭证:": {
-    lines: ["调用IDM Tool", "下发域接入凭证"],
-    targetNode: "ACN",
-    placement: "right",
-    activeTools: ["IDM Tool"],
-  },
-  "下发UPF配置:": {
-    lines: ["调用SMF Tool", "下发物理组网配置"],
-    targetNode: "ConnectionAgent",
-    placement: "right",
-    activeTools: ["6G SM Tool"],
-  },
-};
-
-const STAGE6_WORKFLOW = [
-  {
-    label: "ID寻址路由:",
-    flowType: "a2aGateway",
-    bubble: {
-      lines: ["ID寻址路由"],
-      targetNode: "AgentGW",
-      placement: "above",
-      offsetY: -3,
-      activeTools: ["A2A GW Tool"],
-    },
-  },
-  {
-    label: "身份可信认证:",
-    flowType: "a2aTrust",
-    bubble: {
-      lines: ["身份可信认证"],
-      targetNode: "ACN",
-      placement: "right",
-      activeTools: ["IDM Tool"],
-    },
-  },
-  {
-    label: "Agent协议转换:",
-    flowType: "a2aGateway",
-    bubble: {
-      lines: ["Agent协议转换"],
-      targetNode: "AgentGW",
-      placement: "above",
-      offsetY: -3,
-      activeTools: ["A2A GW Tool"],
-    },
-  },
-];
-
-const STAGE7_WORKFLOW = [
-  {
-    label: "创建算力会话:",
-    flowType: "computeSandbox",
-    bubble: {
-      lines: ["调用CMF Tool", "创建算力会话"],
-      targetNode: "Computing",
-      placement: "right",
-      activeTools: ["CMF Tool"],
-    },
-  },
-  {
-    label: "分配算力资源:",
-    flowType: "computeSandbox",
-    bubble: {
-      lines: ["调用CMF Tool", "分配算力资源"],
-      targetNode: "Computing",
-      placement: "right",
-      activeTools: ["CMF Tool"],
-    },
-  },
-];
-
-const STAGE9_WORKFLOW = [
-  { label: "数字身份申请:", value: "IDM颁发数字身份；能力注册；接入网络", status: "success", stacked: true },
-  { label: "生成式网络:", value: "创建家庭域；更新签约数据；下发域接入凭证；下发物理组网配置", status: "success", stacked: true },
-  { label: "机器狗实时视野:", value: "机器狗抵达商店并回传实时视野", status: "success", stacked: true },
-  { label: "跨域智能体认证交互:", value: "获取超市智能体数字身份；AR眼镜、机器狗与超市智能体双向认证", status: "success", stacked: true },
-  { label: "分配算力资源:", value: "创建算力会话；分配算力资源", status: "success", stacked: true },
-  { label: "算力卸载:", value: "机器狗感知输入；网络算力节点识别标注；结果回传AR眼镜", status: "success", stacked: true },
-  { label: "物品交接:", value: "机器狗与超市智能体交接物品；算力卸载已完成", status: "success", stacked: true },
-];
-
-const STAGE9_COMPLETED_TASKS = [
-  {
-    title: "数字身份申请",
-    tasks: ["IDM颁发数字身份", "能力注册", "接入网络"],
-  },
-  {
-    title: "生成式网络",
-    tasks: ["创建家庭域", "更新签约数据", "下发域接入凭证", "下发物理组网配置"],
-  },
-  {
-    title: "跨域智能体认证交互",
-    tasks: ["获取超市智能体数字身份", "AR眼镜与超市智能体双向认证", "机器狗与超市智能体双向认证"],
-  },
-  {
-    title: "分配算力资源",
-    tasks: ["创建算力会话", "分配算力资源"],
-  },
-  {
-    title: "算力卸载",
-    tasks: ["机器狗感知设备输入", "网络算力节点识别标注", "标注结果回传AR眼镜"],
-  },
-];
-
-const STAGE2_WORKFLOW = [
-  {
-    label: "IDM颁发数字身份:",
-    bubble: {
-      lines: ["调用IDM Tool:", "颁发数字身份"],
-      targetNode: "ACN",
-      placement: "right",
-      activeTools: ["IDM Tool"],
-    },
-  },
-  {
-    label: "能力注册:",
-    bubble: {
-      lines: ["调用ARF Tool", "发布能力卡片"],
-      targetNode: "ACN",
-      placement: "right",
-      activeTools: ["ARF Tool"],
-    },
-  },
-  {
-    label: "接入网络:",
-    bubble: {
-      lines: ["机器狗接入网络"],
-      targetNode: "ConnectionAgent",
-      placement: "right",
-      activeTools: ["6G AM Tool", "6G SM Tool", "6G Policy Tool"],
-    },
-  },
-];
-
-const AGENT_TOOL_SETS = {
-  ACN: ["IDM Tool", "ARF Tool", "UDM Tool"],
-  ConnectionAgent: ["6G AM Tool", "6G SM Tool", "6G Policy Tool"],
-  Computing: ["CMF Tool"],
-};
-
-const BASE_AGENT_LOGS = [
-  ["10:31:00", "业务目标", "建立机器狗与AR眼镜之间的可信协作入口"],
-  ["10:31:01", "系统决策", "识别当前演示处于接入准备阶段，等待数字身份和网络能力就绪"],
-  ["10:31:02", "核心网能力", "数字身份、可信接入、智能体发现能力处于待编排状态"],
-  ["10:31:03", "当前结果", "机器狗、AR眼镜、核心网智能体已进入协同准备态"],
-];
-
-const STAGE2_COMPLETION_LOGS = [
-  ["10:31:10", "核心网能力", "机器狗数字身份完成签发，接入凭证进入可用状态"],
-  ["10:31:11", "系统决策", "将机器狗能力注册为可发现服务，开放给后续网络编排使用"],
-  ["10:31:12", "当前结果", "机器狗身份、能力卡片和接入路径已完成准备"],
-  ["10:31:13", "业务目标", "数字身份申请阶段完成，可以进入家庭域网络创建"],
-];
-
-const STAGE6_LOGS = [
-  ["10:31:16", "业务目标", "建立跨域智能体协作链路，让眼镜意图可被远端能力承接"],
-  ["10:31:17", "系统决策", "通过Agent GW完成跨域寻址，并由ACN确认对端身份可信"],
-  ["10:31:18", "核心网能力", "跨域认证、任务级会话和协议转换能力已生效"],
-  ["10:31:19", "当前结果", "跨域A2A链路已建立，后续视觉任务可进入算力资源编排"],
-];
-
-const STAGE7_LOGS = [
-  ["10:31:21", "业务目标", "将机器狗实时视野接入视觉识别任务，响应用户寻找目标物的意图"],
-  ["10:31:22", "系统决策", "判断当前视频链路稳定，触发算力资源分配"],
-  ["10:31:23", "核心网能力", "为视觉识别任务分配低时延算力资源和推理会话"],
-  ["10:31:24", "当前结果", "识别任务进入运行态，视频流开始进入算力节点处理"],
-];
-
-const STAGE5_LOGS = [
-  ["10:31:14", "业务目标", "把机器狗第一视角视频接入家庭域，形成可用实时视野"],
-  ["10:31:15", "系统决策", "选择低时延视频路径，优先保障眼镜端观看体验"],
-  ["10:31:16", "核心网能力", "家庭域连接、UPF路径和视频通道已完成联动"],
-  ["10:31:17", "当前结果", "机器狗原始视野已稳定输出，等待后续增强识别任务"],
-];
-
-const STAGE_ANIMATION_TIMING = {
-  2: { workingMs: 560, successMs: 180 },
-  4: { workingMs: 500, successMs: 150 },
-  6: { workingMs: 800, successMs: 180 },
-  7: { workingMs: 1280, successMs: 180 },
-};
-
-const SYSTEM_AGENT_BUBBLE_ANCHOR = {
-  targetNode: "SystemAgent",
-  placement: "upperLeft",
-  arrow: "down-right",
-  offsetX: -3,
-  offsetY: 4,
-};
-
-const normalizeWorkflowLabel = (label = "") => label.replace(/:$/, "");
-
-const formatSystemAgentBubbleLabel = (label = "") => (
-  normalizeWorkflowLabel(label).replace(/(Agent[:：])/, "$1\n")
-);
-
-const getCombinedWorkflowStatus = (items = []) => {
-  if (items.some((item) => item?.status === "working")) {
-    return "working";
-  }
-
-  if (items.length && items.every((item) => item?.status === "success")) {
-    return "success";
-  }
-
-  return items.some((item) => item?.status === "success") ? "working" : "pending";
-};
-
-const STAGE_STORY_LINES = {
-  1: "机器狗开箱，申请数字身份。",
-  2: "机器狗上传基础信息，获得网络签发数字身份，完成接入。",
-  4: "AR眼镜指示机器狗前往商店，网络为其创建家庭域。",
-  5: "机器狗抵达商店门口，回传实时视野。",
-  6: "机器狗、AR眼镜与商店智能体完成双向认证。",
-  7: "机器狗寻找目标物品，算力不足无法识别，申请算力卸载到网络。",
-  8: "网络算力节点识别商品并回传标注结果。",
-  9: "机器狗与超市智能体完成商品交接。",
-};
-
-const STAGE_CONFIG = {
-  1: {
-    leftPanelTitle: "AR眼镜已接入",
-    activeFlowType: null,
-    showArRegistration: true,
-    showRegisteredDevice: false,
-    coreFunctions: [
-      "统一数字身份管理",
-      "通信凭证签发",
-      "可信接入控制",
-      "智能体发布发现",
-    ],
-    statusTitle: "用户状态",
-    statusRows: [
-      { label: "凭证:", value: "未颁发", status: "pending" },
-      { label: "机器狗ID:", value: "None", status: "pending", isMono: true },
-    ],
-    userStatus: {
-      credential: { value: "未颁发", status: "pending" },
-      robotDogId: { value: "None", status: "pending" },
-    },
-    logs: BASE_AGENT_LOGS,
-    workflow: [
-      { label: "IDM颁发数字身份:", value: "Pending", status: "pending" },
-      { label: "能力注册:", value: "Pending", status: "pending" },
-      { label: "接入网络:", value: "Pending", status: "pending" },
-    ],
-    steps: [
-      { id: "01", icon: ShieldCheck, title: "数字身份申请", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "02", icon: Globe, title: "生成式网络", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "03", icon: Share2, title: "跨域智能体认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "04", icon: Cpu, title: "分配算力资源", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
-    ],
-  },
-  2: {
-    leftPanelTitle: "机器狗接入",
-    activeFlowType: "auth",
-    showRegisteredDevice: false,
-    coreFunctions: [
-      "统一数字身份管理",
-      "通信凭证签发",
-      "可信接入控制",
-      "智能体发布发现",
-    ],
-    statusTitle: "用户状态",
-    statusRows: [
-      { label: "凭证:", value: "未颁发", status: "pending" },
-      { label: "机器狗ID:", value: "None", status: "pending", isMono: true },
-    ],
-    userStatus: {
-      credential: { value: "未颁发", status: "pending" },
-      robotDogId: { value: "None", status: "pending" },
-    },
-    logs: [
-      ...BASE_AGENT_LOGS,
-      ["10:31:06", "业务目标", "为机器狗申请可验证数字身份，建立后续网络接入前提"],
-      ["10:31:07", "系统决策", "将用户意图拆分为身份签发、能力注册和网络接入准备"],
-      ["10:31:08", "核心网能力", "启用统一数字身份管理和可信接入控制能力"],
-      ["10:31:09", "当前结果", "数字身份申请正在处理，机器狗能力等待发布"],
-    ],
-    workflow: [
-      { label: "IDM颁发数字身份:", value: "Pending", status: "pending" },
-      { label: "能力注册:", value: "Pending", status: "pending" },
-      { label: "接入网络:", value: "Pending", status: "pending" },
-    ],
-    steps: [
-      { id: "01", icon: ShieldCheck, title: "数字身份申请", subtitle: "进行中 / Working", status: "working" },
-      { id: "02", icon: Globe, title: "生成式网络", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "03", icon: Share2, title: "跨域智能体认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "04", icon: Cpu, title: "分配算力资源", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
-    ],
-  },
-  4: {
-    leftPanelTitle: "家庭域创建",
-    topologyTitle: "6G核心网：生成式网络",
-    activeFlowType: "domain",
-    showRegisteredDevice: true,
-    hideDeviceArrow: true,
-    showHomeDomainDevice: true,
-    coreFunctions: [
-      "L3按需组网",
-      "安全接入控制",
-      "域内连接最优选路",
-    ],
-    statusTitle: "端侧状态",
-    statusRows: [
-      { label: "端侧带宽:", value: "5Mbps", status: "success" },
-      { label: "平均时延:", value: "25ms", status: "success" },
-    ],
-    logs: [
-      ...BASE_AGENT_LOGS,
-      ["10:31:06", "业务目标", "创建家庭域连接，让AR眼镜能够低时延访问机器狗"],
-      ["10:31:07", "系统决策", "将家庭域创建拆分为域管理、接入凭证和物理组网配置"],
-      ["10:31:08", "核心网能力", "生成式网络开始为家庭域计算接入路径"],
-      ["10:31:09", "当前结果", "家庭域网络正在创建，端侧连接参数开始生效"],
-      ["10:31:10", "核心网能力", "签约数据和接入凭证已进入家庭域管理流程"],
-      ["10:31:11", "系统决策", "优先选择低时延路径承载机器狗视频能力"],
-      ["10:31:12", "当前结果", "机器狗能力已在家庭域内可发现"],
-      ["10:31:13", "核心网能力", "UPF路径配置开始下发，视频流量进入专用转发路径"],
-      ["10:31:14", "当前结果", "家庭域连接建立中，端侧带宽和时延进入目标范围"],
-    ],
-    workflow: [
-      { label: "签约数据更新:", value: "Working", status: "working" },
-      { label: "下发域接入凭证:", value: "Pending", status: "pending" },
-      { label: "下发UPF配置:", value: "Pending", status: "pending" },
-    ],
-    steps: [
-      { id: "01", icon: ShieldCheck, title: "数字身份申请", subtitle: "已完成 / Completed", status: "success" },
-      { id: "02", icon: Globe, title: "生成式网络", subtitle: "进行中 / Working", status: "working" },
-      { id: "03", icon: Share2, title: "跨域智能体认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "04", icon: Cpu, title: "分配算力资源", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
-    ],
-  },
-};
-
-STAGE_CONFIG[5] = {
-  ...STAGE_CONFIG[4],
-  leftPanelTitle: "机器狗共享实时视野",
-  activeFlowType: "dogVision",
-  showDogVision: true,
-  showHomeDomainDevice: false,
-  showRegisteredDevice: false,
-  logs: [
-    ...STAGE_CONFIG[4].logs,
-    ...STAGE5_LOGS,
-  ],
-  workflow: [
-    { label: "签约数据更新:", value: "Done", status: "success" },
-    { label: "下发域接入凭证:", value: "Done", status: "success" },
-    { label: "下发UPF配置:", value: "Done", status: "success" },
-  ],
-  steps: STAGE_CONFIG[4].steps.map((step) => (
-    step.id === "02"
-      ? { ...step, subtitle: "已完成 / Completed", status: "success" }
-      : step
-  )),
-};
-
-STAGE_CONFIG[6] = {
-  ...STAGE_CONFIG[5],
-  topologyTitle: "6G核心网：Agent GW跨域互联",
-  activeFlowType: "a2aGateway",
-  coreFunctions: [
-    "ID寻址路由",
-    "可信身份背书",
-    "Agent协议转换",
-  ],
-  logs: [
-    ...STAGE_CONFIG[5].logs,
-    ...STAGE6_LOGS,
-  ],
-  workflow: [
-    { label: "ID寻址路由:", value: "Working", status: "working" },
-    { label: "身份可信认证:", value: "Pending", status: "pending" },
-    { label: "Agent协议转换:", value: "Pending", status: "pending" },
-  ],
-  steps: STAGE_CONFIG[5].steps.map((step) => (
-    step.id === "03"
-      ? { ...step, subtitle: "进行中 / Working", status: "working" }
-      : step
-  )),
-};
-
-STAGE_CONFIG[7] = {
-  ...STAGE_CONFIG[6],
-  topologyTitle: "6G核心网：分配算力资源",
-  activeFlowType: "computeSandbox",
-  coreFunctions: [
-    "网络提供强大算力",
-    "算力随路卸载",
-    "传输低时延",
-  ],
-  logs: [
-    ...STAGE_CONFIG[6].logs,
-    ...STAGE7_LOGS,
-  ],
-  workflow: [
-    { label: "创建算力会话:", value: "Working", status: "working" },
-    { label: "分配算力资源:", value: "Pending", status: "pending" },
-  ],
-  steps: STAGE_CONFIG[6].steps.map((step) => {
-    if (step.id === "03") {
-      return { ...step, subtitle: "已完成 / Completed", status: "success" };
-    }
-
-    if (step.id === "04") {
-      return { ...step, subtitle: "进行中 / Working", status: "working" };
-    }
-
-    return step;
-  }),
-};
-
-STAGE_CONFIG[8] = {
-  ...STAGE_CONFIG[7],
-  leftPanelTitle: "机器狗视野增强",
-  topologyTitle: "6G核心网：算力卸载",
-  activeFlowType: "dogVision",
-  showDogVision: false,
-  showEnhancedDogVision: true,
-  workflow: [
-    { label: "算力入网实际应用:", value: "Working", status: "working" },
-  ],
-  steps: STAGE_CONFIG[7].steps.map((step) => {
-    if (step.id === "04") {
-      return { ...step, subtitle: "已完成 / Completed", status: "success" };
-    }
-
-    if (step.id === "05") {
-      return { ...step, subtitle: "进行中 / Working", status: "working" };
-    }
-
-    return step;
-  }),
-};
-
-STAGE_CONFIG[9] = {
-  ...STAGE_CONFIG[8],
-  leftPanelTitle: "物品交接",
-  topologyTitle: "6G核心网：算力卸载",
-  activeFlowType: "handoff",
-  showHandoff: true,
-  showEnhancedDogVision: false,
-  showDogVision: false,
-  showHomeDomainDevice: false,
-  showRegisteredDevice: false,
-  showArRegistration: false,
-  statusTitle: "已完成任务",
-  statusRows: [
-    {
-      label: "数字身份申请:",
-      value: "IDM颁发数字身份；能力注册；接入网络",
-      status: "success",
-      stacked: true,
-      valueClassName: "break-words",
-    },
-    {
-      label: "生成式网络:",
-      value: "创建家庭域；更新签约数据；下发域接入凭证；下发物理组网配置",
-      status: "success",
-      stacked: true,
-      valueClassName: "break-words",
-    },
-    {
-      label: "机器狗实时视野:",
-      value: "机器狗抵达商店并回传实时视野",
-      status: "success",
-      stacked: true,
-      valueClassName: "break-words",
-    },
-    {
-      label: "跨域智能体认证交互:",
-      value: "获取超市智能体数字身份；AR眼镜、机器狗与超市智能体双向认证",
-      status: "success",
-      stacked: true,
-      valueClassName: "break-words",
-    },
-    {
-      label: "分配算力资源:",
-      value: "创建算力会话；分配算力资源",
-      status: "success",
-      stacked: true,
-      valueClassName: "break-words",
-    },
-    {
-      label: "算力卸载:",
-      value: "机器狗感知输入；网络算力节点识别标注；结果回传AR眼镜",
-      status: "success",
-      stacked: true,
-      valueClassName: "break-words",
-    },
-    {
-      label: "物品交接:",
-      value: "机器狗与超市智能体交接物品；算力卸载已完成",
-      status: "success",
-      stacked: true,
-      valueClassName: "break-words",
-    },
-  ],
-  userStatus: {
-    credential: { value: "已完成", status: "success" },
-    robotDogId: { value: "1saR84Q2Z@market.com", status: "success", isMono: true },
-  },
-  logs: [
-    ...STAGE_CONFIG[8].logs,
-    ["10:31:25", "业务目标", "机器狗与超市智能体完成商品取件交接动作"],
-    ["10:31:26", "系统决策", "将识别结果与交接任务结果同步回系统门户"],
-    ["10:31:27", "核心网能力", "RAN->UPF->Agent GW->Market Agent 任务链路完成调度"],
-    ["10:31:28", "当前结果", "阶段9任务完成，整条作业闭环成功"],
-  ],
-  workflow: STAGE9_WORKFLOW,
-  steps: STAGE_CONFIG[8].steps.map((step) => (
-    { ...step, subtitle: "已完成 / Completed", status: "success" }
-  )),
-};
-
-const getRuntimeConfig = () => window.__RUNTIME_CONFIG__ || {};
-
-const buildHttpUrl = (port, path, host) => {
-  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-  return `${protocol}//${host || window.location.hostname}:${port}${path}`;
-};
-
-const buildRuntimeBackendUrl = (baseKey, portKey, defaultPort, path, hostKey = "backendHost") => {
-  const runtimeConfig = getRuntimeConfig();
-  const configuredBase = runtimeConfig[baseKey];
-  if (configuredBase) {
-    return `${String(configuredBase).replace(/\/$/, "")}${path}`;
-  }
-  return buildHttpUrl(runtimeConfig[portKey] || defaultPort, path, runtimeConfig[hostKey]);
-};
-
-const getStageApiUrl = () => {
-  const runtimeConfig = getRuntimeConfig();
-  return runtimeConfig.stageApiUrl
-    || import.meta.env.VITE_STAGE_API_URL
-    || buildRuntimeBackendUrl("sysAgentApiUrl", "sysAgentPort", 8000, "/api/stage");
-};
-
-const getArStatusApiUrl = () => {
-  const runtimeConfig = getRuntimeConfig();
-  return runtimeConfig.arStatusApiUrl
-    || import.meta.env.VITE_AR_STATUS_API_URL
-    || buildRuntimeBackendUrl("sysAgentApiUrl", "sysAgentPort", 9100, "/api/v1/system/ar/status");
-};
-
-const getLatencyApiUrl = () => {
-  const runtimeConfig = getRuntimeConfig();
-  return runtimeConfig.latencyApiUrl
-    || import.meta.env.VITE_LATENCY_API_URL
-    || buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/latency", "sandboxHost");
-};
-
-const getSandboxHealthApiUrl = () => {
-  const runtimeConfig = getRuntimeConfig();
-  return runtimeConfig.sandboxHealthApiUrl
-    || import.meta.env.VITE_SANDBOX_HEALTH_API_URL
-    || buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/health", "sandboxHost");
-};
-
-const sleep = (delay) => new Promise((resolve) => {
-  window.setTimeout(resolve, delay);
-});
-
-const normalizeStage = (value) => {
-  const parsed = Number(value);
-  if (parsed === 3) {
-    return 2;
-  }
-  return STAGE_CONFIG[parsed] ? parsed : null;
-};
-
-// 宇树 (Unitree Go2) 仿生机器狗高保真矢量重绘（完美修正：关节一致朝右弯折，背部扁平无隆起）
 const UnitreeGo2Vector = ({ className = "", status = "neutral", colors }) => {
   return (
     <svg 
@@ -1140,8 +643,7 @@ const StatusRow = ({ label, value, status = "success", isMono = false, valueClas
     return (
       <div className="py-2 border-b border-blue-950/40 last:border-0 text-sm">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-semibold text-blue-100/95">{label}</span>
-          {status === 'success' && <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />}
+          <span className="status-row-label font-semibold text-blue-100/95">{label}</span>
           {status === 'working' && <CircleDot className="w-4 h-4 shrink-0 text-amber-300 animate-pulse" />}
           {status === 'pending' && <CircleDot className="w-4 h-4 shrink-0 text-blue-500" />}
         </div>
@@ -1153,13 +655,12 @@ const StatusRow = ({ label, value, status = "success", isMono = false, valueClas
   }
 
   return (
-    <div className="flex justify-between items-center py-2.5 border-b border-blue-950/40 last:border-0 text-sm lg:text-base">
-      <span className="font-semibold text-blue-100/95">{label}</span>
-      <div className="flex min-w-0 items-center gap-1.5">
-        <span className={`font-bold ${getStatusColor()} ${isMono ? 'font-mono' : ''} ${valueClassName}`}>{value}</span>
-        {status === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-        {status === 'working' && <CircleDot className="w-4 h-4 text-amber-300 animate-pulse" />}
-        {status === 'pending' && <CircleDot className="w-4 h-4 text-blue-500" />}
+    <div className="status-row flex justify-between items-center py-2.5 border-b border-blue-950/40 last:border-0 text-sm lg:text-base">
+      <span className="status-row-label min-w-0 pr-2 font-semibold text-blue-100/95">{label}</span>
+      <div className="status-row-value-wrap flex shrink-0 items-center gap-1.5 whitespace-nowrap">
+        <span className={`shrink-0 whitespace-nowrap font-bold ${getStatusColor()} ${isMono ? 'font-mono' : ''} ${valueClassName}`}>{value}</span>
+        {status === 'working' && <CircleDot className="w-4 h-4 shrink-0 text-amber-300 animate-pulse" />}
+        {status === 'pending' && <CircleDot className="w-4 h-4 shrink-0 text-blue-500" />}
       </div>
     </div>
   );
@@ -1167,7 +668,7 @@ const StatusRow = ({ label, value, status = "success", isMono = false, valueClas
 
 const CompletedTasksPanel = () => (
   <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-emerald-400/35 bg-slate-950/42 shadow-[0_0_22px_rgba(16,185,129,0.12)]">
-    <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+    <div className="completed-tasks-scroll min-h-0 flex-1 overflow-y-auto px-3 py-3">
       <div className="flex flex-col gap-2.5">
         {STAGE9_COMPLETED_TASKS.map((group, index) => (
           <section
@@ -1175,16 +676,16 @@ const CompletedTasksPanel = () => (
             className="rounded-md border border-blue-400/20 bg-blue-950/18 px-3 py-3 shadow-[inset_0_0_14px_rgba(59,130,246,0.06)]"
           >
             <div className="mb-2 flex items-center gap-2.5">
-              <span className="flex h-6 min-w-6 items-center justify-center rounded border border-emerald-300/45 bg-emerald-400/10 px-1.5 text-xs font-black text-emerald-200">
+              <span className="flex h-7 min-w-7 items-center justify-center rounded border border-emerald-300/45 bg-emerald-400/10 px-1.5 text-sm font-black text-emerald-200">
                 {String(index + 1).padStart(2, "0")}
               </span>
-              <h3 className="min-w-0 text-base font-black leading-tight text-blue-50">
+              <h3 className="min-w-0 text-lg font-black leading-tight text-blue-50">
                 {group.title}
               </h3>
             </div>
             <ul className="space-y-1">
               {group.tasks.map((task) => (
-                <li key={task} className="flex gap-2.5 text-sm font-bold leading-snug text-emerald-300">
+                <li key={task} className="flex gap-2.5 text-base font-normal leading-snug text-white">
                   <span className="mt-[0.45em] h-2 w-2 shrink-0 rounded-full bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.75)]" />
                   <span className="min-w-0 break-words">{task}</span>
                 </li>
@@ -1198,7 +699,46 @@ const CompletedTasksPanel = () => (
 );
 
 const TaskBriefPanel = ({ logs }) => {
-  const briefByCategory = logs.reduce((acc, [, category, message]) => ({
+  const safeLogs = Array.isArray(logs) ? logs : [];
+  const intentScrollRef = useRef(null);
+  const isIntentCardLogs = safeLogs[0] && !Array.isArray(safeLogs[0]) && typeof safeLogs[0] === "object";
+  const formatIntentSummaryLine = (line) => String(line).replace(/\s*Tool\b/g, "");
+
+  useEffect(() => {
+    if (!isIntentCardLogs || !intentScrollRef.current) {
+      return;
+    }
+
+    intentScrollRef.current.scrollTop = intentScrollRef.current.scrollHeight;
+  }, [isIntentCardLogs, safeLogs.length]);
+
+  if (safeLogs.length === 0) {
+    return <div className="min-h-0 flex-1" />;
+  }
+
+  if (isIntentCardLogs) {
+    return (
+      <div ref={intentScrollRef} className="intent-summary-scroll flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
+        {safeLogs.map((card, index) => (
+          <div
+            key={card.id || `${card.label}-${index}`}
+            className="rounded-lg border border-cyan-300/35 bg-cyan-400/[0.08] px-3 py-2.5 text-cyan-50 shadow-[inset_0_0_18px_rgba(34,211,238,0.08),0_0_14px_rgba(34,211,238,0.12)] backdrop-blur-md"
+          >
+            <div className="mb-1.5 text-[11px] font-black leading-none tracking-wide text-cyan-200">
+              {card.label || "摘要"}
+            </div>
+            <div className="space-y-0.5 text-[12px] font-normal leading-snug text-blue-50 lg:text-[13px]">
+              {(card.lines || []).map((line) => (
+                <div key={line} className="min-w-0 break-words">{formatIntentSummaryLine(line)}</div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const briefByCategory = safeLogs.reduce((acc, [, category, message]) => ({
     ...acc,
     [category]: message,
   }), {});
@@ -1353,21 +893,21 @@ const ArAccessStateCard = ({ registered = false }) => {
           <polygon points="34,65 65,15 95,50" fill={`url(#${stateStyles.gradientId})`} className="opacity-40 animate-pulse" />
           <line x1="34" y1="65" x2="65" y2="15" stroke={stateStyles.beamLine} strokeWidth="0.5" strokeDasharray="2 2" />
           <line x1="34" y1="65" x2="95" y2="50" stroke={stateStyles.beamLine} strokeWidth="0.5" strokeDasharray="2 2" />
-          <circle cx="34" cy="65" r="1.5" fill={stateStyles.beamDot} className="animate-ping" />
+          <circle cx="34" cy="65" r="1.5" fill={stateStyles.beamDot} />
         </svg>
 
         <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
           <ARGlasses className="w-full h-full object-contain" />
         </div>
 
-        <div className={`absolute top-1 right-1 w-[52%] max-w-[150px] border p-1.5 sm:p-2 rounded-lg backdrop-blur-md z-20 ${registered ? "animate-hologram" : "animate-hologram-red"} [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight ${stateStyles.cardPanel}`}>
-          <div className={`font-black mb-1 border-b pb-1 uppercase tracking-wide text-[8px] sm:text-[9px] ${stateStyles.panelTitleClass}`}>
+        <div className={`absolute top-1 right-1 w-[60%] max-w-[175px] origin-top-right border p-2 sm:p-2.5 rounded-lg backdrop-blur-md z-20 ${registered ? "animate-hologram" : "animate-hologram-red"} [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.5)] leading-tight ${stateStyles.cardPanel}`}>
+          <div className={`font-black mb-1 border-b pb-1 uppercase tracking-wide text-[10px] sm:text-[11px] ${stateStyles.panelTitleClass}`}>
             {stateStyles.panelTitle}
           </div>
-          <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
+          <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[10px] sm:text-[11px]">
             {stateStyles.deviceName}
           </div>
-          <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
+          <div className="flex flex-col gap-0.5 text-[9px] sm:text-[10px] font-medium">
             <div className="flex flex-col gap-0.5">
               <span className="opacity-75">{stateStyles.detail}</span>
               <span className="font-bold text-cyan-300 leading-tight break-words">
@@ -1378,7 +918,7 @@ const ArAccessStateCard = ({ registered = false }) => {
               <span className="opacity-75">Status:</span>
               <span className={`font-bold flex items-center gap-0.5 ${stateStyles.statusClass}`}>
                 {stateStyles.statusLabel}
-                {registered && <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>}
+                {registered && <span className="w-1 h-1 bg-emerald-400 rounded-full inline-block"></span>}
               </span>
             </div>
           </div>
@@ -1415,7 +955,7 @@ const RegisteredRobotDogCard = ({ className = "flex-1 h-[180px] lg:h-[210px]" })
         <polygon points="34,65 65,15 95,50" fill="url(#handoff-robot-reg-cone-beam)" className="opacity-40 animate-pulse" />
         <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
         <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-        <circle cx="34" cy="65" r="1.5" fill="#10b981" className="animate-ping" />
+        <circle cx="34" cy="65" r="1.5" fill="#10b981" />
       </svg>
 
       <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
@@ -1430,14 +970,14 @@ const RegisteredRobotDogCard = ({ className = "flex-1 h-[180px] lg:h-[210px]" })
         />
       </div>
 
-      <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
-        <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
+      <div className="absolute top-1 right-1 w-[64%] max-w-[190px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.5)] leading-tight text-emerald-300">
+        <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
           Digital ID
         </div>
-        <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
+        <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[10px] sm:text-[11px]">
           DID:2168nLB3G@CMCC.org
         </div>
-        <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
+        <div className="flex flex-col gap-0.5 text-[9px] sm:text-[10px] font-medium">
           <div className="flex flex-col gap-0.5">
             <span className="opacity-75">Capabilities:</span>
             <span className="font-bold text-cyan-300 leading-tight break-words">
@@ -1447,7 +987,7 @@ const RegisteredRobotDogCard = ({ className = "flex-1 h-[180px] lg:h-[210px]" })
           <div className="flex justify-between items-center">
             <span className="opacity-75">Status:</span>
             <span className="font-bold flex items-center gap-0.5 text-emerald-400">
-              Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
+              Active <span className="w-1 h-1 bg-emerald-400 rounded-full inline-block"></span>
             </span>
           </div>
         </div>
@@ -1532,21 +1072,21 @@ const HandoffPanel = () => (
           <polygon points="35,66 65,18 96,48" fill="url(#arm-handoff-cone-beam)" className="opacity-40 animate-pulse" />
           <line x1="35" y1="66" x2="65" y2="18" stroke="rgba(34, 211, 238, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
           <line x1="35" y1="66" x2="96" y2="48" stroke="rgba(34, 211, 238, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-          <circle cx="35" cy="66" r="1.5" fill="#22d3ee" className="animate-ping" />
+          <circle cx="35" cy="66" r="1.5" fill="#22d3ee" />
         </svg>
 
         <div className="absolute bottom-8 left-2 w-32 h-28 z-10">
           <RobotArm className="w-full h-full object-contain opacity-95 drop-shadow-[0_0_14px_rgba(34,211,238,0.3)]" />
         </div>
 
-        <div className="absolute top-1 right-1 w-[58%] max-w-[170px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
-          <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
+        <div className="absolute top-1 right-1 w-[64%] max-w-[190px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.5)] leading-tight text-emerald-300">
+          <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
             Digital ID
           </div>
-          <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 break-all text-[9px] sm:text-[10px]">
+          <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 break-all text-[10px] sm:text-[11px]">
             1saR84Q2Z@market.com
           </div>
-          <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
+          <div className="flex flex-col gap-0.5 text-[9px] sm:text-[10px] font-medium">
             <div className="flex flex-col gap-0.5">
               <span className="opacity-75">Capabilities:</span>
               <span className="font-bold text-cyan-300 leading-tight break-words">
@@ -1556,7 +1096,7 @@ const HandoffPanel = () => (
             <div className="flex justify-between items-center">
               <span className="opacity-75">Status:</span>
               <span className="font-bold flex items-center gap-0.5 text-emerald-400">
-                Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
+                Active <span className="w-1 h-1 bg-emerald-400 rounded-full inline-block"></span>
               </span>
             </div>
           </div>
@@ -1566,722 +1106,9 @@ const HandoffPanel = () => (
   </div>
 );
 
-const AgentSpeechBubble = ({ bubble }) => {
-  if (!bubble) {
-    return null;
-  }
-
-  const items = Array.isArray(bubble.items) ? bubble.items : null;
-  const lines = (Array.isArray(bubble.lines) ? bubble.lines : [bubble.text]).filter(Boolean);
-  const isVoiceIntent = bubble.variant === "voiceIntent";
-  const tools = !items && !isVoiceIntent ? AGENT_TOOL_SETS[bubble.targetNode] : null;
-  const activeTools = new Set(Array.isArray(bubble.activeTools) ? bubble.activeTools : []);
-  const hasToolPanel = Array.isArray(tools) && tools.length > 0;
-  const positionClassName = bubble.style ? (bubble.className || "") : (bubble.className || "left-[83%] top-[36%]");
-  const arrowClassName = bubble.arrow === "down-right"
-    ? "absolute bottom-[-5px] right-6 h-2 w-2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
-    : bubble.arrow === "down-left-corner"
-    ? "absolute bottom-[-5px] left-1 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-l border-cyan-400/45 bg-slate-950/86"
-    : bubble.arrow === "down-left"
-    ? "absolute bottom-[-5px] left-[72%] h-2 w-2 -translate-x-1/2 rotate-[28deg] border-b border-r border-cyan-400/45 bg-slate-950/86"
-    : bubble.arrow === "down"
-      ? "absolute bottom-[-5px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
-      : bubble.arrow === "right"
-        ? "absolute -right-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 border-r border-t border-cyan-400/45 bg-slate-950/86"
-      : "absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 border-b border-l border-cyan-400/45 bg-slate-950/86";
-  const bubbleClassName = isVoiceIntent
-    ? "border-cyan-200/75 bg-cyan-950/92 text-cyan-50 shadow-[0_0_20px_rgba(34,211,238,0.36),inset_0_0_14px_rgba(34,211,238,0.12)] ring-1 ring-cyan-300/35"
-    : "border-cyan-400/45 bg-slate-950/86 text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)]";
-
-  return (
-    <div
-      className={`absolute z-30 flex ${items ? "w-[175px] flex-col items-stretch gap-1 rounded-lg" : hasToolPanel ? "w-[150px] flex-col items-stretch rounded-md border-dashed" : "max-w-[175px] items-center gap-1.5 rounded-full"} border ${hasToolPanel ? "px-0 py-0" : "px-2.5 py-1.5"} text-[9px] font-bold backdrop-blur-md ${bubbleClassName} ${positionClassName}`}
-      style={bubble.style}
-    >
-      {items ? (
-        items.map((item) => (
-          <div key={item.label} className="flex min-w-0 items-center gap-1.5 leading-tight">
-            {item.status === "success" ? (
-              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
-            ) : item.status === "working" ? (
-              <LoaderCircle className="h-3.5 w-3.5 shrink-0 animate-spin text-cyan-100" />
-            ) : (
-              <CircleDot className="h-3.5 w-3.5 shrink-0 text-slate-400/75" />
-            )}
-            <span className={`min-w-0 flex-1 whitespace-normal break-words ${item.status === "pending" ? "text-blue-100/60" : ""}`}>
-              {(item.isSystemAgentItem ? formatSystemAgentBubbleLabel(item.label) : normalizeWorkflowLabel(item.label))
-                .split("\n")
-                .map((line) => (
-                  <span key={line} className="block">{line}</span>
-                ))}
-            </span>
-          </div>
-        ))
-      ) : hasToolPanel ? (
-        <>
-          <div className="flex flex-col gap-1.5 px-3 py-2">
-            {tools.map((tool) => {
-              const isWorking = activeTools.has(tool) && bubble.status === "working";
-
-              return (
-                <div key={tool} className="grid grid-cols-[1fr_auto] items-center gap-3 text-[10px] leading-tight">
-                  <span className="truncate text-blue-50">{tool}</span>
-                  <span className={isWorking ? "text-amber-200" : "text-blue-300"}>
-                    {isWorking ? "working" : "idle"}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          {lines.length > 0 && (
-            <div className="border-t border-dashed border-cyan-300/50 px-3 py-2 text-[10px] leading-tight text-cyan-50">
-              {lines.map((line) => (
-                <span key={line} className="block whitespace-normal break-words">
-                  {normalizeWorkflowLabel(line)}
-                </span>
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          {isVoiceIntent ? (
-            <Radio className="h-3.5 w-3.5 shrink-0 animate-pulse text-cyan-100" />
-          ) : bubble.status === "success" ? (
-            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
-          ) : (
-            <LoaderCircle className="h-3.5 w-3.5 shrink-0 animate-spin text-slate-300" />
-          )}
-          <span className={`flex min-w-0 flex-col leading-tight ${isVoiceIntent ? "whitespace-normal break-words" : "whitespace-nowrap"}`}>
-            {lines.map((line) => (
-              <span key={line}>{line}</span>
-            ))}
-          </span>
-        </>
-      )}
-      {!hasToolPanel && <span className={arrowClassName} />}
-    </div>
-  );
-};
-
-const randomLatency = ({ min, max }) => (
-  Math.floor(Math.random() * (max - min + 1)) + min
-);
-
-const NetworkTopology3D = ({ stage, activeFlowType, coreFunctions, agentBubble, agentBubbles = [], arSpeechText = "", title = "6G 核心网：数字身份申请" }) => {
-  const nodes = {
-    UE: { name: "AR Glasses (6G终端)", x: 7, y: 78, color: "#22f5ff", image: "/topology/glasses_transparent.png", size: "w-16 md:w-20" },
-    RobotDog: { name: "Robot Dog", x: 7, y: 32, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-20 md:w-24" },
-    gNB: { name: "6G RAN", x: 22, y: 55, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-24 md:w-28" },
-    SRF: { name: "SRF", x: 36, y: 43, color: "#38bdf8", image: srfImage, size: "w-20 md:w-24" },
-    SystemAgent: { name: "SystemAgent", x: 56.5, y: 40, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24" },
-    UPF: { name: "UPF", x: 36, y: 82, color: "#34d399", image: upfImage, size: "w-20 md:w-24" },
-    ConnectionAgent: { name: "Connection Agent", x: 78, y: 12, color: "#22d3ee", image: connectionImage, size: "w-16 md:w-20" },
-    Computing: { name: "Computing Agent", x: 78, y: 30, color: "#fbbf24", image: computingImage, size: "w-16 md:w-20" },
-    ACN: { name: "ACN Agent", x: 78, y: 52, color: "#f472b6", image: acnImage, size: "w-16 md:w-20" },
-    AgentGW: { name: "Agent GW", x: 62.5, y: 91, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20" },
-    MarketAgent: { name: "Market Agent", x: 84, y: 81, color: "#38bdf8", image: marketImage, size: "w-16 md:w-20" },
-    Gateway: { name: "Computing Node", x: 62.5, y: 72, color: "#38bdf8", image: computingNodeImage, size: "w-16 md:w-20" },
-  };
-
-  const connections = [
-    ["UE", "gNB"],
-    ["RobotDog", "gNB"],
-    ["gNB", "SRF"],
-    ["SRF", "SystemAgent"],
-    ["gNB", "UPF"],
-    ["UPF", "Gateway"],
-    ["UPF", "AgentGW"],
-    ["AgentGW", "MarketAgent"],
-    ["SystemAgent", "ConnectionAgent"],
-    ["SystemAgent", "ACN"],
-    ["SystemAgent", "Computing"],
-  ];
-
-  const activeFlowConfig = getTopologyFlowConfig(stage, activeFlowType);
-  const [stage9BlinkActive, setStage9BlinkActive] = useState(false);
-  const resolveAgentBubblePosition = (bubble) => {
-    if (!bubble?.targetNode) {
-      return bubble;
-    }
-
-    const target = nodes[bubble.targetNode];
-
-    if (!target) {
-      return bubble;
-    }
-
-    const offsetX = bubble.offsetX || 0;
-    const offsetY = bubble.offsetY || 0;
-    const placement = bubble.placement || "above";
-    const basePosition = {
-      left: `${target.x + offsetX}%`,
-      top: `${target.y + offsetY}%`,
-    };
-    const hasToolPanel = Boolean(AGENT_TOOL_SETS[bubble.targetNode]);
-    const placementStyle = placement === "right"
-      ? {
-          ...basePosition,
-          top: hasToolPanel && bubble.targetNode === "ConnectionAgent"
-            ? `${target.y - 9 + offsetY}%`
-            : `${target.y - 5 + offsetY}%`,
-          transform: hasToolPanel && bubble.targetNode === "ConnectionAgent"
-            ? "translate(30%, 0)"
-            : hasToolPanel
-              ? "translate(30%, -50%)"
-              : "translate(22%, -50%)",
-        }
-      : placement === "left"
-        ? { ...basePosition, transform: "translate(-108%, -50%)" }
-      : placement === "upperLeft"
-        ? { left: `${target.x + 4 + offsetX}%`, top: `${target.y - 15 + offsetY}%`, transform: "translate(-100%, -100%)" }
-        : { ...basePosition, top: `${target.y - 6 + offsetY}%`, transform: "translate(-50%, -100%)" };
-
-    return {
-      ...bubble,
-      arrow: bubble.arrow || (placement === "right" ? undefined : placement === "left" ? "right" : "down"),
-      style: {
-        ...placementStyle,
-        ...(bubble.style || {}),
-      },
-    };
-  };
-
-  const arSpeechBubble = arSpeechText
-      ? {
-        lines: [arSpeechText],
-        status: "success",
-        variant: "voiceIntent",
-        className: "left-[9.5%] top-[74%] w-[13.5em]",
-      }
-    : null;
-  const robotDogSpeechBubble = stage === 2
-    ? {
-        lines: ["Apply for the Digital ID"],
-        status: "success",
-        variant: "voiceIntent",
-        arrow: "down-left-corner",
-        className: "left-[11.5%] top-[18%] w-[12em]",
-      }
-    : null;
-  const activeToolBubbleByTarget = Object.fromEntries(
-    agentBubbles
-      .filter((bubble) => bubble?.targetNode && AGENT_TOOL_SETS[bubble.targetNode])
-      .map((bubble) => [bubble.targetNode, bubble])
-  );
-  const persistentToolBubbles = Object.keys(AGENT_TOOL_SETS).map((targetNode) => {
-    const activeBubble = activeToolBubbleByTarget[targetNode];
-    const defaultPlacement = targetNode === "AgentGW" ? "above" : "right";
-
-    return {
-      targetNode,
-      placement: activeBubble?.placement || defaultPlacement,
-      offsetY: activeBubble?.offsetY || (targetNode === "AgentGW" ? -3 : 0),
-      lines: activeBubble?.lines || [],
-      activeTools: activeBubble?.activeTools || [],
-      status: activeBubble?.status || "idle",
-    };
-  });
-  const nonToolAgentBubbles = agentBubbles.filter((bubble) => (
-    !bubble?.targetNode || !AGENT_TOOL_SETS[bubble.targetNode]
-  ));
-  const positionedAgentBubbles = [agentBubble, ...persistentToolBubbles, ...nonToolAgentBubbles]
-    .filter(Boolean)
-    .map((bubble) => resolveAgentBubblePosition(bubble));
-  const [latencySampleTick, setLatencySampleTick] = useState(0);
-
-  useEffect(() => {
-    setLatencySampleTick(0);
-
-    if (!activeFlowConfig.lines.length) {
-      return undefined;
-    }
-
-    const timer = window.setInterval(() => {
-      setLatencySampleTick((tick) => tick + 1);
-    }, 1200);
-
-    return () => window.clearInterval(timer);
-  }, [stage, activeFlowType, activeFlowConfig.lines.length]);
-
-  useEffect(() => {
-    if (stage !== 9 || !activeFlowConfig.lines.length) {
-      setStage9BlinkActive(false);
-      return undefined;
-    }
-
-    setStage9BlinkActive(true);
-    const timer = window.setTimeout(() => {
-      setStage9BlinkActive(false);
-    }, 5000);
-
-    return () => window.clearTimeout(timer);
-  }, [stage, activeFlowType, activeFlowConfig.lines.length]);
-
-  const activeLineConfigByKey = useMemo(() => (
-    Object.fromEntries(
-      activeFlowConfig.lines.map((line) => [
-        line.key,
-        {
-          ...line,
-          displayLatencyMs: randomLatency(line.latencyMs),
-        },
-      ])
-    )
-  ), [stage, activeFlowType, latencySampleTick]);
-
-  const getPathGeometry = ([from, to]) => {
-    const a = nodes[from];
-    const b = nodes[to];
-    const start = from === "RobotDog" && to === "gNB"
-      ? { x: a.x + 6, y: a.y - 2 }
-      : { x: a.x, y: a.y };
-    const end = from === "SystemAgent" && to === "Computing"
-      ? { x: b.x, y: b.y - 6 }
-      : { x: b.x, y: b.y };
-    const cx = (start.x + end.x) / 2;
-    const cy = Math.min(start.y, end.y) - 10;
-    return { start, control: { x: cx, y: cy }, end };
-  };
-
-  const buildPath = (connection) => {
-    const { start, control, end } = getPathGeometry(connection);
-    return `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`;
-  };
-
-  const getPathPoint = (connection, t = 0.5) => {
-    const { start, control, end } = getPathGeometry(connection);
-    const inverse = 1 - t;
-    return {
-      x: (inverse ** 2 * start.x) + (2 * inverse * t * control.x) + (t ** 2 * end.x),
-      y: (inverse ** 2 * start.y) + (2 * inverse * t * control.y) + (t ** 2 * end.y),
-    };
-  };
-
-  const isActive = (key) => Boolean(activeLineConfigByKey[key]);
-
-  return (
-    <div className="border border-blue-500/35 rounded-xl p-5 bg-slate-900/25 backdrop-blur-md flex flex-col h-full relative shadow-[0_0_22px_rgba(0,0,0,0.35)] overflow-hidden">
-      <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-blue-400" />
-      <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-blue-400" />
-      <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-blue-400" />
-      <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-blue-400" />
-
-      <div className="relative flex items-center justify-center gap-3 mb-4">
-        <div className="w-full text-center">
-          <h2 className="text-base font-bold text-blue-100 tracking-wider">
-            {title}
-          </h2>
-        </div>
-      </div>
-
-      <div className="flex-[2.05] w-full min-h-[525px] lg:min-h-[640px] relative rounded-lg overflow-visible border border-blue-900/30 bg-slate-950/20">
-        <svg className="absolute inset-0 z-10 h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <defs>
-            <filter id="topology-line-glow" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="1.4" result="coloredBlur" />
-              <feMerge>
-                <feMergeNode in="coloredBlur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          {connections.map((connection) => {
-            const key = `${connection[0]}->${connection[1]}`;
-            const active = isActive(key) && (stage !== 9 || stage9BlinkActive);
-            const color = activeFlowConfig.color || "#22f5ff";
-            const path = buildPath(connection);
-
-            return (
-              <g key={key}>
-                <path
-                  d={path}
-                  fill="none"
-                  stroke="#cbd5e1"
-                  strokeWidth="0.35"
-                  strokeDasharray="1.2 1.1"
-                  strokeLinecap="round"
-                  opacity="0.42"
-                />
-                {active && (
-                  <>
-                    <path
-                      d={path}
-                      fill="none"
-                      stroke={color}
-                      strokeWidth="1.15"
-                      strokeLinecap="round"
-                      opacity="0.78"
-                      filter="url(#topology-line-glow)"
-                      className="animate-pulse"
-                    />
-                    <path
-                      d={path}
-                      fill="none"
-                      stroke={color}
-                      strokeWidth="0.9"
-                      strokeDasharray="4 8"
-                      strokeLinecap="round"
-                      opacity="0.95"
-                      className="[animation:topology-flow_1.3s_linear_infinite]"
-                    />
-                  </>
-                )}
-              </g>
-            );
-          })}
-        </svg>
-
-        <div className="pointer-events-none absolute inset-0 z-[18]">
-          {connections.map((connection) => {
-            const key = `${connection[0]}->${connection[1]}`;
-            const lineConfig = stage !== 9 || stage9BlinkActive ? activeLineConfigByKey[key] : null;
-
-            if (!lineConfig) {
-              return null;
-            }
-
-            const point = getPathPoint(connection, 0.52);
-            const isBelowLine = lineConfig.labelPosition === "below";
-
-            return (
-              <div
-                key={`${key}-latency`}
-                className={`absolute -translate-x-1/2 rounded border border-cyan-200/70 bg-slate-950/95 px-2 py-1 font-mono text-[9px] font-black leading-none text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.34)] backdrop-blur-md ${
-                  isBelowLine ? "translate-y-0" : "-translate-y-full"
-                }`}
-                style={{
-                  left: `${point.x}%`,
-                  top: isBelowLine ? `calc(${point.y}% + 8px)` : `calc(${point.y}% - 8px)`,
-                }}
-              >
-                {lineConfig.displayLatencyMs}ms
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="pointer-events-none absolute left-[32%] top-[1%] z-[19] h-[60%] w-[66%] rounded-lg border-2 border-dashed border-orange-300/90 bg-orange-500/[0.08] shadow-[0_0_22px_rgba(251,146,60,0.28)]">
-          <div className="absolute left-2 top-2 rounded-md border border-orange-200/80 bg-slate-950/92 px-3 py-1 text-xl font-black leading-none tracking-tight text-orange-100 shadow-[0_0_18px_rgba(251,146,60,0.35)]">
-            CP
-          </div>
-        </div>
-
-        <div className="pointer-events-none absolute left-[32%] top-[63%] z-[19] h-[36%] w-[39%] rounded-lg border-2 border-dashed border-emerald-300/90 bg-emerald-500/[0.08] shadow-[0_0_22px_rgba(16,185,129,0.25)]">
-          <div className="absolute bottom-2 left-2 rounded-md border border-emerald-200/80 bg-slate-950/92 px-3 py-1 text-xl font-black leading-none tracking-tight text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.32)]">
-            UP
-          </div>
-        </div>
-
-        <div className="pointer-events-none absolute left-[73%] top-[63%] z-[19] h-[36%] w-[25%] rounded-lg border-2 border-dashed border-sky-300/85 bg-sky-500/[0.08] shadow-[0_0_18px_rgba(56,189,248,0.18)]">
-          <div className="absolute bottom-2 right-2 rounded-md border border-sky-200/70 bg-slate-950/92 px-3 py-1 text-xl font-black leading-none tracking-tight text-sky-100 shadow-[0_0_14px_rgba(56,189,248,0.22)]">
-            OTT
-          </div>
-        </div>
-
-        <div className="absolute inset-0 z-20">
-          {Object.entries(nodes).map(([key, value]) => (
-            <div
-              key={key}
-              className="absolute -translate-x-1/2 -translate-y-1/2 select-none"
-              style={{ left: `${value.x}%`, top: `${value.y}%` }}
-            >
-              <div className="relative flex flex-col items-center">
-                <div
-                  className="absolute top-[64%] h-5 w-20 rounded-full blur-md opacity-45"
-                  style={{ backgroundColor: value.color }}
-                />
-                <img
-                  src={value.image}
-                  alt={value.name}
-                  className={`${value.size} relative z-10 object-contain [transform:perspective(720px)_rotateX(10deg)_rotateY(-10deg)_translateY(-4px)] drop-shadow-[0_18px_18px_rgba(0,0,0,0.58)]`}
-                  draggable="false"
-                />
-                <div className={`${value.labelClassName || "relative -mt-1"} z-20 rounded border border-slate-500/45 bg-slate-950/85 px-2.5 py-1 text-[9px] sm:text-[10px] font-bold tracking-wide text-gray-100 whitespace-nowrap backdrop-blur-md`}>
-                  {value.name}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        {positionedAgentBubbles.map((bubble, index) => (
-          <AgentSpeechBubble
-            key={`${bubble.targetNode || "agent"}-${bubble.placement || "bubble"}-${index}`}
-            bubble={bubble}
-          />
-        ))}
-        <AgentSpeechBubble bubble={robotDogSpeechBubble} />
-        <AgentSpeechBubble bubble={arSpeechBubble} />
-
-      </div>
-
-      <div className="mt-1.5 border-t border-blue-500/25 pt-1.5">
-        <div className="flex items-center justify-between gap-3 mb-1">
-          <h3 className="text-sm font-bold text-blue-100 tracking-wide">6G核心网作用</h3>
-          <span className="text-[10px] text-cyan-300 font-mono">Core Network Functions</span>
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          {coreFunctions.map((item) => (
-            <div
-              key={item}
-              className="flex items-center gap-2 rounded border border-blue-500/25 bg-slate-900/20 px-2.5 py-1.5 text-xs text-blue-100/90 backdrop-blur-sm"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-cyan-300" />
-              <span className="font-medium">{item}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const waitForIceGathering = (pc) => {
-  if (pc.iceGatheringState === "complete") {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve) => {
-    const timeout = window.setTimeout(() => {
-      pc.removeEventListener("icegatheringstatechange", onStateChange);
-      resolve();
-    }, 3000);
-
-    const onStateChange = () => {
-      if (pc.iceGatheringState === "complete") {
-        window.clearTimeout(timeout);
-        pc.removeEventListener("icegatheringstatechange", onStateChange);
-        resolve();
-      }
-    };
-    pc.addEventListener("icegatheringstatechange", onStateChange);
-  });
-};
-
-const getWebRtcOfferUrl = () => {
-  const runtimeConfig = getRuntimeConfig();
-  const configuredUrl = runtimeConfig.webRtcSignalUrl || import.meta.env.VITE_WEBRTC_SIGNAL_URL;
-  if (configuredUrl) {
-    return configuredUrl;
-  }
-
-  return buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/v1/web/sdp/offer", "sandboxHost");
-};
-
-const getDogVisionOfferUrl = () => {
-  const runtimeConfig = getRuntimeConfig();
-  const configuredUrl = runtimeConfig.dogWebRtcSignalUrl || import.meta.env.VITE_DOG_WEBRTC_SIGNAL_URL;
-  if (configuredUrl) {
-    return configuredUrl;
-  }
-
-  return getWebRtcOfferUrl();
-};
-
-const getDogEnhancedOfferUrl = () => {
-  const runtimeConfig = getRuntimeConfig();
-  const configuredUrl = runtimeConfig.dogEnhancedWebRtcSignalUrl || import.meta.env.VITE_DOG_ENHANCED_WEBRTC_SIGNAL_URL;
-  if (configuredUrl) {
-    return configuredUrl;
-  }
-
-  return getWebRtcOfferUrl();
-};
-
-const isLocalNetworkHost = (hostname) => {
-  if (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "::1"
-  ) {
-    return true;
-  }
-
-  const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (!ipv4Match) {
-    return false;
-  }
-
-  const octets = ipv4Match.slice(1).map(Number);
-  if (octets.some((octet) => octet < 0 || octet > 255)) {
-    return false;
-  }
-
-  const [first, second] = octets;
-  return (
-    first === 10 ||
-    (first === 172 && second >= 16 && second <= 31) ||
-    (first === 192 && second === 168) ||
-    (first === 169 && second === 254)
-  );
-};
-
-const getWebRtcIceServers = () => {
-  if (isLocalNetworkHost(window.location.hostname)) {
-    return [];
-  }
-
-  return [
-    {
-      urls: [
-        "stun:101.245.78.174:28002",
-        "turn:101.245.78.174:28002?transport=udp",
-        "turn:101.245.78.174:28002?transport=tcp",
-      ],
-      username: "cloudproxy",
-      credential: "f41bd6b00f9fe5b5980197d793699aea",
-    },
-  ];
-};
-
-const connectBackendVideoPeer = async (pc, offerUrl, clientId, streamType) => {
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  await waitForIceGathering(pc);
-
-  const localDescription = pc.localDescription || offer;
-  const response = await fetch(offerUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: clientId,
-      ...(streamType ? { streamType } : {}),
-      sdp_offer: {
-        type: localDescription.type,
-        sdp: localDescription.sdp,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`WebRTC offer failed: ${response.status}`);
-  }
-
-  const payload = await response.json();
-  if (!payload?.sdp_answer) {
-    throw new Error("WebRTC answer missing sdp_answer");
-  }
-
-  await pc.setRemoteDescription(payload.sdp_answer);
-};
-
-const DOG_VIDEO_HEALTH_POLL_MS = 500;
-const DOG_VIDEO_CONNECT_TIMEOUT_MS = 10000;
-
-const getDogVideoGateState = (health, hasError = false) => {
-  if (hasError) {
-    return "waiting-sandbox";
-  }
-  if (!health) {
-    return "waiting-task";
-  }
-  if (!health.streamRequested) {
-    return "waiting-task";
-  }
-  if (!health.videoReady) {
-    return "waiting-stream";
-  }
-  return "ready";
-};
-
-const isDogVideoReadyForOffer = (health) => (
-  health?.ok === true
-  && health?.streamRequested === true
-  && health?.videoReady === true
-);
-
-const useDogVideoOfferGate = (enabled = true) => {
-  const [snapshot, setSnapshot] = useState({
-    health: null,
-    ready: false,
-    state: enabled ? "waiting-task" : "idle",
-  });
-
-  useEffect(() => {
-    if (!enabled) {
-      setSnapshot({
-        health: null,
-        ready: false,
-        state: "idle",
-      });
-      return undefined;
-    }
-
-    let disposed = false;
-    let timerId = null;
-
-    const poll = async () => {
-      try {
-        const response = await fetch(getSandboxHealthApiUrl(), { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error(`Sandbox health failed: ${response.status}`);
-        }
-
-        const health = await response.json();
-        if (!disposed) {
-          const ready = isDogVideoReadyForOffer(health);
-          setSnapshot({
-            health,
-            ready,
-            state: ready ? "ready" : getDogVideoGateState(health),
-          });
-        }
-      } catch (error) {
-        console.error("Sandbox health polling failed", error);
-        if (!disposed) {
-          setSnapshot((current) => ({
-            health: current.health,
-            ready: false,
-            state: getDogVideoGateState(current.health, true),
-          }));
-        }
-      }
-
-      if (!disposed) {
-        timerId = window.setTimeout(poll, DOG_VIDEO_HEALTH_POLL_MS);
-      }
-    };
-
-    poll();
-
-    return () => {
-      disposed = true;
-      if (timerId !== null) {
-        window.clearTimeout(timerId);
-      }
-    };
-  }, [enabled]);
-
-  return snapshot;
-};
-
-const formatVideoState = (state) => {
-  if (state === "receiving" || state === "connected") {
-    return "Live";
-  }
-
-  const labels = {
-    idle: "Idle",
-    ready: "Ready",
-    connecting: "Connecting",
-    failed: "Failed",
-    disconnected: "Disconnected",
-    closed: "Closed",
-    "waiting-task": "Waiting task",
-    "waiting-dog": "Waiting dog",
-    "waiting-stream": "Waiting stream",
-    "waiting-sandbox": "Waiting sandbox",
-  };
-
-  return labels[state] || state;
-};
-
-const WebRtcBackground = () => {
-  return <div className="fixed inset-0 -z-20 bg-black" />;
-};
-
-const DogVisionPanel = ({ label, state, videoRef, tall = false }) => {
+const DogVisionPanel = ({ label, state, videoRef, tall = false, tags }) => {
   const live = state === "receiving" || state === "connected";
+  const panelTags = tags || ["DOG-CAM", "MOQT", live ? "SYNCED" : formatVideoState(state)];
 
   return (
     <div className={`relative overflow-hidden rounded-xl border border-emerald-400/35 bg-slate-950/45 shadow-[inset_0_0_24px_rgba(16,185,129,0.12),0_0_18px_rgba(34,211,238,0.14)] ${tall ? "flex-1" : "h-[220px] shrink-0 lg:h-[240px]"}`}>
@@ -2299,7 +1126,7 @@ const DogVisionPanel = ({ label, state, videoRef, tall = false }) => {
         {label}
       </div>
       <div className="absolute bottom-2 left-2 right-2 grid grid-cols-3 gap-2 text-[9px] font-mono text-cyan-100/90">
-        {["DOG-CAM", "MOQT", live ? "SYNCED" : formatVideoState(state)].map((item) => (
+        {panelTags.map((item) => (
           <div key={item} className="rounded border border-cyan-400/25 bg-slate-950/62 px-2 py-1 text-center backdrop-blur-md">
             {item}
           </div>
@@ -2309,165 +1136,44 @@ const DogVisionPanel = ({ label, state, videoRef, tall = false }) => {
   );
 };
 
-const useBackendVideoStream = ({
-  enabled,
-  ready,
-  gateState,
-  streamEpoch,
-  offerUrl,
-  clientId,
-  streamType,
-  label,
-  attachKey,
-}) => {
-  const videoRef = useRef(null);
-  const [state, setState] = useState(enabled ? "waiting-task" : "idle");
-  const [stream, setStream] = useState(null);
-  const [retryToken, setRetryToken] = useState(0);
+const BackgroundVideoPanel = ({ visible }) => {
+  const background = useBackendVideoStream({
+    enabled: true,
+    ready: true,
+    gateState: "ready",
+    streamEpoch: null,
+    offerUrl: getWebRtcOfferUrl(),
+    clientId: "react-stage9-background",
+    streamType: "background",
+    label: "Stage9 background video",
+    attachKey: visible,
+  });
+  const backgroundLive = background.hasStream && (background.state === "receiving" || background.state === "connected");
 
-  useEffect(() => {
-    if (!enabled) {
-      setState("idle");
-      setStream(null);
-      setRetryToken(0);
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-      return;
-    }
+  if (!visible) {
+    return (
+      <video
+        ref={background.videoRef}
+        className="pointer-events-none absolute h-px w-px opacity-0"
+        autoPlay
+        muted
+        playsInline
+        aria-hidden="true"
+      />
+    );
+  }
 
-    if (!ready) {
-      setState(gateState);
-      setStream(null);
-      setRetryToken(0);
-    }
-  }, [enabled, gateState, ready]);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-    }
-  }, [attachKey, stream]);
-
-  useEffect(() => {
-    if (!enabled || !ready) {
-      return undefined;
-    }
-
-    let disposed = false;
-    let retryTimer = null;
-    let connectTimeout = null;
-    let receivedTrack = false;
-    const iceServers = getWebRtcIceServers();
-    const pc = new RTCPeerConnection({
-      iceServers,
-      iceTransportPolicy: iceServers.length ? "relay" : "all",
-    });
-    setState("connecting");
-
-    const clearScheduledRetry = () => {
-      if (retryTimer !== null) {
-        window.clearTimeout(retryTimer);
-        retryTimer = null;
-      }
-    };
-
-    const clearConnectTimeout = () => {
-      if (connectTimeout !== null) {
-        window.clearTimeout(connectTimeout);
-        connectTimeout = null;
-      }
-    };
-
-    const scheduleRetry = (delayMs = 1200) => {
-      if (disposed || retryTimer !== null) {
-        return;
-      }
-
-      retryTimer = window.setTimeout(() => {
-        retryTimer = null;
-        if (!disposed) {
-          setRetryToken((token) => token + 1);
-        }
-      }, delayMs);
-    };
-
-    const closeAndRetry = (reason, delayMs = 1200) => {
-      if (disposed) {
-        return;
-      }
-
-      console.warn(`${label} WebRTC retrying: ${reason}`, {
-        clientId,
-        connectionState: pc.connectionState,
-        iceConnectionState: pc.iceConnectionState,
-        signalingState: pc.signalingState,
-      });
-      clearConnectTimeout();
-      setState("failed");
-      scheduleRetry(delayMs);
-      pc.close();
-    };
-
-    pc.addTransceiver("video", { direction: "recvonly" });
-
-    pc.onconnectionstatechange = () => {
-      if (!disposed) {
-        setState(pc.connectionState);
-        if (["connected", "connecting"].includes(pc.connectionState)) {
-          clearScheduledRetry();
-        } else if (pc.connectionState === "disconnected") {
-          scheduleRetry(10000);
-        } else if (["failed", "closed"].includes(pc.connectionState)) {
-          clearConnectTimeout();
-          scheduleRetry();
-        }
-      }
-    };
-
-    pc.ontrack = (event) => {
-      if (!disposed) {
-        receivedTrack = true;
-        clearConnectTimeout();
-        setStream(event.streams[0]);
-        setState("receiving");
-      }
-    };
-
-    connectTimeout = window.setTimeout(() => {
-      if (!receivedTrack) {
-        closeAndRetry("timed out before video track arrived");
-      }
-    }, DOG_VIDEO_CONNECT_TIMEOUT_MS);
-
-    const connect = async () => {
-      try {
-        await connectBackendVideoPeer(pc, offerUrl, clientId, streamType);
-      } catch (error) {
-        console.error(`${label} WebRTC connection failed`, error);
-        if (!disposed) {
-          setState("failed");
-          scheduleRetry();
-        }
-        pc.close();
-      }
-    };
-
-    connect();
-
-    return () => {
-      disposed = true;
-      clearScheduledRetry();
-      clearConnectTimeout();
-      setStream(null);
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-      pc.close();
-    };
-  }, [clientId, enabled, gateState, label, offerUrl, ready, retryToken, streamEpoch, streamType]);
-
-  return { state, videoRef };
+  return (
+    <div className="flex h-[210px] shrink-0 lg:h-[240px]">
+      <DogVisionPanel
+        label="机械臂视频流"
+        state={background.state}
+        videoRef={background.videoRef}
+        tall
+        tags={["ARM-CAM", "WEBRTC", backgroundLive ? "SYNCED" : formatVideoState(background.state)]}
+      />
+    </div>
+  );
 };
 
 const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
@@ -2533,184 +1239,6 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
   );
 };
 
-const useStagePolling = () => {
-  const [stage, setStage] = useState(1);
-  const [connectionState, setConnectionState] = useState("connecting");
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let disposed = false;
-    let isPolling = false;
-
-    const pollStage = async () => {
-      if (isPolling) {
-        return;
-      }
-
-      isPolling = true;
-
-      try {
-        const response = await fetch(getStageApiUrl(), {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          throw new Error(`Stage API failed: ${response.status}`);
-        }
-
-        const contentType = response.headers.get("content-type") || "";
-        if (!contentType.includes("application/json")) {
-          throw new Error("Stage API did not return JSON");
-        }
-
-        const payload = await response.json();
-        const nextStage = normalizeStage(payload.stage);
-
-        if (!nextStage) {
-          throw new Error(`Unknown stage: ${payload.stage}`);
-        }
-
-        if (!disposed) {
-          setStage(nextStage);
-          setConnectionState("connected");
-          setError(null);
-        }
-      } catch (stageError) {
-        if (!disposed) {
-          setConnectionState("error");
-          setError(stageError.message);
-        }
-      } finally {
-        isPolling = false;
-      }
-    };
-
-    pollStage();
-    const interval = window.setInterval(pollStage, 1000);
-
-    return () => {
-      disposed = true;
-      window.clearInterval(interval);
-    };
-  }, []);
-
-  return { stage, connectionState, error };
-};
-
-const useArLastWhisper = () => {
-  const [lastWhisper, setLastWhisper] = useState("");
-
-  useEffect(() => {
-    let disposed = false;
-    let isPolling = false;
-
-    const pollArStatus = async () => {
-      if (isPolling) {
-        return;
-      }
-
-      isPolling = true;
-
-      try {
-        const response = await fetch(getArStatusApiUrl(), {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          throw new Error(`AR status API failed: ${response.status}`);
-        }
-
-        const payload = await response.json();
-        const nextWhisper = String(payload.last_whisper || payload.lastWhisper || "").trim();
-        if (!disposed && nextWhisper) {
-          setLastWhisper(nextWhisper);
-        }
-      } catch (arStatusError) {
-        console.error("AR status polling failed", arStatusError);
-      } finally {
-        isPolling = false;
-      }
-    };
-
-    pollArStatus();
-    const interval = window.setInterval(pollArStatus, 1000);
-
-    return () => {
-      disposed = true;
-      window.clearInterval(interval);
-    };
-  }, []);
-
-  return lastWhisper;
-};
-
-const useLatencySeries = (enabled) => {
-  const [points, setPoints] = useState([]);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let disposed = false;
-    let isPolling = false;
-
-    if (!enabled) {
-      setPoints([]);
-      setError(null);
-      return undefined;
-    }
-
-    const pollLatency = async () => {
-      if (isPolling) {
-        return;
-      }
-
-      isPolling = true;
-
-      try {
-        const response = await fetch(getLatencyApiUrl(), {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          throw new Error(`Latency API failed: ${response.status}`);
-        }
-
-        const payload = await response.json();
-        const latencyMs = Number(payload.latencyMs);
-
-        if (!Number.isFinite(latencyMs)) {
-          throw new Error("Latency API returned invalid latency");
-        }
-
-        const timestamp = Number(payload.timestamp) || Date.now();
-
-        if (!disposed) {
-          setPoints((current) => [
-            ...current.slice(-23),
-            { timestamp, latencyMs },
-          ]);
-          setError(null);
-        }
-      } catch (latencyError) {
-        if (!disposed) {
-          setError(latencyError.message);
-        }
-      } finally {
-        isPolling = false;
-      }
-    };
-
-    pollLatency();
-    const interval = window.setInterval(pollLatency, 1000);
-
-    return () => {
-      disposed = true;
-      window.clearInterval(interval);
-    };
-  }, [enabled]);
-
-  return { points, error };
-};
-
 const LatencyChart = ({ points, error }) => {
   const chartWidth = 220;
   const chartHeight = 92;
@@ -2745,6 +1273,10 @@ const LatencyChart = ({ points, error }) => {
 
   return (
     <div className="rounded-lg border border-cyan-400/25 bg-slate-950/35 p-2.5">
+      <div className="mb-2 text-sm font-black leading-none tracking-wide text-cyan-50">
+        L3级通信保障
+      </div>
+      <div className="mb-2 h-px w-full bg-cyan-300/35" />
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
           <div className="text-xs font-bold text-cyan-100">端到端时延</div>
@@ -2797,126 +1329,6 @@ const LatencyChart = ({ points, error }) => {
   );
 };
 
-const getWorkflowBubbleFromRows = (workflow = [], stage) => {
-  if (!workflow.length) {
-    return null;
-  }
-
-  if (stage === 1) {
-    return null;
-  }
-
-  if (stage === 2) {
-    const acnRows = workflow.filter((item) => (
-      item.label === "IDM颁发数字身份:" || item.label === "能力注册:"
-    ));
-    const connectionRow = workflow.find((item) => item.label === "接入网络:");
-    const items = [
-      acnRows.length
-        ? {
-            label: "ACN Agent:签发数字身份",
-            status: getCombinedWorkflowStatus(acnRows),
-          }
-        : null,
-      connectionRow
-        ? {
-            label: "Connection Agent:接入网络",
-            status: connectionRow.status,
-          }
-        : null,
-    ].filter(Boolean);
-
-    return {
-      items,
-      status: getCombinedWorkflowStatus(items),
-    };
-  }
-
-  if (stage === 4 || stage === 5) {
-    const acnRows = workflow.filter((item) => (
-      item.label === "签约数据更新:" || item.label === "下发域接入凭证:"
-    ));
-    const connectionRow = workflow.find((item) => item.label === "下发UPF配置:");
-    const items = [
-      acnRows.length
-        ? {
-            label: "ACN Agent:创建管理家庭域",
-            status: getCombinedWorkflowStatus(acnRows),
-          }
-        : null,
-      connectionRow
-        ? {
-            label: "Connection Agent：下发物理组网配置",
-            status: connectionRow.status,
-          }
-        : null,
-    ].filter(Boolean);
-
-    return {
-      items,
-      status: getCombinedWorkflowStatus(items),
-    };
-  }
-
-  if (stage === 6) {
-    return null;
-  }
-
-  if (stage === 7) {
-    const computingRows = workflow.filter((item) => (
-      item.label === "创建算力会话:" || item.label === "分配算力资源:"
-    ));
-    const items = computingRows.length
-      ? [
-          {
-            label: "Computing Agent:创建算力会话\n分配算力资源",
-            status: getCombinedWorkflowStatus(computingRows),
-          },
-        ]
-      : [];
-
-    return {
-      items,
-      status: getCombinedWorkflowStatus(items),
-    };
-  }
-
-  if (stage === 8) {
-    return null;
-  }
-
-  return {
-    items: workflow.map((item) => ({
-      label: item.label,
-      status: item.status,
-    })),
-    status: workflow.some((item) => item.status === "working") ? "working" : "success",
-  };
-};
-
-const pinBubbleToSystemAgent = (bubble) => (
-  bubble
-    ? {
-        ...bubble,
-        items: bubble.items?.map((item) => ({
-          ...item,
-          isSystemAgentItem: true,
-        })),
-        ...SYSTEM_AGENT_BUBBLE_ANCHOR,
-        className: "w-[150px]",
-      }
-    : null
-);
-
-const FIXED_AR_SPEECH_BY_STAGE = {
-  4: "Let my dog go to the supermarket",
-  5: "Share Dog's vision and enter the supermarket",
-  6: "Share Dog's vision and enter the supermarket",
-  7: "Find the yellow bottle",
-  8: "Find the yellow bottle",
-  9: "Grasp the yellow bottle",
-};
-
 export default function App() {
   const appRootRef = useRef(null);
   const [language, setLanguage] = useState(() => (
@@ -2924,31 +1336,6 @@ export default function App() {
       ? "zh"
       : window.localStorage.getItem(LANGUAGE_STORAGE_KEY) || "zh"
   ));
-  const { stage, connectionState, error } = useStagePolling();
-  const arSpeechText = FIXED_AR_SPEECH_BY_STAGE[stage] || "";
-  const stageConfig = STAGE_CONFIG[stage] || STAGE_CONFIG[1];
-  const latencySeries = useLatencySeries(stage === 8);
-  const [stage2Progress, setStage2Progress] = useState({
-    activeTask: 0,
-    completedCount: 0,
-    bubbleStatus: "working",
-  });
-  const [stage4Progress, setStage4Progress] = useState({
-    activeTask: 0,
-    completedCount: 0,
-    bubbleStatus: "working",
-  });
-  const [stage6Progress, setStage6Progress] = useState({
-    activeTask: 0,
-    completedCount: 0,
-    bubbleStatus: "working",
-  });
-  const [stage7Progress, setStage7Progress] = useState({
-    activeTask: 0,
-    completedCount: 0,
-    bubbleStatus: "working",
-  });
-
   useLanguageOverlay(appRootRef, language);
 
   useEffect(() => {
@@ -2956,425 +1343,35 @@ export default function App() {
     document.title = language === "en" ? "Agent Communication Network" : "智能体通信网络";
   }, [language]);
 
-  useEffect(() => {
-    if (stage !== 2) {
-      setStage2Progress({
-        activeTask: 0,
-        completedCount: 0,
-        bubbleStatus: "working",
-      });
-      return;
-    }
-
-    setStage2Progress({
-      activeTask: 0,
-      completedCount: 0,
-      bubbleStatus: "working",
-    });
-  }, [stage]);
-
-  useEffect(() => {
-    if (stage !== 2 || stage2Progress.completedCount >= STAGE2_WORKFLOW.length) {
-      return undefined;
-    }
-
-    const currentTask = stage2Progress.activeTask;
-    const timer = window.setTimeout(() => {
-      if (stage2Progress.bubbleStatus === "working") {
-        setStage2Progress((progress) => ({
-          ...progress,
-          bubbleStatus: "success",
-        }));
-        return;
-      }
-
-      setStage2Progress((progress) => {
-        const nextCompletedCount = Math.min(progress.completedCount + 1, STAGE2_WORKFLOW.length);
-        const nextTask = Math.min(currentTask + 1, STAGE2_WORKFLOW.length - 1);
-
-        return {
-          activeTask: nextTask,
-          completedCount: nextCompletedCount,
-          bubbleStatus: nextCompletedCount >= STAGE2_WORKFLOW.length ? "success" : "working",
-        };
-      });
-    }, stage2Progress.bubbleStatus === "working"
-      ? STAGE_ANIMATION_TIMING[2].workingMs
-      : STAGE_ANIMATION_TIMING[2].successMs);
-
-    return () => window.clearTimeout(timer);
-  }, [stage, stage2Progress.activeTask, stage2Progress.bubbleStatus, stage2Progress.completedCount]);
-
-  useEffect(() => {
-    if (stage !== 4) {
-      setStage4Progress({
-        activeTask: 0,
-        completedCount: 0,
-        bubbleStatus: "working",
-      });
-      return;
-    }
-
-    setStage4Progress({
-      activeTask: 0,
-      completedCount: 0,
-      bubbleStatus: "working",
-    });
-  }, [stage]);
-
-  useEffect(() => {
-    if (stage !== 6) {
-      setStage6Progress({
-        activeTask: 0,
-        completedCount: 0,
-        bubbleStatus: "working",
-      });
-      return;
-    }
-
-    setStage6Progress({
-      activeTask: 0,
-      completedCount: 0,
-      bubbleStatus: "working",
-    });
-  }, [stage]);
-
-  useEffect(() => {
-    if (stage !== 7) {
-      setStage7Progress({
-        activeTask: 0,
-        completedCount: 0,
-        bubbleStatus: "working",
-      });
-      return;
-    }
-
-    setStage7Progress({
-      activeTask: 0,
-      completedCount: 0,
-      bubbleStatus: "working",
-    });
-  }, [stage]);
-
-  useEffect(() => {
-    if (stage !== 4 || stage4Progress.completedCount >= STAGE4_WORKFLOW.length) {
-      return undefined;
-    }
-
-    const currentTask = stage4Progress.activeTask;
-    const timer = window.setTimeout(() => {
-      if (stage4Progress.bubbleStatus === "working") {
-        setStage4Progress((progress) => ({
-          ...progress,
-          bubbleStatus: "success",
-        }));
-        return;
-      }
-
-      setStage4Progress((progress) => {
-        const nextCompletedCount = Math.min(progress.completedCount + 1, STAGE4_WORKFLOW.length);
-        const nextTask = Math.min(currentTask + 1, STAGE4_WORKFLOW.length - 1);
-
-        return {
-          activeTask: nextTask,
-          completedCount: nextCompletedCount,
-          bubbleStatus: nextCompletedCount >= STAGE4_WORKFLOW.length ? "success" : "working",
-        };
-      });
-    }, stage4Progress.bubbleStatus === "working"
-      ? STAGE_ANIMATION_TIMING[4].workingMs
-      : STAGE_ANIMATION_TIMING[4].successMs);
-
-    return () => window.clearTimeout(timer);
-  }, [stage, stage4Progress.activeTask, stage4Progress.bubbleStatus, stage4Progress.completedCount]);
-
-  useEffect(() => {
-    if (stage !== 6 || stage6Progress.completedCount >= STAGE6_WORKFLOW.length) {
-      return undefined;
-    }
-
-    const currentTask = stage6Progress.activeTask;
-    const timer = window.setTimeout(() => {
-      if (stage6Progress.bubbleStatus === "working") {
-        setStage6Progress((progress) => ({
-          ...progress,
-          bubbleStatus: "success",
-        }));
-        return;
-      }
-
-      setStage6Progress((progress) => {
-        const nextCompletedCount = Math.min(progress.completedCount + 1, STAGE6_WORKFLOW.length);
-        const nextTask = Math.min(currentTask + 1, STAGE6_WORKFLOW.length - 1);
-
-        return {
-          activeTask: nextTask,
-          completedCount: nextCompletedCount,
-          bubbleStatus: nextCompletedCount >= STAGE6_WORKFLOW.length ? "success" : "working",
-        };
-      });
-    }, stage6Progress.bubbleStatus === "working"
-      ? STAGE_ANIMATION_TIMING[6].workingMs
-      : STAGE_ANIMATION_TIMING[6].successMs);
-
-    return () => window.clearTimeout(timer);
-  }, [stage, stage6Progress.activeTask, stage6Progress.bubbleStatus, stage6Progress.completedCount]);
-
-  useEffect(() => {
-    if (stage !== 7 || stage7Progress.completedCount >= STAGE7_WORKFLOW.length) {
-      return undefined;
-    }
-
-    const currentTask = stage7Progress.activeTask;
-    const timer = window.setTimeout(() => {
-      if (stage7Progress.bubbleStatus === "working") {
-        setStage7Progress((progress) => ({
-          ...progress,
-          bubbleStatus: "success",
-        }));
-        return;
-      }
-
-      setStage7Progress((progress) => {
-        const nextCompletedCount = Math.min(progress.completedCount + 1, STAGE7_WORKFLOW.length);
-        const nextTask = Math.min(currentTask + 1, STAGE7_WORKFLOW.length - 1);
-
-        return {
-          activeTask: nextTask,
-          completedCount: nextCompletedCount,
-          bubbleStatus: nextCompletedCount >= STAGE7_WORKFLOW.length ? "success" : "working",
-        };
-      });
-    }, stage7Progress.bubbleStatus === "working"
-      ? STAGE_ANIMATION_TIMING[7].workingMs
-      : STAGE_ANIMATION_TIMING[7].successMs);
-
-    return () => window.clearTimeout(timer);
-  }, [stage, stage7Progress.activeTask, stage7Progress.bubbleStatus, stage7Progress.completedCount]);
-
-  const effectiveStageConfig = (() => {
-    if (stage === 2) {
-      const workflow = STAGE2_WORKFLOW.map((item, index) => {
-        if (index < stage2Progress.completedCount) {
-          return { label: item.label, value: "Done", status: "success" };
-        }
-
-        if (index === stage2Progress.activeTask && stage2Progress.completedCount < STAGE2_WORKFLOW.length) {
-          return {
-            label: item.label,
-            value: stage2Progress.bubbleStatus === "success" ? "Done" : "Working",
-            status: stage2Progress.bubbleStatus === "success" ? "success" : "working",
-          };
-        }
-
-        return { label: item.label, value: "Pending", status: "pending" };
-      });
-
-      const allDone = stage2Progress.completedCount >= STAGE2_WORKFLOW.length;
-      const activeWorkflow = allDone ? null : STAGE2_WORKFLOW[stage2Progress.activeTask];
-      const completionLogCount = Math.max(0, Math.min(stage2Progress.completedCount, STAGE2_COMPLETION_LOGS.length));
-      const logs = [
-        ...stageConfig.logs,
-        ...STAGE2_COMPLETION_LOGS.slice(0, completionLogCount),
-      ];
-
-      return {
-        ...stageConfig,
-        activeFlowType: allDone ? null : "auth",
-        showRegisteredDevice: allDone,
-        statusRows: [
-          {
-            label: "凭证:",
-            value: stage2Progress.completedCount >= 1 ? "已颁发" : "未颁发",
-            status: stage2Progress.completedCount >= 1 ? "success" : "pending",
-          },
-          {
-            label: "机器狗ID:",
-            value: allDone ? "DID:2168nLB3G@CMCC.org" : "None",
-            status: allDone ? "success" : "pending",
-            isMono: true,
-          },
-        ],
-        userStatus: {
-          credential: {
-            value: stage2Progress.completedCount >= 1 ? "已颁发" : "未颁发",
-            status: stage2Progress.completedCount >= 1 ? "success" : "pending",
-          },
-          robotDogId: {
-            value: allDone ? "DID:2168nLB3G@CMCC.org" : "None",
-            status: allDone ? "success" : "pending",
-          },
-        },
-        logs,
-        workflow,
-        steps: stageConfig.steps.map((step) => (
-          step.id === "01"
-            ? {
-                ...step,
-                subtitle: allDone ? "已完成 / Completed" : "进行中 / Working",
-                status: allDone ? "success" : "working",
-              }
-            : step
-        )),
-        agentBubble: activeWorkflow
-          ? {
-              ...activeWorkflow.bubble,
-              status: stage2Progress.bubbleStatus,
-            }
-          : null,
-      };
-    }
-
-    if (stage === 6) {
-      const workflow = STAGE6_WORKFLOW.map((item, index) => {
-        if (index < stage6Progress.completedCount) {
-          return { label: item.label, value: "Done", status: "success" };
-        }
-
-        if (index === stage6Progress.activeTask && stage6Progress.completedCount < STAGE6_WORKFLOW.length) {
-          return {
-            label: item.label,
-            value: stage6Progress.bubbleStatus === "success" ? "Done" : "Working",
-            status: stage6Progress.bubbleStatus === "success" ? "success" : "working",
-          };
-        }
-
-        return { label: item.label, value: "Pending", status: "pending" };
-      });
-
-      const allDone = stage6Progress.completedCount >= STAGE6_WORKFLOW.length;
-      const activeWorkflow = allDone ? null : STAGE6_WORKFLOW[stage6Progress.activeTask];
-      const visibleLogs = [
-        ...STAGE_CONFIG[5].logs,
-        ...STAGE6_LOGS.slice(0, Math.min(stage6Progress.completedCount + 1, STAGE6_LOGS.length)),
-      ];
-
-      return {
-        ...stageConfig,
-        activeFlowType: activeWorkflow?.flowType || "a2aGateway",
-        logs: visibleLogs,
-        workflow,
-        steps: stageConfig.steps.map((step) => (
-          step.id === "03"
-            ? {
-                ...step,
-                subtitle: allDone ? "已完成 / Completed" : "进行中 / Working",
-                status: allDone ? "success" : "working",
-              }
-            : step
-        )),
-        agentBubble: activeWorkflow
-          ? {
-              ...activeWorkflow.bubble,
-              status: stage6Progress.bubbleStatus,
-            }
-          : null,
-      };
-    }
-
-    if (stage === 7) {
-      const workflow = STAGE7_WORKFLOW.map((item, index) => {
-        if (index < stage7Progress.completedCount) {
-          return { label: item.label, value: "Done", status: "success" };
-        }
-
-        if (index === stage7Progress.activeTask && stage7Progress.completedCount < STAGE7_WORKFLOW.length) {
-          return {
-            label: item.label,
-            value: stage7Progress.bubbleStatus === "success" ? "Done" : "Working",
-            status: stage7Progress.bubbleStatus === "success" ? "success" : "working",
-          };
-        }
-
-        return { label: item.label, value: "Pending", status: "pending" };
-      });
-
-      const allDone = stage7Progress.completedCount >= STAGE7_WORKFLOW.length;
-      const activeWorkflow = allDone ? null : STAGE7_WORKFLOW[stage7Progress.activeTask];
-      const visibleLogs = [
-        ...STAGE_CONFIG[6].logs,
-        ...STAGE7_LOGS.slice(0, Math.min(stage7Progress.completedCount + 1, STAGE7_LOGS.length)),
-      ];
-
-      return {
-        ...stageConfig,
-        activeFlowType: activeWorkflow?.flowType || "computeSandbox",
-        logs: visibleLogs,
-        workflow,
-        steps: stageConfig.steps.map((step) => (
-          step.id === "04"
-            ? {
-                ...step,
-                subtitle: allDone ? "已完成 / Completed" : "进行中 / Working",
-                status: allDone ? "success" : "working",
-              }
-            : step
-        )),
-        agentBubble: activeWorkflow
-          ? {
-              ...activeWorkflow.bubble,
-              status: stage7Progress.bubbleStatus,
-            }
-          : null,
-      };
-    }
-
-    if (stage !== 4) {
-      return stageConfig;
-    }
-
-    const workflow = STAGE4_WORKFLOW.map((item, index) => {
-      if (index < stage4Progress.completedCount) {
-        return { ...item, value: "Done", status: "success" };
-      }
-
-      if (index === stage4Progress.activeTask && stage4Progress.completedCount < STAGE4_WORKFLOW.length) {
-        return {
-          ...item,
-          value: stage4Progress.bubbleStatus === "success" ? "Done" : "Working",
-          status: stage4Progress.bubbleStatus === "success" ? "success" : "working",
-        };
-      }
-
-      return item;
-    });
-
-    const allDone = stage4Progress.completedCount >= STAGE4_WORKFLOW.length;
-    const steps = stageConfig.steps.map((step) => (
-      step.id === "02"
-        ? {
-            ...step,
-            subtitle: allDone ? "已完成 / Completed" : "进行中 / Working",
-            status: allDone ? "success" : "working",
-          }
-        : step
-    ));
-
-    const activeWorkflow = allDone ? null : workflow[stage4Progress.activeTask];
-    const toolBubble = activeWorkflow ? STAGE4_TOOL_BUBBLES[activeWorkflow.label] : null;
-
-    return {
-      ...stageConfig,
-      homeDomainDevicesReady: allDone,
-      showRegisteredDevice: allDone,
-      workflow,
-      steps,
-      agentBubble: activeWorkflow
-        ? {
-            ...(toolBubble || { text: normalizeWorkflowLabel(activeWorkflow.label) }),
-            status: stage4Progress.bubbleStatus,
-          }
-        : null,
-    };
-  })();
-  const topologyAgentBubble = stage === 9
+  const { stage, connectionState, error } = useStagePolling();
+  const latencySeries = useLatencySeries(stage === 8);
+  const effectiveStageConfig = useEffectiveStageConfig(stage);
+  const rawArSpeechText = FIXED_AR_SPEECH_BY_STAGE[stage] || "";
+  const arSpeechText = effectiveStageConfig.hideArSpeech ? "" : rawArSpeechText;
+  const topologyAgentBubble = effectiveStageConfig.systemAgentBubble
+    ? pinBubbleToSystemAgent(effectiveStageConfig.systemAgentBubble)
+    : stage === 9
     ? null
     : pinBubbleToSystemAgent(
         getWorkflowBubbleFromRows(effectiveStageConfig.workflow, stage)
       );
-  const childAgentBubbles = effectiveStageConfig.agentBubble
-    ? [effectiveStageConfig.agentBubble]
-    : [];
+  const childAgentBubbles = [
+    ...(effectiveStageConfig.agentBubble ? [effectiveStageConfig.agentBubble] : []),
+    ...(effectiveStageConfig.agentBubbles || []),
+  ];
+  const panelComponents = {
+    ARGlasses,
+    ArRegistrationPanel,
+    BackgroundVideoPanel,
+    CompletedTasksPanel,
+    DogVisionStreams,
+    HandoffPanel,
+    LatencyChart,
+    RobotDog,
+    SciFiPanel,
+    StatusRow,
+    TaskBriefPanel,
+  };
 
   return (
     <div
@@ -3455,6 +1452,13 @@ export default function App() {
         .lang-en .max-w-\\[140px\\] {
           max-width: 160px;
         }
+        .completed-tasks-scroll {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .completed-tasks-scroll::-webkit-scrollbar {
+          display: none;
+        }
         .lang-en .task-brief-badge {
           width: 4.85rem;
           padding-left: 0.25rem;
@@ -3470,6 +1474,55 @@ export default function App() {
           overflow-wrap: normal;
           word-break: normal;
           hyphens: none;
+        }
+        .lang-en .status-row-label {
+          white-space: nowrap;
+          overflow-wrap: normal;
+          word-break: normal;
+          hyphens: none;
+        }
+        .lang-en .status-row {
+          flex-wrap: wrap;
+          align-items: baseline;
+          row-gap: 0.15rem;
+        }
+        .lang-en .status-row-value-wrap {
+          min-width: 0;
+          flex-shrink: 1;
+          white-space: normal;
+        }
+        .lang-en .status-panel-title {
+          white-space: pre-line;
+        }
+        .lang-en .stage-plan-en-compact {
+          scale: 0.93;
+          transform-origin: 0 0;
+        }
+        .lang-en .core-functions-heading,
+        .lang-en .core-functions-heading h3,
+        .lang-en .core-functions-heading span {
+          white-space: nowrap;
+        }
+        .lang-en .core-function-item-label {
+          white-space: nowrap;
+          overflow: visible;
+          font-size: 12px;
+          line-height: 1;
+        }
+        .lang-en .stepbar-id {
+          white-space: nowrap;
+          overflow-wrap: normal;
+          word-break: normal;
+          font-size: 1.25rem;
+          line-height: 1;
+        }
+        .lang-en .stepbar-title {
+          font-size: 1rem;
+          line-height: 1.05;
+        }
+        .lang-en .stepbar-subtitle {
+          font-size: 0.875rem;
+          line-height: 1.05;
         }
         @keyframes spin-slow {
           0% { transform: rotate(0deg); }
@@ -3496,7 +1549,7 @@ export default function App() {
             <Wifi className="w-8 h-8 animate-pulse" />
           </div>
           <div className="text-center absolute left-1/2 -translate-x-1/2">
-            <h1 className={`text-2xl md:text-4xl font-bold tracking-widest text-white glow-text ${language === "zh" ? "mb-2" : "mb-0"}`}>
+            <h1 className={`text-3xl md:text-5xl font-bold tracking-widest text-white glow-text ${language === "zh" ? "mb-2" : "mb-0"}`}>
               {language === "en" ? "Agent Communication Network" : "智能体通信网络"}
             </h1>
             {language === "zh" && (
@@ -3511,282 +1564,11 @@ export default function App() {
         {/* 核心内容区 (三列布局) */}
         <div className="grid grid-cols-1 md:grid-cols-[2.5fr_6.5fr_2.5fr] gap-6 flex-1 relative z-10">
           
-          {/* 左列：机器狗接入 */}
-          <div>
-            <SciFiPanel className="h-full">
-              <div className="flex flex-col h-full">
-                <h2 className="text-blue-100 text-lg lg:text-xl font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
-                  {effectiveStageConfig.leftPanelTitle}
-                </h2>
-                
-                <div className="flex flex-col flex-1 gap-2">
-                  {effectiveStageConfig.showArRegistration ? (
-                    <ArRegistrationPanel />
-                  ) : effectiveStageConfig.showHandoff ? (
-                    <HandoffPanel />
-                  ) : effectiveStageConfig.showDogVision || effectiveStageConfig.showEnhancedDogVision ? (
-                    <DogVisionStreams
-                      showEnhanced={Boolean(effectiveStageConfig.showEnhancedDogVision)}
-                      preloadEnhanced={Number(stage) >= 5}
-                    />
-                  ) : effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.homeDomainDevicesReady === false ? (
-                    <div className="flex-1 min-h-[424px] rounded-xl border border-emerald-500/20 bg-slate-950/10 backdrop-blur-md" aria-hidden="true" />
-                  ) : effectiveStageConfig.showHomeDomainDevice ? (
-                    <div className={`border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex flex-col overflow-hidden rounded-xl p-3 relative ${
-                      effectiveStageConfig.showRegisteredDevice
-                        ? "flex-1 h-[180px] lg:h-[210px]"
-                        : "h-[220px] lg:h-[240px]"
-                    }`}>
-                      <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
-                        <ShieldCheck className="w-5 h-5 animate-pulse" />
-                        <div>
-                          <div className="font-bold text-xs lg:text-sm">已注册设备</div>
-                          <div className="text-[10px] opacity-70">Registered Device</div>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 w-full relative mt-1">
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
-                          <defs>
-                            <linearGradient id="ar-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
-                              <stop offset="0%" stopColor="rgba(34, 211, 238, 0.35)" stopOpacity="0.7" />
-                              <stop offset="100%" stopColor="rgba(34, 211, 238, 0)" stopOpacity="0" />
-                            </linearGradient>
-                          </defs>
-                          <polygon points="34,65 65,15 95,50" fill="url(#ar-cone-beam)" className="opacity-40 animate-pulse" />
-                          <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(34, 211, 238, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                          <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(34, 211, 238, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                          <circle cx="34" cy="65" r="1.5" fill="#22d3ee" className="animate-ping" />
-                        </svg>
-
-                        <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
-                          <ARGlasses className="w-full h-full object-contain" />
-                        </div>
-
-                        <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
-                          <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
-                            Digital ID
-                          </div>
-                          <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
-                            3lt1zY73G@CMCC.org
-                          </div>
-                          <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="opacity-75">Capabilities:</span>
-                              <span className="font-bold text-cyan-300 leading-tight break-words">
-                                [Device-Network Synergy, AR]
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="opacity-75">Status:</span>
-                              <span className="font-bold flex items-center gap-0.5 text-emerald-400">
-                                Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {/* === 未注册设备 (红色全息光锥投影) === */}
-                      <div className={`border border-red-500/30 bg-red-950/10 backdrop-blur-md flex flex-col overflow-hidden rounded-xl p-3 relative ${
-                        effectiveStageConfig.showRegisteredDevice
-                          ? "flex-1 h-[180px] lg:h-[210px]"
-                          : "h-[220px] lg:h-[240px]"
-                      }`}>
-                        <div className="flex items-center gap-2 text-red-400 mb-2 relative z-20">
-                          <ShieldAlert className="w-5 h-5 animate-bounce" />
-                          <div>
-                            <div className="font-bold text-xs lg:text-sm">未注册设备</div>
-                            <div className="text-[10px] opacity-70">Unknown Device</div>
-                          </div>
-                        </div>
-
-                        <div className="flex-1 w-full relative mt-1">
-                          {/* 红色发散全息光锥层 */}
-                          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <defs>
-                              <linearGradient id="unreg-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
-                                <stop offset="0%" stopColor="rgba(239, 68, 68, 0.35)" stopOpacity="0.7" />
-                                <stop offset="100%" stopColor="rgba(239, 68, 68, 0)" stopOpacity="0" />
-                              </linearGradient>
-                            </defs>
-                            {/* 雷达源到全息面板的扩散半透明光锥 */}
-                            <polygon points="34,65 65,15 95,50" fill="url(#unreg-cone-beam)" className="opacity-40 animate-pulse" />
-                            <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                            <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(248, 113, 113, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                            {/* 发射微点 */}
-                            <circle cx="34" cy="65" r="1.5" fill="#ef4444" className="animate-ping" />
-                          </svg>
-
-                          {/* 机器狗本体 (靠左下坐立) */}
-                          <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
-                            <RobotDog className="w-full h-full object-contain" status="unregistered" />
-                          </div>
-
-                          {/* 3D 悬浮红色警示全息牌 (靠右侧，朝狗身侧上方倾斜) */}
-                          <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-red-950/80 border border-red-500/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.25)] z-20 animate-hologram-red [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] text-red-300 leading-tight">
-                            <div className="text-red-400 font-black mb-1 border-b border-red-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
-                              Device Warning
-                            </div>
-                            <div className="font-mono font-bold text-[10px] sm:text-xs truncate mb-1">
-                              Robot Dog
-                            </div>
-                            <div className="opacity-80 text-[8px] sm:text-[9px] mb-1">
-                              待注册 / Unregistered
-                            </div>
-                            <div className="mt-1 flex justify-between text-[8px] sm:text-[9px] font-bold">
-                              <span>Status:</span>
-                              <span className="text-red-400 animate-pulse">Blocked</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                  {effectiveStageConfig.showRegisteredDevice && (
-                    <>
-                      {!effectiveStageConfig.hideDeviceArrow && (
-                        <div className="flex justify-center text-blue-500 my-[-10px] z-10">
-                          <ChevronRight className="w-8 h-8 rotate-90 bg-slate-900 border border-blue-500/30 rounded-full" />
-                        </div>
-                      )}
-                      {effectiveStageConfig.hideDeviceArrow && (
-                        <div className="h-3 shrink-0 opacity-0 pointer-events-none" aria-hidden="true" />
-                      )}
-
-                      {/* === 已注册设备 (绿色3D全息投影面板) === */}
-                      <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex-1 flex flex-col h-[180px] lg:h-[210px] overflow-hidden rounded-xl p-3 relative">
-                        <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
-                          <ShieldCheck className="w-5 h-5 animate-pulse" />
-                          <div>
-                            <div className="font-bold text-xs lg:text-sm">已注册设备</div>
-                            <div className="text-[10px] opacity-70">Registered Device</div>
-                          </div>
-                        </div>
-
-                        <div className="flex-1 w-full relative mt-1">
-                          {/* 全息透视光锥 (激光散射线) */}
-                          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <defs>
-                              <linearGradient id="reg-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
-                                <stop offset="0%" stopColor="rgba(16, 185, 129, 0.35)" stopOpacity="0.7" />
-                                <stop offset="100%" stopColor="rgba(16, 185, 129, 0)" stopOpacity="0" />
-                              </linearGradient>
-                            </defs>
-                            {/* 光罩 */}
-                            <polygon points="34,65 65,15 95,50" fill="url(#reg-cone-beam)" className="opacity-40 animate-pulse" />
-                            <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                            <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                            {/* 激光雷达发射核心 */}
-                            <circle cx="34" cy="65" r="1.5" fill="#10b981" className="animate-ping" />
-                          </svg>
-
-                          {/* 机器狗本体 (靠左下安稳站立) */}
-                          <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
-                            <RobotDog className="w-full h-full object-contain" status="registered" />
-                          </div>
-
-                          {/* 3D 浮空倾斜全息卡片 (跟在机器狗身侧上部，带透视翻折) */}
-                          <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
-                            <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
-                              Digital ID
-                            </div>
-                            <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
-                              DID:2168nLB3G@CMCC.org
-                            </div>
-                            <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="opacity-75">Capabilities:</span>
-                                <span className="font-bold text-cyan-300 leading-tight break-words">
-                                  [4 Legs, Camera, Payload:10KG/10KM]
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="opacity-75">Status:</span>
-                                <span className="font-bold flex items-center gap-0.5 text-emerald-400">
-                                  Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                    </>
-                  )}
-                  {effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.showRegisteredDevice && (
-                    <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex-1 flex flex-col h-[180px] lg:h-[210px] overflow-hidden rounded-xl p-3 relative">
-                      <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
-                        <ShieldCheck className="w-5 h-5 animate-pulse" />
-                        <div>
-                          <div className="font-bold text-xs lg:text-sm">已注册设备</div>
-                          <div className="text-[10px] opacity-70">Registered Device</div>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 w-full relative mt-1">
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
-                          <defs>
-                            <linearGradient id="stage4-reg-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
-                              <stop offset="0%" stopColor="rgba(16, 185, 129, 0.35)" stopOpacity="0.7" />
-                              <stop offset="100%" stopColor="rgba(16, 185, 129, 0)" stopOpacity="0" />
-                            </linearGradient>
-                          </defs>
-                          <polygon points="34,65 65,15 95,50" fill="url(#stage4-reg-cone-beam)" className="opacity-40 animate-pulse" />
-                          <line x1="34" y1="65" x2="65" y2="15" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                          <line x1="34" y1="65" x2="95" y2="50" stroke="rgba(52, 211, 153, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-                          <circle cx="34" cy="65" r="1.5" fill="#10b981" className="animate-ping" />
-                        </svg>
-
-                        <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
-                          <RobotDog className="w-full h-full object-contain" status="registered" />
-                        </div>
-
-                        <div className="absolute top-1 right-1 w-[52%] max-w-[150px] bg-emerald-950/80 border border-cyan-400/50 p-1.5 sm:p-2 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)] leading-tight text-emerald-300">
-                          <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[8px] sm:text-[9px]">
-                            Digital ID
-                          </div>
-                          <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[9px] sm:text-[10px]">
-                            DID:2168nLB3G@CMCC.org
-                          </div>
-                          <div className="flex flex-col gap-0.5 text-[8px] sm:text-[9px] font-medium">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="opacity-75">Capabilities:</span>
-                              <span className="font-bold text-cyan-300 leading-tight break-words">
-                                [4 Legs, Camera, Payload:10KG/10KM]
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="opacity-75">Status:</span>
-                              <span className="font-bold flex items-center gap-0.5 text-emerald-400">
-                                Active <span className="w-1 h-1 bg-emerald-400 rounded-full animate-ping inline-block"></span>
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-
-                {effectiveStageConfig.showRegisteredDevice && !effectiveStageConfig.hideDeviceArrow && (
-                  <div className="flex justify-between text-[10px] lg:text-xs text-blue-200 mt-4 px-1 font-medium">
-                    <span>① 身份申请</span>
-                    <ChevronRight className="w-3 lg:w-4 h-3 lg:h-4 text-blue-400" />
-                    <span>② 业务授权</span>
-                    <ChevronRight className="w-3 lg:w-4 h-3 lg:h-4 text-blue-400" />
-                    <span>③ 能力发布</span>
-                  </div>
-                )}
-                {effectiveStageConfig.showRegisteredDevice && effectiveStageConfig.hideDeviceArrow && (
-                  <div className="mt-4 h-[18px] opacity-0 pointer-events-none" aria-hidden="true" />
-                )}
-              </div>
-            </SciFiPanel>
-          </div>
+          <LeftPanel
+            effectiveStageConfig={effectiveStageConfig}
+            stage={stage}
+            components={panelComponents}
+          />
 
           {/* 中间列：6G核心网 3D 拓扑与平面网元、上方弧线数据流 */}
           <div>
@@ -3797,137 +1579,26 @@ export default function App() {
               agentBubble={topologyAgentBubble}
               agentBubbles={childAgentBubbles}
               arSpeechText={arSpeechText}
+              hideRobotDogSpeech={effectiveStageConfig.hideRobotDogSpeech}
               title={effectiveStageConfig.topologyTitle}
+              topologyLines={effectiveStageConfig.topologyLines}
+              highlightedNodes={effectiveStageConfig.highlightedNodes}
+              activeConnections={effectiveStageConfig.activeConnections}
+              stagePhaseKey={effectiveStageConfig.stagePhaseKey}
+              language={language}
             />
           </div>
 
-          {/* 右列：实时状态 */}
-          <div>
-            <SciFiPanel className="h-full">
-              <div className="flex flex-col h-full">
-                <h2 className="text-blue-200 text-base lg:text-lg font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
-                  {stage === 9 ? "已完成任务" : "实时状态"}
-                </h2>
-                {stage === 9 ? (
-                  <CompletedTasksPanel />
-                ) : (
-                  <div className="flex flex-col flex-1 gap-4">
-                    {/* 子栏目 1: 实时状态 */}
-                    <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
-                      {stage === 8 ? (
-                        <LatencyChart points={latencySeries.points} error={latencySeries.error} />
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-8 h-8 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
-                              <User className="w-4 h-4 text-blue-300" />
-                            </div>
-                            <h3 className="text-white font-bold text-base lg:text-lg">{effectiveStageConfig.statusTitle}</h3>
-                          </div>
-                          <div className="flex flex-col">
-                            {effectiveStageConfig.statusRows.map((item) => (
-                              <StatusRow
-                                key={item.label}
-                                label={item.label}
-                                value={item.value}
-                                status={item.status}
-                                isMono={item.isMono}
-                                stacked={item.stacked}
-                                valueClassName={[
-                                  item.valueClassName || "",
-                                  item.isMono ? "leading-tight text-right break-all" : "",
-                                ].filter(Boolean).join(" ")}
-                              />
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* 子栏目 2: 当前任务摘要 */}
-                    <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-[1.35] flex-col shadow-md">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 rounded bg-blue-900/25 border border-blue-500/40 flex items-center justify-center">
-                          <Network className="w-4 h-4 text-blue-300" />
-                        </div>
-                        <h3 className="text-white font-bold text-base lg:text-lg">当前任务摘要</h3>
-                      </div>
-                      <TaskBriefPanel logs={effectiveStageConfig.logs} />
-                    </div>
-
-                    {/* 子栏目 3: 工作流 */}
-                    <div className="border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
-                      <div className="flex items-center gap-3 mb-3 opacity-80">
-                        <div className="w-8 h-8 rounded bg-blue-900/15 border border-blue-500/20 flex items-center justify-center">
-                          <ArrowRightCircle className="w-4 h-4 text-blue-300" />
-                        </div>
-                        <h3 className="text-white font-bold text-base lg:text-lg">工作流</h3>
-                      </div>
-                      <div className="flex flex-col">
-                        {effectiveStageConfig.workflow.map((item) => (
-                          <StatusRow
-                            key={item.label}
-                            label={item.label}
-                            value={item.value}
-                            status={item.status}
-                            stacked={item.stacked}
-                            valueClassName={item.valueClassName || ""}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </SciFiPanel>
-          </div>
+          <RightPanel
+            effectiveStageConfig={effectiveStageConfig}
+            latencySeries={latencySeries}
+            stage={stage}
+            components={panelComponents}
+          />
         </div>
 
-        {/* 底部步骤条 - 升级为精致高对比度毛玻璃条 */}
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
-          {effectiveStageConfig.steps.map((step) => {
-            const StepIcon = step.icon;
-            const isDone = step.status === "success";
-            const isWorking = step.status === "working";
-
-            return (
-              <div
-                key={step.id}
-                className={`border bg-slate-900/30 backdrop-blur-md rounded-lg p-3 flex items-center gap-3 relative overflow-hidden shadow-md ${
-                  isDone
-                    ? "border-emerald-500/80 shadow-[0_0_18px_rgba(16,185,129,0.25)]"
-                    : isWorking
-                      ? "border-amber-400/70 shadow-[0_0_18px_rgba(251,191,36,0.18)]"
-                      : "border-blue-500/30"
-                }`}
-              >
-                {(isDone || isWorking) && (
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                    isDone
-                      ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]"
-                      : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]"
-                  }`} />
-                )}
-                <span className={`font-mono font-bold text-lg ${
-                  isDone ? "text-emerald-400 opacity-90" : isWorking ? "text-amber-300 opacity-90" : "text-blue-300 opacity-60"
-                }`}>
-                  {step.id}
-                </span>
-                <StepIcon className={`w-6 h-6 ${
-                  isDone ? "text-emerald-400" : isWorking ? "text-amber-300 animate-pulse" : "text-blue-300/80"
-                }`} />
-                <div className="flex flex-col min-w-0">
-                  <span className="text-blue-100 font-bold text-sm leading-tight">{step.title}</span>
-                  <span className={`text-xs font-semibold ${isDone ? "text-emerald-400" : isWorking ? "text-amber-300" : "text-blue-300/70"}`}>
-                    {step.subtitle}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <StepBar steps={effectiveStageConfig.steps} />
       </div>
-      
       {/* 底部反光效果 */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-blue-900/10 to-transparent -z-10 pointer-events-none transform scale-y-[-1] opacity-50 blur-xl"></div>
     </div>

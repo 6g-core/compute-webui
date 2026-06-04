@@ -120,7 +120,7 @@ const AgentSpeechBubble = ({ bubble }) => {
               const isWorking = activeTools.has(tool) && bubble.status === "working";
 
               return (
-                <div key={tool} className="grid grid-cols-[1fr_auto] items-center gap-3 text-[10px] leading-tight">
+                <div key={tool} className="grid grid-cols-[1fr_auto] items-center gap-3 text-[11px] leading-tight">
                   <span className="truncate text-blue-50">{tool}</span>
                   <span className={isWorking ? "text-amber-200" : "text-blue-300"}>
                     {isWorking ? "working" : "idle"}
@@ -130,7 +130,7 @@ const AgentSpeechBubble = ({ bubble }) => {
             })}
           </div>
           {lines.length > 0 && (
-            <div className="border-t border-dashed border-cyan-300/50 px-3 py-2 text-[10px] leading-tight text-cyan-50">
+            <div className="border-t border-dashed border-cyan-300/50 px-3 py-2 text-[11px] leading-tight text-cyan-50">
               {lines.map((line) => (
                 <span key={line} className="block whitespace-normal break-words">
                   {formatBubbleText(normalizeWorkflowLabel(line))}
@@ -277,7 +277,7 @@ const UnifiedToolPanel = ({ toolStates }) => (
         style={{ flex: `${group.items.length} 1 0%` }}
       >
         <div className="px-1.5 pb-1.5">
-          <div className="max-w-full whitespace-nowrap px-0.5 text-[14px] font-bold leading-tight tracking-wide text-cyan-50">
+          <div className="max-w-full whitespace-nowrap px-0.5 text-[15px] font-bold leading-tight tracking-wide text-cyan-50">
             {group.title}
           </div>
         </div>
@@ -302,7 +302,7 @@ const UnifiedToolPanel = ({ toolStates }) => (
             return (
               <div
                 key={name}
-                className={`group/tool flex min-h-[32px] items-center justify-between gap-2 rounded-md px-0 py-0.5 text-[14px] leading-tight transition ${
+                className={`group/tool flex min-h-[32px] items-center justify-between gap-2 rounded-md px-0 py-0.5 text-[15px] leading-tight transition ${
                   state === "working"
                     ? "animate-pulse"
                     : ""
@@ -318,7 +318,7 @@ const UnifiedToolPanel = ({ toolStates }) => (
                 </span>
                 <span className="flex shrink-0 items-center gap-1.5">
                   <span className={`h-1.5 w-1.5 rounded-full ${dotClassName}`} />
-                  <span className={`font-mono text-[11px] leading-tight ${stateClassName}`}>
+                  <span className={`font-mono text-[12px] leading-tight ${stateClassName}`}>
                     {state === "working" ? "work" : state === "inactive" ? "Inactive" : state}
                   </span>
                 </span>

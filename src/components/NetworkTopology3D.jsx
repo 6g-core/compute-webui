@@ -20,6 +20,7 @@ const AgentSpeechBubble = ({ bubble }) => {
   const formatBubbleText = (text) => String(text).replace(/\s*Tool\b/g, "").replace(/Tool：/g, "：");
   const isVoiceIntent = bubble.variant === "voiceIntent";
   const isStage2SystemPlan = bubble.variant === "stage2SystemPlan";
+  const hasBoostedPlanText = isStage2SystemPlan && bubble.planTextBoost;
   const tools = bubble.variant === "toolPanel" && !items && !isVoiceIntent ? AGENT_TOOL_SETS[bubble.targetNode] : null;
   const activeTools = new Set(Array.isArray(bubble.activeTools) ? bubble.activeTools : []);
   const hasToolPanel = Array.isArray(tools) && tools.length > 0;
@@ -27,7 +28,9 @@ const AgentSpeechBubble = ({ bubble }) => {
   const isSystemIntentBubble = isSystemAgentBubble && lines.some((line) => String(line).includes("收到意图"));
   const isLargeAgentBubble = ["ConnectionAgent", "ACN", "Computing", "AgentGW", "OttAgentGW"].includes(bubble.targetNode) && !items && !hasToolPanel;
   const isPrimaryAgentBubble = ["ConnectionAgent", "ACN", "Computing"].includes(bubble.targetNode) && !items && !hasToolPanel;
-  const baseTextSizeClass = isStage2SystemPlan ? "text-[11px]" : isPrimaryAgentBubble ? "text-[12px]" : isLargeAgentBubble ? "text-[11px]" : isSystemIntentBubble ? "text-[11px]" : isSystemAgentBubble ? "text-[10px]" : "text-[9px]";
+  const baseTextSizeClass = isStage2SystemPlan ? (hasBoostedPlanText ? "text-[12px]" : "text-[11px]") : isPrimaryAgentBubble ? "text-[12px]" : isLargeAgentBubble ? "text-[11px]" : isSystemIntentBubble ? "text-[11px]" : isSystemAgentBubble ? "text-[10px]" : "text-[9px]";
+  const planHeadingTextClass = hasBoostedPlanText ? "text-[12px]" : "text-[11px]";
+  const planTitleTextClass = hasBoostedPlanText ? "text-[13px]" : "text-[12px]";
   const positionClassName = bubble.style ? (bubble.className || "") : (bubble.className || "left-[83%] top-[36%]");
   const arrowClassName = bubble.arrow === "down-right"
     ? "absolute bottom-[-5px] right-6 h-2 w-2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
@@ -65,11 +68,11 @@ const AgentSpeechBubble = ({ bubble }) => {
       {isStage2SystemPlan ? (
         <>
           <div className="leading-tight">
-            <span className="block text-[11px] font-bold tracking-wide text-cyan-200/80">用户意图：</span>
-            <span className="block text-[12px] font-black text-cyan-50">{bubble.title}</span>
+            <span className={`block ${planHeadingTextClass} font-bold tracking-wide text-cyan-200/80`}>用户意图：</span>
+            <span className={`block ${planTitleTextClass} font-black text-cyan-50`}>{bubble.title}</span>
           </div>
           <div className="my-1.5 border-t border-dashed border-cyan-300/55" />
-          <div className="mb-1 text-[11px] font-bold leading-tight text-cyan-200/85">
+          <div className={`mb-1 ${planHeadingTextClass} font-bold leading-tight text-cyan-200/85`}>
             网络任务规划：
           </div>
           <div className="flex flex-col gap-1.5">

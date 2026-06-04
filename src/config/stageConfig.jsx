@@ -514,6 +514,7 @@ const buildStage7SystemPlanBubble = ({ computingStatus = "pending", policyStatus
   className: "stage-plan-en-compact",
   planTextBoost: true,
   scale: 1.16,
+  style: { top: "3.5%" },
   transformOrigin: "0 0",
   title: "Compute offloading for object recognition",
   tasks: [

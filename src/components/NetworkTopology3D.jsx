@@ -51,6 +51,7 @@ const AgentSpeechBubble = ({ bubble }) => {
       ? "border-cyan-200/85 bg-cyan-950/96 text-cyan-50 shadow-[0_0_26px_rgba(34,211,238,0.48),inset_0_0_16px_rgba(34,211,238,0.16)] ring-1 ring-cyan-300/45"
       : "border-cyan-400/45 bg-slate-950/86 text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)]";
   const bubbleScale = bubble.scale || (isStage2SystemPlan ? 1.6 : isVoiceIntent ? 1.22 : bubble.focusScale ? 1.18 : 1);
+  const planWidthClass = bubble.planWidthClass || "w-[165px]";
   const shouldScaleBubble = bubbleScale !== 1;
   const bubbleStyle = shouldScaleBubble
     ? {
@@ -62,7 +63,7 @@ const AgentSpeechBubble = ({ bubble }) => {
 
   return (
     <div
-      className={`absolute z-30 flex transition-transform duration-500 ease-out ${isStage2SystemPlan ? "w-[165px] flex-col items-stretch rounded-lg" : items ? "w-[175px] flex-col items-stretch gap-1 rounded-lg" : hasToolPanel ? "w-[150px] flex-col items-stretch rounded-md border-dashed" : isLargeAgentBubble ? "max-w-[205px] items-center gap-2 rounded-full" : "max-w-[175px] items-center gap-1.5 rounded-full"} border ${hasToolPanel ? "px-0 py-0" : isLargeAgentBubble ? "px-3 py-2" : "px-2.5 py-1.5"} ${baseTextSizeClass} font-bold backdrop-blur-md ${shouldScaleBubble ? "ring-1 ring-cyan-200/45 shadow-[0_0_26px_rgba(34,211,238,0.28)]" : ""} ${bubbleClassName} ${positionClassName}`}
+      className={`absolute z-30 flex transition-transform duration-500 ease-out ${isStage2SystemPlan ? `${planWidthClass} flex-col items-stretch rounded-lg` : items ? "w-[175px] flex-col items-stretch gap-1 rounded-lg" : hasToolPanel ? "w-[150px] flex-col items-stretch rounded-md border-dashed" : isLargeAgentBubble ? "max-w-[205px] items-center gap-2 rounded-full" : "max-w-[175px] items-center gap-1.5 rounded-full"} border ${hasToolPanel ? "px-0 py-0" : isLargeAgentBubble ? "px-3 py-2" : "px-2.5 py-1.5"} ${baseTextSizeClass} font-bold backdrop-blur-md ${shouldScaleBubble ? "ring-1 ring-cyan-200/45 shadow-[0_0_26px_rgba(34,211,238,0.28)]" : ""} ${bubbleClassName} ${positionClassName}`}
       style={bubbleStyle}
     >
       {isStage2SystemPlan ? (

@@ -22,7 +22,7 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                       </h2>
                 
                       <div className="flex flex-col flex-1 gap-2">
-                        {Number(stage) >= 7 && (
+                        {Number(stage) >= 7 && effectiveStageConfig.showBackgroundVideo && (
                           <BackgroundVideoPanel visible={Boolean(effectiveStageConfig.showBackgroundVideo)} />
                         )}
                         {effectiveStageConfig.showArRegistration ? (

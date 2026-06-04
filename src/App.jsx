@@ -1050,58 +1050,7 @@ const RobotArm = ({ className = "" }) => (
 const HandoffPanel = () => (
   <div className="flex flex-col flex-1 gap-2">
     <RegisteredRobotDogCard className="flex-1 h-[180px] lg:h-[210px]" />
-
-    <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex flex-col flex-1 min-h-[220px] overflow-hidden rounded-xl p-3 relative">
-      <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
-        <ShieldCheck className="w-5 h-5 animate-pulse" />
-        <div>
-          <div className="font-bold text-xs lg:text-sm">已注册设备</div>
-          <div className="text-[10px] opacity-70">Registered Device</div>
-        </div>
-      </div>
-
-      <div className="flex-1 w-full relative mt-1">
-        <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="arm-handoff-cone-beam" x1="0" y1="0.8" x2="0.8" y2="0.2">
-              <stop offset="0%" stopColor="rgba(34, 211, 238, 0.35)" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="rgba(34, 211, 238, 0)" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <polygon points="35,66 65,18 96,48" fill="url(#arm-handoff-cone-beam)" className="opacity-40 animate-pulse" />
-          <line x1="35" y1="66" x2="65" y2="18" stroke="rgba(34, 211, 238, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-          <line x1="35" y1="66" x2="96" y2="48" stroke="rgba(34, 211, 238, 0.4)" strokeWidth="0.5" strokeDasharray="2 2" />
-          <circle cx="35" cy="66" r="1.5" fill="#22d3ee" />
-        </svg>
-
-        <div className="absolute bottom-8 left-2 w-32 h-28 z-10">
-          <RobotArm className="w-full h-full object-contain opacity-95 drop-shadow-[0_0_14px_rgba(34,211,238,0.3)]" />
-        </div>
-
-        <div className="absolute top-1 right-1 w-[64%] max-w-[190px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.5)] leading-tight text-emerald-300">
-          <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
-            Digital ID
-          </div>
-          <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 break-all text-[10px] sm:text-[11px]">
-            1saR84Q2Z@market.com
-          </div>
-          <div className="flex flex-col gap-0.5 text-[9px] sm:text-[10px] font-medium">
-            <div className="flex flex-col gap-0.5">
-              <span className="opacity-75">Capabilities:</span>
-              <span className="font-bold text-cyan-300 leading-tight break-words">
-                [Automatic sorting, Object grasping.]
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="opacity-75">Status:</span>
-              <span className="font-bold flex items-center gap-0.5 text-emerald-400">
-                Active <span className="w-1 h-1 bg-emerald-400 rounded-full inline-block"></span>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ArAccessStateCard registered />
   </div>
 );
 

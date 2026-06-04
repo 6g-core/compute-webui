@@ -25,7 +25,7 @@ const AgentSpeechBubble = ({ bubble }) => {
   const hasToolPanel = Array.isArray(tools) && tools.length > 0;
   const isSystemAgentBubble = bubble.targetNode === "SystemAgent";
   const isLargeAgentBubble = ["ConnectionAgent", "ACN", "Computing", "AgentGW", "OttAgentGW"].includes(bubble.targetNode) && !items && !hasToolPanel;
-  const baseTextSizeClass = isLargeAgentBubble ? "text-[11px]" : isSystemAgentBubble ? "text-[10px]" : "text-[9px]";
+  const baseTextSizeClass = isStage2SystemPlan ? "text-[11px]" : isLargeAgentBubble ? "text-[11px]" : isSystemAgentBubble ? "text-[10px]" : "text-[9px]";
   const positionClassName = bubble.style ? (bubble.className || "") : (bubble.className || "left-[83%] top-[36%]");
   const arrowClassName = bubble.arrow === "down-right"
     ? "absolute bottom-[-5px] right-6 h-2 w-2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
@@ -45,7 +45,7 @@ const AgentSpeechBubble = ({ bubble }) => {
     : isVoiceIntent
       ? "border-cyan-200/85 bg-cyan-950/96 text-cyan-50 shadow-[0_0_26px_rgba(34,211,238,0.48),inset_0_0_16px_rgba(34,211,238,0.16)] ring-1 ring-cyan-300/45"
       : "border-cyan-400/45 bg-slate-950/86 text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)]";
-  const bubbleScale = bubble.scale || (isStage2SystemPlan ? 1.5 : isVoiceIntent ? 1.22 : bubble.focusScale ? 1.18 : 1);
+  const bubbleScale = bubble.scale || (isStage2SystemPlan ? 1.6 : isVoiceIntent ? 1.22 : bubble.focusScale ? 1.18 : 1);
   const shouldScaleBubble = bubbleScale !== 1;
   const bubbleStyle = shouldScaleBubble
     ? {
@@ -57,17 +57,17 @@ const AgentSpeechBubble = ({ bubble }) => {
 
   return (
     <div
-      className={`absolute z-30 flex transition-transform duration-500 ease-out ${isStage2SystemPlan ? "w-[155px] flex-col items-stretch rounded-lg" : items ? "w-[175px] flex-col items-stretch gap-1 rounded-lg" : hasToolPanel ? "w-[150px] flex-col items-stretch rounded-md border-dashed" : isLargeAgentBubble ? "max-w-[205px] items-center gap-2 rounded-full" : "max-w-[175px] items-center gap-1.5 rounded-full"} border ${hasToolPanel ? "px-0 py-0" : isLargeAgentBubble ? "px-3 py-2" : "px-2.5 py-1.5"} ${baseTextSizeClass} font-bold backdrop-blur-md ${shouldScaleBubble ? "ring-1 ring-cyan-200/45 shadow-[0_0_26px_rgba(34,211,238,0.28)]" : ""} ${bubbleClassName} ${positionClassName}`}
+      className={`absolute z-30 flex transition-transform duration-500 ease-out ${isStage2SystemPlan ? "w-[165px] flex-col items-stretch rounded-lg" : items ? "w-[175px] flex-col items-stretch gap-1 rounded-lg" : hasToolPanel ? "w-[150px] flex-col items-stretch rounded-md border-dashed" : isLargeAgentBubble ? "max-w-[205px] items-center gap-2 rounded-full" : "max-w-[175px] items-center gap-1.5 rounded-full"} border ${hasToolPanel ? "px-0 py-0" : isLargeAgentBubble ? "px-3 py-2" : "px-2.5 py-1.5"} ${baseTextSizeClass} font-bold backdrop-blur-md ${shouldScaleBubble ? "ring-1 ring-cyan-200/45 shadow-[0_0_26px_rgba(34,211,238,0.28)]" : ""} ${bubbleClassName} ${positionClassName}`}
       style={bubbleStyle}
     >
       {isStage2SystemPlan ? (
         <>
           <div className="leading-tight">
-            <span className="block text-[10px] font-bold tracking-wide text-cyan-200/80">用户意图：</span>
-            <span className="block text-[11px] font-black text-cyan-50">{bubble.title}</span>
+            <span className="block text-[11px] font-bold tracking-wide text-cyan-200/80">用户意图：</span>
+            <span className="block text-[12px] font-black text-cyan-50">{bubble.title}</span>
           </div>
           <div className="my-1.5 border-t border-dashed border-cyan-300/55" />
-          <div className="mb-1 text-[10px] font-bold leading-tight text-cyan-200/85">
+          <div className="mb-1 text-[11px] font-bold leading-tight text-cyan-200/85">
             网络任务规划：
           </div>
           <div className="flex flex-col gap-1.5">

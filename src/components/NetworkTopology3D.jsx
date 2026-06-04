@@ -175,8 +175,8 @@ const TOPOLOGY_NODES = {
   SRF: { name: "SRF", x: 36, y: 43, color: "#38bdf8", image: srfImage, size: "w-20 md:w-24" },
   SystemAgent: { name: "SystemAgent", x: 53.5, y: 40, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24" },
   UPF: { name: "UPF", x: 36, y: 82, color: "#34d399", image: upfImage, size: "w-20 md:w-24" },
-  ConnectionAgent: { name: "Connection Agent", x: 69, y: 13, color: "#22d3ee", image: connectionImage, size: "w-16 md:w-20" },
-  ACN: { name: "ACN Agent", x: 69, y: 32, color: "#f472b6", image: acnImage, size: "w-16 md:w-20" },
+  ConnectionAgent: { name: "Connection Agent", x: 69, y: 13, color: "#22d3ee", image: connectionImage, size: "w-16 md:w-20", labelTextClassName: "text-[11px] sm:text-[12px]" },
+  ACN: { name: "ACN Agent", x: 69, y: 32, color: "#f472b6", image: acnImage, size: "w-16 md:w-20", labelTextClassName: "text-[11px] sm:text-[12px]" },
   Computing: {
     name: "Computing Agent",
     x: 69,
@@ -185,6 +185,7 @@ const TOPOLOGY_NODES = {
     image: computingImage,
     size: "w-16 md:w-20",
     labelClassName: "absolute top-[80%]",
+    labelTextClassName: "text-[11px] sm:text-[12px]",
     labelStyle: { whiteSpace: "nowrap", width: "max-content", minWidth: "max-content" },
   },
   AgentGW: { name: "Agent GW", x: 62.5, y: 91, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20" },
@@ -742,7 +743,7 @@ export const NetworkTopology3D = ({
                     draggable="false"
                   />
                   <div
-                    className={`${value.labelClassName || "relative -mt-1"} z-20 rounded border px-2.5 py-1 text-[10px] sm:text-[11px] font-bold tracking-wide whitespace-nowrap backdrop-blur-md ${highlighted ? "border-cyan-200/80 bg-cyan-950/80 text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.32)]" : "border-slate-500/45 bg-slate-950/85 text-gray-100"}`}
+                    className={`${value.labelClassName || "relative -mt-1"} z-20 rounded border px-2.5 py-1 ${value.labelTextClassName || "text-[10px] sm:text-[11px]"} font-bold tracking-wide whitespace-nowrap backdrop-blur-md ${highlighted ? "border-cyan-200/80 bg-cyan-950/80 text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.32)]" : "border-slate-500/45 bg-slate-950/85 text-gray-100"}`}
                     style={value.labelStyle}
                   >
                     {value.name}

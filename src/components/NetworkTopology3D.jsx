@@ -425,6 +425,10 @@ export const NetworkTopology3D = ({
       ...(bubble.style || {}),
     };
 
+    if (bubble.targetNode === "SystemAgent") {
+      mergedStyle.left = offsetPercentValue(mergedStyle.left, 5);
+    }
+
     if (shouldLowerSystemStatusBubble) {
       mergedStyle.top = offsetPercentValue(mergedStyle.top, 5);
     }

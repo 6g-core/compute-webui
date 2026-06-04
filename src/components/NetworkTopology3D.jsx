@@ -24,9 +24,10 @@ const AgentSpeechBubble = ({ bubble }) => {
   const activeTools = new Set(Array.isArray(bubble.activeTools) ? bubble.activeTools : []);
   const hasToolPanel = Array.isArray(tools) && tools.length > 0;
   const isSystemAgentBubble = bubble.targetNode === "SystemAgent";
+  const isSystemIntentBubble = isSystemAgentBubble && lines.some((line) => String(line).includes("收到意图"));
   const isLargeAgentBubble = ["ConnectionAgent", "ACN", "Computing", "AgentGW", "OttAgentGW"].includes(bubble.targetNode) && !items && !hasToolPanel;
   const isPrimaryAgentBubble = ["ConnectionAgent", "ACN", "Computing"].includes(bubble.targetNode) && !items && !hasToolPanel;
-  const baseTextSizeClass = isStage2SystemPlan ? "text-[11px]" : isPrimaryAgentBubble ? "text-[12px]" : isLargeAgentBubble ? "text-[11px]" : isSystemAgentBubble ? "text-[10px]" : "text-[9px]";
+  const baseTextSizeClass = isStage2SystemPlan ? "text-[11px]" : isPrimaryAgentBubble ? "text-[12px]" : isLargeAgentBubble ? "text-[11px]" : isSystemIntentBubble ? "text-[11px]" : isSystemAgentBubble ? "text-[10px]" : "text-[9px]";
   const positionClassName = bubble.style ? (bubble.className || "") : (bubble.className || "left-[83%] top-[36%]");
   const arrowClassName = bubble.arrow === "down-right"
     ? "absolute bottom-[-5px] right-6 h-2 w-2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"

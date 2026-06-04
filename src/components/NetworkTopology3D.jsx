@@ -329,7 +329,6 @@ const UnifiedToolPanel = ({ toolStates }) => (
 export const NetworkTopology3D = ({
   stage,
   activeFlowType,
-  coreFunctions,
   agentBubble,
   agentBubbles = [],
   arSpeechText = "",
@@ -760,26 +759,6 @@ export const NetworkTopology3D = ({
         </div>
       </div>
 
-      <div className="mt-1.5 border-t border-blue-500/25 pt-1.5">
-        <div className="core-functions-heading flex items-center justify-between gap-3 mb-1">
-          <h3 className="shrink-0 text-lg font-bold text-blue-100 tracking-wide">6G核心网作用</h3>
-          <span className="shrink-0 text-[12px] text-cyan-300 font-mono">Core Network Functions</span>
-        </div>
-        <div
-          className="grid gap-2"
-          style={{ gridTemplateColumns: `repeat(${Math.max(coreFunctions.length, 1)}, minmax(0, 1fr))` }}
-        >
-          {coreFunctions.map((item) => (
-            <div
-              key={item}
-              className="flex items-center gap-2.5 rounded border border-blue-500/25 bg-slate-900/20 px-3 py-2 text-base text-blue-100/90 backdrop-blur-sm"
-            >
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-cyan-300" />
-              <span className="core-function-item-label font-medium">{item}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };

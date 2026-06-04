@@ -3,14 +3,13 @@ import {
   Wifi,
   ShieldAlert,
   ShieldCheck,
-  CheckCircle2,
   CircleDot,
 } from 'lucide-react';
 import { STAGE9_COMPLETED_TASKS, getWorkflowBubbleFromRows, pinBubbleToSystemAgent } from './config/stageConfig.jsx';
 import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, formatVideoState, useBackendVideoStream, useDogVideoOfferGate } from './hooks/useBackendVideo';
 import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
-import { useLatencySeries, useStagePolling } from './hooks/usePolling';
-import { LeftPanel, RightPanel, StepBar } from './components/DemoPanels.jsx';
+import { useStagePolling } from './hooks/usePolling';
+import { LeftPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
 
@@ -1344,7 +1343,6 @@ export default function App() {
   }, [language]);
 
   const { stage, connectionState, error } = useStagePolling();
-  const latencySeries = useLatencySeries(stage === 8);
   const effectiveStageConfig = useEffectiveStageConfig(stage);
   const rawArSpeechText = FIXED_AR_SPEECH_BY_STAGE[stage] || "";
   const arSpeechText = effectiveStageConfig.hideArSpeech ? "" : rawArSpeechText;
@@ -1363,14 +1361,10 @@ export default function App() {
     ARGlasses,
     ArRegistrationPanel,
     BackgroundVideoPanel,
-    CompletedTasksPanel,
     DogVisionStreams,
     HandoffPanel,
-    LatencyChart,
     RobotDog,
     SciFiPanel,
-    StatusRow,
-    TaskBriefPanel,
   };
 
   return (
@@ -1561,8 +1555,8 @@ export default function App() {
           <div className="w-24"></div>
         </header>
 
-        {/* 核心内容区 (三列布局) */}
-        <div className="grid grid-cols-1 md:grid-cols-[2.5fr_6.5fr_2.5fr] gap-6 flex-1 relative z-10">
+        {/* 核心内容区 */}
+        <div className="grid grid-cols-1 md:grid-cols-[2.5fr_9fr] gap-6 flex-1 relative z-10">
           
           <LeftPanel
             effectiveStageConfig={effectiveStageConfig}
@@ -1575,7 +1569,6 @@ export default function App() {
             <NetworkTopology3D
               stage={stage}
               activeFlowType={effectiveStageConfig.activeFlowType}
-              coreFunctions={effectiveStageConfig.coreFunctions}
               agentBubble={topologyAgentBubble}
               agentBubbles={childAgentBubbles}
               arSpeechText={arSpeechText}
@@ -1589,12 +1582,6 @@ export default function App() {
             />
           </div>
 
-          <RightPanel
-            effectiveStageConfig={effectiveStageConfig}
-            latencySeries={latencySeries}
-            stage={stage}
-            components={panelComponents}
-          />
         </div>
 
         <StepBar steps={effectiveStageConfig.steps} />

@@ -1,4 +1,5 @@
-const DEFAULT_IP = 'http://localhost:8000'
+import { normalizeBackendOriginForRuntime, resolveDefaultBackendOrigin } from './backendOrigin'
+
 const STORAGE_KEY = 'backend-ips'
 
 export interface BackendIps {
@@ -8,14 +9,16 @@ export interface BackendIps {
   ar: string
 }
 
-const DEFAULTS: BackendIps = {
-  sdp:     DEFAULT_IP,
-  metrics: DEFAULT_IP,
-  stage:   DEFAULT_IP,
-  ar:      DEFAULT_IP
+function createDefaultBackendIps(defaultOrigin = resolveDefaultBackendOrigin()): BackendIps {
+  return {
+    sdp:     defaultOrigin,
+    metrics: defaultOrigin,
+    stage:   defaultOrigin,
+    ar:      defaultOrigin
+  }
 }
 
-const _ips = ref<BackendIps>({ ...DEFAULTS })
+const _ips = ref<BackendIps>(createDefaultBackendIps())
 
 /** 路径前缀 → BackendIps 字段。按具体到泛化排序，首个命中即用。 */
 const PREFIX_MAP: [string, keyof BackendIps][] = [
@@ -33,18 +36,24 @@ const SAMPLE_PATHS: Record<keyof BackendIps, string> = {
   ar:      '/api/v1/system/ar/status'
 }
 
+function normalizeOrigin(raw: unknown, defaultOrigin: string): string {
+  return typeof raw === 'string'
+    ? normalizeBackendOriginForRuntime(raw, defaultOrigin)
+    : defaultOrigin
+}
+
 /** 旧 schema 迁移：apiV1/apiLogs/apiMetrics/stream 或含 reset 的 5 字段 → 4 字段。 */
-function migrate(raw: Record<string, unknown>): BackendIps {
+function migrate(raw: Record<string, unknown>, defaults = createDefaultBackendIps()): BackendIps {
   const hasNew = 'sdp' in raw || 'metrics' in raw || 'stage' in raw || 'ar' in raw
   if (hasNew) {
     return {
-      sdp:     typeof raw.sdp     === 'string' ? raw.sdp     : DEFAULT_IP,
-      metrics: typeof raw.metrics === 'string' ? raw.metrics : DEFAULT_IP,
-      stage:   typeof raw.stage   === 'string' ? raw.stage   : DEFAULT_IP,
-      ar:      typeof raw.ar      === 'string' ? raw.ar      : DEFAULT_IP
+      sdp:     normalizeOrigin(raw.sdp, defaults.sdp),
+      metrics: normalizeOrigin(raw.metrics, defaults.metrics),
+      stage:   normalizeOrigin(raw.stage, defaults.stage),
+      ar:      normalizeOrigin(raw.ar, defaults.ar)
     }
   }
-  const legacy = typeof raw.apiV1 === 'string' && raw.apiV1 ? raw.apiV1 : DEFAULT_IP
+  const legacy = normalizeOrigin(raw.apiV1, defaults.sdp)
   return { sdp: legacy, metrics: legacy, stage: legacy, ar: legacy }
 }
 
@@ -59,9 +68,11 @@ export function useBackendIp() {
         const raw = localStorage.getItem(STORAGE_KEY)
         if (raw) {
           _ips.value = migrate(JSON.parse(raw))
+        } else {
+          _ips.value = createDefaultBackendIps()
         }
       } catch {
-        _ips.value = { ...DEFAULTS }
+        _ips.value = createDefaultBackendIps()
       }
     }
   }

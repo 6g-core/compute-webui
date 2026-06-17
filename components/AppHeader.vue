@@ -78,6 +78,7 @@
 <script setup lang="ts">
 import { Setting, Back, Link, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { resolveDefaultBackendOrigin } from '~/composables/backendOrigin'
 import type { BackendIps } from '~/composables/useBackendIp'
 
 const route = useRoute()
@@ -90,13 +91,14 @@ let timer: ReturnType<typeof setInterval> | null = null
 const { ips, load: loadIp, save: saveBackendIps, diagnose } = useBackendIp()
 const ipDialogVisible = ref(false)
 const ipDraft = ref<BackendIps>({ sdp: '', metrics: '', stage: '', ar: '' })
+const defaultBackendOrigin = computed(() => resolveDefaultBackendOrigin())
 
-const ipFields: { key: keyof BackendIps; label: string; prefix: string; placeholder: string }[] = [
-  { key: 'sdp',     label: 'SDP 协商', prefix: 'POST /api/v1/web/sdp/offer',         placeholder: 'http://localhost:8000' },
-  { key: 'metrics', label: '指标历史', prefix: 'GET  /api/v1/metrics/history',       placeholder: 'http://localhost:8000' },
-  { key: 'stage',   label: '业务阶段', prefix: 'GET  /api/v1/system/topology/stage', placeholder: 'http://localhost:8000' },
-  { key: 'ar',      label: 'AR 状态',  prefix: 'GET  /api/v1/system/ar/status',      placeholder: 'http://localhost:8000' },
-]
+const ipFields = computed<{ key: keyof BackendIps; label: string; prefix: string; placeholder: string }[]>(() => [
+  { key: 'sdp',     label: 'SDP 协商', prefix: 'POST /api/v1/web/sdp/offer',         placeholder: defaultBackendOrigin.value },
+  { key: 'metrics', label: '指标历史', prefix: 'GET  /api/v1/metrics/history',       placeholder: defaultBackendOrigin.value },
+  { key: 'stage',   label: '业务阶段', prefix: 'GET  /api/v1/system/topology/stage', placeholder: defaultBackendOrigin.value },
+  { key: 'ar',      label: 'AR 状态',  prefix: 'GET  /api/v1/system/ar/status',      placeholder: defaultBackendOrigin.value },
+])
 
 function onMenuCommand(cmd: string) {
   if (cmd === 'editor') {

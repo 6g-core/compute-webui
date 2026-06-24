@@ -1,6 +1,6 @@
 import { ChevronRight, Network, ShieldAlert, ShieldCheck, User } from 'lucide-react';
 
-export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
+export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", translateText = (text) => text, components }) => {
   const {
     ARGlasses,
     ArRegistrationPanel,
@@ -14,15 +14,21 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
   return (
     <>
                 {/* 左列：机器狗接入 */}
-                <div>
+                <div className="min-h-0">
                   <SciFiPanel className="h-full">
                     <div className="flex flex-col h-full">
-                      <h2 className="text-blue-100 text-lg lg:text-xl font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
-                        {effectiveStageConfig.leftPanelTitle}
+                      <h2
+                        key={`${stage}-${language}-${effectiveStageConfig.leftPanelTitle}`}
+                        data-language-managed
+                        className="text-blue-100 text-lg lg:text-xl font-bold text-center mb-4 pb-3 border-b border-blue-500/30"
+                      >
+                        {language === "en"
+                          ? translateText(effectiveStageConfig.leftPanelTitle)
+                          : effectiveStageConfig.leftPanelTitle}
                       </h2>
-                
-                      <div className="flex flex-col flex-1 gap-2">
-                        {Number(stage) >= 7 && effectiveStageConfig.showBackgroundVideo && (
+
+                      <div className="flex min-h-0 flex-1 flex-col gap-3">
+                        {Number(stage) >= 7 && (
                           <BackgroundVideoPanel visible={Boolean(effectiveStageConfig.showBackgroundVideo)} />
                         )}
                         {effectiveStageConfig.showArRegistration ? (
@@ -37,13 +43,13 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                             preloadEnhanced={Number(stage) >= 5}
                           />
                         ) : effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.homeDomainDevicesReady === false ? (
-                          <div className="flex-1 min-h-[424px] rounded-xl border border-emerald-500/20 bg-slate-950/10 backdrop-blur-md" aria-hidden="true" />
+                          <div className="min-h-[520px] flex-1 rounded-xl border border-emerald-500/20 bg-slate-950/10 backdrop-blur-md" aria-hidden="true" />
                         ) : effectiveStageConfig.showHomeDomainDevice ? (
                           <>
                           <div className={`border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex flex-col overflow-hidden rounded-xl p-3 relative ${
                             effectiveStageConfig.showRegisteredDevice
-                              ? "flex-1 h-[180px] lg:h-[210px]"
-                              : "flex-1 h-[180px] lg:h-[210px]"
+                              ? "min-h-[260px] flex-1"
+                              : "min-h-[260px] flex-1"
                           }`}>
                             <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
                               <ShieldCheck className="w-5 h-5 animate-pulse" />
@@ -67,11 +73,11 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                                 <circle cx="34" cy="65" r="1.5" fill="#22d3ee" />
                               </svg>
 
-                              <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+                              <div className="absolute bottom-1 left-1 z-10 h-24 w-28 lg:h-28 lg:w-32 2xl:h-48 2xl:w-64">
                                 <ARGlasses className="w-full h-full object-contain" />
                               </div>
 
-                              <div className="absolute top-1 right-1 w-[64%] max-w-[190px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.5)] leading-tight text-emerald-300">
+                              <div className="absolute right-3 top-3 w-[44%] max-w-[155px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 2xl:max-w-[220px] 2xl:p-3 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
                                 <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
                                   Digital ID
                                 </div>
@@ -96,7 +102,7 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                             </div>
                           </div>
                           {!effectiveStageConfig.showRegisteredDevice && (
-                            <div className="flex-1 h-[180px] lg:h-[210px] opacity-0 pointer-events-none" aria-hidden="true" />
+                            <div className="min-h-[260px] flex-1 opacity-0 pointer-events-none" aria-hidden="true" />
                           )}
                           </>
                         ) : (
@@ -104,8 +110,8 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                             {/* === 未注册设备 (红色全息光锥投影) === */}
                             <div className={`border border-red-500/30 bg-red-950/10 backdrop-blur-md flex flex-col overflow-hidden rounded-xl p-3 relative ${
                               effectiveStageConfig.showRegisteredDevice
-                                ? "flex-1 h-[180px] lg:h-[210px]"
-                                : "flex-1 h-[180px] lg:h-[210px]"
+                                ? "min-h-[260px] flex-1"
+                                : "min-h-[260px] flex-1"
                             }`}>
                               <div className="flex items-center gap-2 text-red-400 mb-2 relative z-20">
                                 <ShieldAlert className="w-5 h-5 animate-bounce" />
@@ -133,12 +139,12 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                                 </svg>
 
                                 {/* 机器狗本体 (靠左下坐立) */}
-                                <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+                                <div className="absolute bottom-1 left-1 z-10 h-24 w-28 lg:h-28 lg:w-32 2xl:h-48 2xl:w-64">
                                   <RobotDog className="w-full h-full object-contain" status="unregistered" />
                                 </div>
 
                                 {/* 3D 悬浮红色警示全息牌 (靠右侧，朝狗身侧上方倾斜) */}
-                                <div className="absolute top-1 right-1 w-[64%] max-w-[190px] origin-top-right bg-red-950/80 border border-red-500/50 p-2 sm:p-2.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.25)] z-20 animate-hologram-red [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.5)] text-red-300 leading-tight">
+                                <div className="absolute right-3 top-3 w-[44%] max-w-[155px] origin-top-right bg-red-950/80 border border-red-500/50 p-2 sm:p-2.5 2xl:max-w-[220px] 2xl:p-3 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.25)] z-20 animate-hologram-red [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] text-red-300 leading-tight">
                                   <div className="text-red-400 font-black mb-1 border-b border-red-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
                                     Device Warning
                                   </div>
@@ -157,7 +163,7 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                             </div>
 
                             {!effectiveStageConfig.showRegisteredDevice && (
-                              <div className="flex-1 h-[180px] lg:h-[210px] opacity-0 pointer-events-none" aria-hidden="true" />
+                              <div className="min-h-[260px] flex-1 opacity-0 pointer-events-none" aria-hidden="true" />
                             )}
 
                         {effectiveStageConfig.showRegisteredDevice && (
@@ -172,7 +178,7 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                             )}
 
                             {/* === 已注册设备 (绿色3D全息投影面板) === */}
-                            <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex-1 flex flex-col h-[180px] lg:h-[210px] overflow-hidden rounded-xl p-3 relative">
+                            <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex min-h-[260px] flex-1 flex-col overflow-hidden rounded-xl p-3 relative">
                               <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
                                 <ShieldCheck className="w-5 h-5 animate-pulse" />
                                 <div>
@@ -199,12 +205,12 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                                 </svg>
 
                                 {/* 机器狗本体 (靠左下安稳站立) */}
-                                <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+                                <div className="absolute bottom-1 left-1 z-10 h-24 w-28 lg:h-28 lg:w-32 2xl:h-48 2xl:w-64">
                                   <RobotDog className="w-full h-full object-contain" status="registered" />
                                 </div>
 
                                 {/* 3D 浮空倾斜全息卡片 (跟在机器狗身侧上部，带透视翻折) */}
-                                <div className="absolute top-1 right-1 w-[64%] max-w-[190px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.5)] leading-tight text-emerald-300">
+                                <div className="absolute right-3 top-3 w-[44%] max-w-[155px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 2xl:max-w-[220px] 2xl:p-3 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
                                   <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
                                     Digital ID
                                   </div>
@@ -233,7 +239,7 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                           </>
                         )}
                         {effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.showRegisteredDevice && (
-                          <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex-1 flex flex-col h-[180px] lg:h-[210px] overflow-hidden rounded-xl p-3 relative">
+                          <div className="border border-emerald-500/30 bg-slate-950/10 backdrop-blur-md flex min-h-[260px] flex-1 flex-col overflow-hidden rounded-xl p-3 relative">
                             <div className="flex items-center gap-2 text-emerald-400 mb-2 relative z-20">
                               <ShieldCheck className="w-5 h-5 animate-pulse" />
                               <div>
@@ -256,11 +262,11 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                                 <circle cx="34" cy="65" r="1.5" fill="#10b981" />
                               </svg>
 
-                              <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+                              <div className="absolute bottom-1 left-1 z-10 h-24 w-28 lg:h-28 lg:w-32 2xl:h-48 2xl:w-64">
                                 <RobotDog className="w-full h-full object-contain" status="registered" />
                               </div>
 
-                              <div className="absolute top-1 right-1 w-[64%] max-w-[190px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.5)] leading-tight text-emerald-300">
+                              <div className="absolute right-3 top-3 w-[44%] max-w-[155px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 2xl:max-w-[220px] 2xl:p-3 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
                                 <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
                                   Digital ID
                                 </div>
@@ -384,7 +390,7 @@ export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, compone
 export const StepBar = ({ steps }) => (
   <>
     {/* 底部步骤条 - 升级为精致高对比度毛玻璃条 */}
-    <div className="stepbar-grid mt-8 grid grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
+    <div className="stepbar-grid relative z-10 mt-3 grid grid-cols-2 gap-2 md:grid-cols-5">
       {steps.map((step) => {
         const StepIcon = step.icon;
         const isDone = step.status === "success";
@@ -393,7 +399,7 @@ export const StepBar = ({ steps }) => (
         return (
           <div
             key={step.id}
-            className={`stepbar-card border bg-slate-900/30 backdrop-blur-md rounded-lg px-3.5 py-2 flex items-center gap-3 relative overflow-hidden shadow-md ${
+            className={`stepbar-card relative flex items-center gap-3 overflow-hidden rounded-lg border bg-slate-900/30 px-3 py-1.5 shadow-md backdrop-blur-md ${
               isDone
                 ? "border-emerald-500/80 shadow-[0_0_18px_rgba(16,185,129,0.25)]"
                 : isWorking

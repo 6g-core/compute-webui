@@ -485,6 +485,9 @@ export const useEffectiveStageConfig = (stage) => {
         activeConnections: hideFinalFlash ? [] : phase.activeConnections || [],
         systemAgentBubble: hideFinalFlash ? null : phase.systemAgentBubble || null,
         agentBubbles: phase.agentBubbles || [],
+        showArSpeech: false,
+        hideArSpeech: true,
+        stageAnimationDone: allDone && !stage2FinalFlashActive,
         hideRobotDogSpeech: Boolean(phase.systemAgentBubble),
         intentSummary: summary,
         showRegisteredDevice: allDone,
@@ -532,6 +535,7 @@ export const useEffectiveStageConfig = (stage) => {
       const hideFinalFlash = phase.key === "stage4_6" && !stage4FinalFlashActive;
       const l1GuaranteeDone = phase.key === "stage4_6_done" || phase.key === "stage4_6";
       const homeDomainDevicesReady = stage4PhaseIndex >= STAGE4_PHASES.findIndex((stage4Phase) => stage4Phase.key === "stage4_5_done");
+      const showArSpeech = phase.key === "stage4_source" && !hideFinalFlash;
 
       return {
         ...stageConfig,
@@ -542,7 +546,9 @@ export const useEffectiveStageConfig = (stage) => {
         activeConnections: hideFinalFlash ? [] : phase.activeConnections || [],
         systemAgentBubble: hideFinalFlash ? null : phase.systemAgentBubble || null,
         agentBubbles: phase.agentBubbles || [],
-        hideArSpeech: Boolean(phase.systemAgentBubble) || hideFinalFlash,
+        showArSpeech,
+        hideArSpeech: !showArSpeech,
+        stageAnimationDone: allDone && !stage4FinalFlashActive,
         intentSummary: buildCumulativeIntentSummary(),
         statusTitle: l1GuaranteeDone ? "端侧状态：L1级通信保障" : "端侧状态",
         statusRows: l1GuaranteeDone
@@ -576,6 +582,7 @@ export const useEffectiveStageConfig = (stage) => {
       const allDone = stage5PhaseIndex >= STAGE5_PHASES.length - 1;
       const hideFinalFlash = phase.key === "stage5_6" && !stage5FinalFlashActive;
       const l2GuaranteeDone = phase.key === "stage5_done" || phase.key === "stage5_6";
+      const showArSpeech = phase.key === "stage5_source" && !hideFinalFlash;
 
       return {
         ...stageConfig,
@@ -586,7 +593,9 @@ export const useEffectiveStageConfig = (stage) => {
         activeConnections: hideFinalFlash ? [] : phase.activeConnections || [],
         systemAgentBubble: hideFinalFlash ? null : phase.systemAgentBubble || null,
         agentBubbles: phase.agentBubbles || [],
-        hideArSpeech: Boolean(phase.systemAgentBubble) || hideFinalFlash,
+        showArSpeech,
+        hideArSpeech: !showArSpeech,
+        stageAnimationDone: allDone && !stage5FinalFlashActive,
         intentSummary: buildCumulativeIntentSummary(),
         statusTitle: l2GuaranteeDone ? "端侧状态：L2级通信保障" : "端侧状态：L1级通信保障",
         statusRows: l2GuaranteeDone
@@ -642,6 +651,9 @@ export const useEffectiveStageConfig = (stage) => {
         ...stageConfig,
         activeFlowType: activeWorkflow?.flowType || "a2aGateway",
         intentSummary: buildCumulativeIntentSummary(),
+        showArSpeech: false,
+        hideArSpeech: true,
+        stageAnimationDone: allDone,
         logs: visibleLogs,
         workflow,
         steps: stageConfig.steps.map((step) => (
@@ -667,7 +679,7 @@ export const useEffectiveStageConfig = (stage) => {
       const allDone = stage7PhaseIndex >= STAGE7_PHASES.length - 1;
       const hideFinalFlash = phase.key === "stage7_5" && !stage7FinalFlashActive;
       const l3GuaranteeDone = phase.key === "stage7_5_policy_done" || phase.key === "stage7_5";
-      const hideStage7ArSpeech = phase.key !== "stage7_source_ar";
+      const showArSpeech = phase.key === "stage7_source_ar" && !hideFinalFlash && !phase.systemAgentBubble;
 
       return {
         ...stageConfig,
@@ -679,7 +691,9 @@ export const useEffectiveStageConfig = (stage) => {
         systemAgentBubble: hideFinalFlash ? null : phase.systemAgentBubble || null,
         agentBubbles: phase.agentBubbles || [],
         hideRobotDogSpeech: Boolean(phase.systemAgentBubble),
-        hideArSpeech: hideStage7ArSpeech || Boolean(phase.systemAgentBubble) || hideFinalFlash,
+        showArSpeech,
+        hideArSpeech: !showArSpeech,
+        stageAnimationDone: allDone && !stage7FinalFlashActive,
         intentSummary: buildCumulativeIntentSummary(),
         statusTitle: l3GuaranteeDone ? "端侧状态：L3级通信保障" : "端侧状态：L2级通信保障",
         statusRows: l3GuaranteeDone
@@ -711,7 +725,9 @@ export const useEffectiveStageConfig = (stage) => {
       return {
         ...stageConfig,
         intentSummary: buildCumulativeIntentSummary(),
-        hideArSpeech: stage === 9 ? !stage9HandoffFlashActive : stageConfig.hideArSpeech,
+        showArSpeech: stage === 8 || (stage === 9 && stage9HandoffFlashActive),
+        hideArSpeech: stage === 8 ? false : stage === 9 ? !stage9HandoffFlashActive : true,
+        stageAnimationDone: stage === 8 || (stage === 9 && !stage9HandoffFlashActive),
       };
     }
 

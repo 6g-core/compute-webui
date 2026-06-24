@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { getArStatusApiUrl, getLatencyApiUrl, getStageApiUrl, normalizeStage } from '../config/runtimeUrls';
+import { getArStatusApiUrl, getLatencyApiUrl, getStageApiUrl } from '../config/runtimeUrls';
+import {
+  appendLatencyPoint,
+  parseArLastWhisper,
+  parseLatencyPayload,
+  parseStagePayload,
+} from '../utils/pollingPayloads';
 
 const useStagePolling = () => {
   const [stage, setStage] = useState(1);
@@ -32,11 +38,7 @@ const useStagePolling = () => {
         }
 
         const payload = await response.json();
-        const nextStage = normalizeStage(payload.stage);
-
-        if (!nextStage) {
-          throw new Error(`Unknown stage: ${payload.stage}`);
-        }
+        const nextStage = parseStagePayload(payload);
 
         if (!disposed) {
           setStage(nextStage);
@@ -89,8 +91,8 @@ const useArLastWhisper = () => {
         }
 
         const payload = await response.json();
-        const nextWhisper = String(payload.last_whisper || payload.lastWhisper || "").trim();
-        if (!disposed && nextWhisper) {
+        const nextWhisper = parseArLastWhisper(payload);
+        if (!disposed) {
           setLastWhisper(nextWhisper);
         }
       } catch (arStatusError) {
@@ -142,20 +144,10 @@ const useLatencySeries = (enabled) => {
           throw new Error(`Latency API failed: ${response.status}`);
         }
 
-        const payload = await response.json();
-        const latencyMs = Number(payload.latencyMs);
-
-        if (!Number.isFinite(latencyMs)) {
-          throw new Error("Latency API returned invalid latency");
-        }
-
-        const timestamp = Number(payload.timestamp) || Date.now();
+        const point = parseLatencyPayload(await response.json());
 
         if (!disposed) {
-          setPoints((current) => [
-            ...current.slice(-23),
-            { timestamp, latencyMs },
-          ]);
+          setPoints((current) => appendLatencyPoint(current, point));
           setError(null);
         }
       } catch (latencyError) {

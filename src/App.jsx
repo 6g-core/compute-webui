@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Wifi,
   ShieldAlert,
   ShieldCheck,
   CircleDot,
@@ -8,21 +7,12 @@ import {
 import { STAGE9_COMPLETED_TASKS, getWorkflowBubbleFromRows, pinBubbleToSystemAgent } from './config/stageConfig.jsx';
 import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, formatVideoState, useBackendVideoStream, useDogVideoOfferGate } from './hooks/useBackendVideo';
 import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
-import { useStagePolling } from './hooks/usePolling';
+import { useArLastWhisper, useStagePolling } from './hooks/usePolling';
 import { LeftPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
 
 const LANGUAGE_STORAGE_KEY = "compute-webui-language";
-
-const FIXED_AR_SPEECH_BY_STAGE = {
-  4: "Let my dog go to the supermarket",
-  5: "Share Video",
-  6: "Share Dog's vision and enter the supermarket",
-  7: "Find the yellow bottle",
-  8: "Find the yellow bottle",
-  9: "Grasp the yellow bottle",
-};
 
 const UI_TRANSLATIONS = {
   "意图解析处理摘要": "Intent Parsing Summary",
@@ -52,17 +42,17 @@ const UI_TRANSLATIONS = {
   "Connection Agent收到任务：L3级通信保障": "Connection Agent receives task: L3 communication assurance",
   "Computing Agent收到任务：创建算力会话": "Computing Agent receives task: create compute session",
   "Computing Agent收到任务：分配算力资源": "Computing Agent receives task: allocate compute resources",
-  "ACN Agent调用IDM签发数字身份": "ACN Agent calls IDM to issue digital identity",
-  "ACN Agent调用ARF发布能力卡片": "ACN Agent calls ARF to publish capability card",
-  "ACN Agent调用6G UDM更新签约数据": "ACN Agent calls 6G UDM to update subscription data",
-  "ACN Agent调用IDM下发域接入凭证": "ACN Agent calls IDM to deliver domain access credentials",
-  "Connection Agent调用6G AM注册": "Connection Agent calls 6G AM to register",
-  "Connection Agent调用6G SM创建会话": "Connection Agent calls 6G SM to create a session",
-  "Connection Agent调用6G SM下发物理组网配置": "Connection Agent calls 6G SM to deliver physical network configuration",
-  "Connection Agent调用6G Policy下发保障策略": "Connection Agent calls 6G Policy to deliver assurance policy",
-  "Connection Agent调用6G Policy下发AI推理通信保障策略": "Connection Agent calls 6G Policy to deliver AI inference communication assurance policy",
-  "Computing Agent调用CMF创建算力会话": "Computing Agent calls CMF to create a compute session",
-  "Computing Agent调用CMF分配算力资源": "Computing Agent calls CMF to allocate compute resources",
+  "ACN Agent调用IDM Tool签发数字身份": "ACN Agent calls IDM Tool to issue digital identity",
+  "ACN Agent调用ARF Tool发布能力卡片": "ACN Agent calls ARF Tool to publish capability card",
+  "ACN Agent调用UDM Tool更新签约数据": "ACN Agent calls UDM Tool to update subscription data",
+  "ACN Agent调用IDM Tool下发域接入凭证": "ACN Agent calls IDM Tool to deliver domain access credentials",
+  "Connection Agent调用AM Tool注册": "Connection Agent calls AM Tool to register",
+  "Connection Agent调用SM Tool创建会话": "Connection Agent calls SM Tool to create a session",
+  "Connection Agent调用SM Tool下发物理组网配置": "Connection Agent calls SM Tool to deliver physical network configuration",
+  "Connection Agent调用Policy Tool下发保障策略": "Connection Agent calls Policy Tool to deliver assurance policy",
+  "Connection Agent调用Policy Tool下发AI推理通信保障策略": "Connection Agent calls Policy Tool to deliver AI inference communication assurance policy",
+  "Computing Agent调用CMF Tool创建算力会话": "Computing Agent calls CMF Tool to create a compute session",
+  "Computing Agent调用CMF Tool分配算力资源": "Computing Agent calls CMF Tool to allocate compute resources",
   "System Agent确认完成签发数字身份任务": "System Agent confirms digital identity issuance is complete",
   "System Agent确认完成接入网络任务": "System Agent confirms network access is complete",
   "System Agent确认完成家庭域凭证任务": "System Agent confirms home-domain credentials are complete",
@@ -76,15 +66,13 @@ const UI_TRANSLATIONS = {
   "收到意图：": "Intent received:",
   "收到任务：": "Task received:",
   "完成任务：": "Task complete:",
-  "调用IDM：": "Call IDM:",
-  "调用6G UDM": "Call 6G UDM",
-  "调用6G AM": "Call 6G AM",
-  "调用6G SM": "Call 6G SM",
-  "调用ARF": "Call ARF",
-  "调用CMF": "Call CMF",
-  "调用IDM": "Call IDM",
-  "调用SMF": "Call SMF",
-  "调用UDM": "Call UDM",
+  "调用IDM Tool：": "Call IDM Tool:",
+  "调用AM Tool": "Call AM Tool",
+  "调用SM Tool": "Call SM Tool",
+  "调用ARF Tool": "Call ARF Tool",
+  "调用CMF Tool": "Call CMF Tool",
+  "调用IDM Tool": "Call IDM Tool",
+  "调用UDM Tool": "Call UDM Tool",
   "签发数字身份": "Issue Digital Identity",
   "创建家庭域凭证": "Create Home-Domain Credentials",
   "家庭域凭证": "Home-Domain Credentials",
@@ -146,6 +134,7 @@ const UI_TRANSLATIONS = {
   "连接无中断": "No connection interruption",
   "端侧状态：L2级通信保障": "Device Status:\nL2 Communication Assurance",
   "视频传输流畅": "Smooth video transmission",
+  "视频传输保障": "Video Transport Assurance",
   "L2级通信保障": "L2 Communication Assurance",
   "端侧状态：L3级通信保障": "Device Status:\nL3 Communication Assurance",
   "L3级通信保障": "L3 Communication Assurance",
@@ -154,16 +143,16 @@ const UI_TRANSLATIONS = {
   "Share Video": "Share Video",
   "L1级通信保障": "L1 Communication Assurance",
   "下发保障策略": "Deliver Assurance Policy",
-  "调用6G Policy": "Call 6G Policy",
+  "调用Policy Tool": "Call Policy Tool",
   "生成式网络开始为家庭域计算接入路径": "Generative networking starts computing an access path for the home domain",
   "任务链路完成调度": "Task link scheduling is complete",
   "调用CMF Tool创建算力会话": "Call CMF Tool to create a compute session",
   "调用CMF Tool分配算力资源": "Call CMF Tool to allocate compute resources",
-  "6G核心网：Agent GW跨域互联": "6G Core Network: Agent GW Cross-Domain Interconnect",
-  "6G核心网：分配算力资源": "6G Core Network: Compute Resource Allocation",
-  "6G核心网：数字身份申请": "6G Core Network: Digital Identity Application",
-  "6G核心网：生成式网络": "6G Core Network: Generative Networking",
-  "6G核心网：算力卸载": "6G Core Network: Compute Offload",
+  "核心网：Agent GW跨域互联": "Core Network: Agent GW Cross-Domain Interconnect",
+  "核心网：分配算力资源": "Core Network: Compute Resource Allocation",
+  "核心网：数字身份申请": "Core Network: Digital Identity Application",
+  "核心网：生成式网络": "Core Network: Generative Networking",
+  "核心网：算力卸载": "Core Network: Compute Offload",
   "6G核心网作用": "6G Core Network Functions",
   "L3按需组网": "L3 On-Demand Networking",
   "ACN Agent:创建管理家庭域": "ACN Agent:\nCreate and manage home domain",
@@ -171,8 +160,9 @@ const UI_TRANSLATIONS = {
   "Connection Agent:接入网络": "Connection Agent:\nAccess network",
   "Computing Agent:创建算力会话": "Computing Agent:\nCreate compute session",
   "ACN Agent:签发数字身份": "ACN Agent:\nIssue digital identity",
-  "IDM颁发数字身份": "IDM issues digital identity",
+  "IDM Tool颁发数字身份": "IDM Tool issues digital identity",
   "AR眼镜、机器狗与超市智能体双向认证": "AR glasses, robot dog, and supermarket agent mutual authentication",
+  "机器狗和AR眼镜分别与超市智能体双向认证": "Robot dog and AR glasses each mutually authenticate with the supermarket agent",
   "AR Glasses (6G终端)": "AR Glasses (6G Terminal)",
   "机器狗与超市智能体交接物品": "Robot dog and supermarket agent hand over item",
   "机器狗与超市智能体双向认证": "Robot dog and supermarket agent mutual authentication",
@@ -194,6 +184,7 @@ const UI_TRANSLATIONS = {
   "下发物理组网配置": "Deliver Physical Network Config",
   "下发UPF配置": "Deliver UPF Config",
   "更新签约数据": "Update Subscription Data",
+  "申请网内算力": "Request In-Network Compute",
   "创建管理家庭域": "Create and Manage Home Domain",
   "创建家庭域": "Create Home Domain",
   "创建算力会话": "Create Compute Session",
@@ -317,7 +308,7 @@ const walkTextNodes = (root, visitor) => {
         return NodeFilter.FILTER_REJECT;
       }
       const parent = node.parentElement;
-      if (!parent || parent.closest("script, style, svg, noscript")) {
+      if (!parent || parent.closest("script, style, svg, noscript, [data-language-managed]")) {
         return NodeFilter.FILTER_REJECT;
       }
       return NodeFilter.FILTER_ACCEPT;
@@ -619,7 +610,7 @@ const SciFiPanel = ({ children, className = "", title = "" }) => (
         <h3 className="text-blue-100 font-medium text-sm md:text-base">{title}</h3>
       </div>
     )}
-    <div className="p-4 h-full">
+    <div className="h-full p-3 xl:p-4">
       {children}
     </div>
   </div>
@@ -895,11 +886,11 @@ const ArAccessStateCard = ({ registered = false }) => {
           <circle cx="34" cy="65" r="1.5" fill={stateStyles.beamDot} />
         </svg>
 
-        <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+        <div className="absolute bottom-1 left-1 z-10 h-24 w-28 lg:h-28 lg:w-32 2xl:h-48 2xl:w-64">
           <ARGlasses className="w-full h-full object-contain" />
         </div>
 
-        <div className={`absolute top-1 right-1 w-[60%] max-w-[175px] origin-top-right border p-2 sm:p-2.5 rounded-lg backdrop-blur-md z-20 ${registered ? "animate-hologram" : "animate-hologram-red"} [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.5)] leading-tight ${stateStyles.cardPanel}`}>
+        <div className={`absolute right-3 top-3 w-[42%] max-w-[145px] origin-top-right border p-2 sm:p-2.5 2xl:max-w-[205px] 2xl:p-3 rounded-lg backdrop-blur-md z-20 ${registered ? "animate-hologram" : "animate-hologram-red"} [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight ${stateStyles.cardPanel}`}>
           <div className={`font-black mb-1 border-b pb-1 uppercase tracking-wide text-[10px] sm:text-[11px] ${stateStyles.panelTitleClass}`}>
             {stateStyles.panelTitle}
           </div>
@@ -928,7 +919,7 @@ const ArAccessStateCard = ({ registered = false }) => {
 };
 
 const ArRegistrationPanel = () => (
-  <div className="flex h-[230px] flex-none flex-col gap-2 lg:h-[260px]">
+  <div className="flex min-h-[260px] basis-1/2 flex-col gap-2">
     <ArAccessStateCard registered />
   </div>
 );
@@ -957,7 +948,7 @@ const RegisteredRobotDogCard = ({ className = "flex-1 h-[180px] lg:h-[210px]" })
         <circle cx="34" cy="65" r="1.5" fill="#10b981" />
       </svg>
 
-      <div className="absolute bottom-1 left-1 w-28 lg:w-32 h-24 lg:h-28 z-10">
+      <div className="absolute bottom-1 left-1 z-10 h-24 w-28 lg:h-28 lg:w-32 2xl:h-48 2xl:w-64">
         <UnitreeGo2Vector
           className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(52,211,153,0.35)]"
           status="registered"
@@ -969,7 +960,7 @@ const RegisteredRobotDogCard = ({ className = "flex-1 h-[180px] lg:h-[210px]" })
         />
       </div>
 
-      <div className="absolute top-1 right-1 w-[64%] max-w-[190px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.5)] leading-tight text-emerald-300">
+      <div className="absolute right-3 top-3 w-[44%] max-w-[155px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
         <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
           Digital ID
         </div>
@@ -1048,8 +1039,8 @@ const RobotArm = ({ className = "" }) => (
 );
 
 const HandoffPanel = () => (
-  <div className="flex flex-col flex-1 gap-2">
-    <RegisteredRobotDogCard className="flex-1 h-[180px] lg:h-[210px]" />
+  <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <RegisteredRobotDogCard className="min-h-[260px] flex-1" />
     <ArAccessStateCard registered />
   </div>
 );
@@ -1059,7 +1050,7 @@ const DogVisionPanel = ({ label, state, videoRef, tall = false, tags }) => {
   const panelTags = tags || ["DOG-CAM", "MOQT", live ? "SYNCED" : formatVideoState(state)];
 
   return (
-    <div className={`relative overflow-hidden rounded-xl border border-emerald-400/35 bg-slate-950/45 shadow-[inset_0_0_24px_rgba(16,185,129,0.12),0_0_18px_rgba(34,211,238,0.14)] ${tall ? "flex-1" : "h-[220px] shrink-0 lg:h-[240px]"}`}>
+    <div className={`relative overflow-hidden rounded-xl border border-emerald-400/35 bg-slate-950/45 shadow-[inset_0_0_24px_rgba(16,185,129,0.12),0_0_18px_rgba(34,211,238,0.14)] ${tall ? "min-h-0 flex-1" : "min-h-[360px] flex-1"}`}>
       <video
         ref={videoRef}
         className="absolute inset-0 h-full w-full object-cover"
@@ -1069,11 +1060,11 @@ const DogVisionPanel = ({ label, state, videoRef, tall = false, tags }) => {
       />
       <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:22px_22px] mix-blend-screen" />
       <div className="absolute inset-0 border border-cyan-300/20" />
-      <div className="absolute left-2 top-2 flex items-center gap-2 rounded border border-emerald-400/45 bg-slate-950/70 px-2 py-1 text-[10px] font-bold tracking-wider text-emerald-200 backdrop-blur-md">
+      <div className="absolute left-3 top-3 flex items-center gap-2 rounded border border-emerald-400/45 bg-slate-950/70 px-3 py-1.5 text-xs font-bold tracking-wider text-emerald-200 backdrop-blur-md">
         <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.9)]" : "bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.9)]"}`} />
         {label}
       </div>
-      <div className="absolute bottom-2 left-2 right-2 grid grid-cols-3 gap-2 text-[9px] font-mono text-cyan-100/90">
+      <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2 text-[11px] font-mono text-cyan-100/90">
         {panelTags.map((item) => (
           <div key={item} className="rounded border border-cyan-400/25 bg-slate-950/62 px-2 py-1 text-center backdrop-blur-md">
             {item}
@@ -1112,13 +1103,13 @@ const BackgroundVideoPanel = ({ visible }) => {
   }
 
   return (
-    <div className="flex h-[210px] shrink-0 lg:h-[240px]">
+    <div className="flex min-h-[420px] flex-1 shrink-0">
       <DogVisionPanel
         label="机械臂视频流"
         state={background.state}
         videoRef={background.videoRef}
         tall
-        tags={["ARM-CAM", "WEBRTC", backgroundLive ? "SYNCED" : formatVideoState(background.state)]}
+        tags={["ARM-CAM", "MOQT", backgroundLive ? "SYNCED" : formatVideoState(background.state)]}
       />
     </div>
   );
@@ -1180,7 +1171,7 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
   }
 
   return (
-    <div className="flex flex-1 min-h-[424px] flex-col gap-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <DogVisionPanel label="机器狗原始视野" state={raw.state} videoRef={raw.videoRef} tall />
       <DogVisionPanel label="机器狗增强后的视野" state={enhanced.state} videoRef={enhanced.videoRef} tall />
     </div>
@@ -1292,9 +1283,50 @@ export default function App() {
   }, [language]);
 
   const { stage, connectionState, error } = useStagePolling();
+  const arLastWhisper = useArLastWhisper();
   const effectiveStageConfig = useEffectiveStageConfig(stage);
-  const rawArSpeechText = FIXED_AR_SPEECH_BY_STAGE[stage] || "";
-  const arSpeechText = effectiveStageConfig.hideArSpeech ? "" : rawArSpeechText;
+  const postAnimationWhisperBaselineRef = useRef({ stage, whisper: arLastWhisper });
+  const [postAnimationArSpeechText, setPostAnimationArSpeechText] = useState("");
+
+  useEffect(() => {
+    postAnimationWhisperBaselineRef.current = { stage, whisper: arLastWhisper };
+    setPostAnimationArSpeechText("");
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage <= 1 || stage === 8) {
+      setPostAnimationArSpeechText("");
+      postAnimationWhisperBaselineRef.current = { stage, whisper: arLastWhisper };
+      return;
+    }
+
+    if (effectiveStageConfig.showArSpeech || !effectiveStageConfig.stageAnimationDone) {
+      setPostAnimationArSpeechText("");
+      postAnimationWhisperBaselineRef.current = { stage, whisper: arLastWhisper };
+      return;
+    }
+
+    if (!arLastWhisper) {
+      setPostAnimationArSpeechText("");
+      postAnimationWhisperBaselineRef.current = { stage, whisper: "" };
+      return;
+    }
+
+    const baseline = postAnimationWhisperBaselineRef.current;
+    if (baseline.stage === stage && arLastWhisper !== baseline.whisper) {
+      setPostAnimationArSpeechText(arLastWhisper);
+      postAnimationWhisperBaselineRef.current = { stage, whisper: arLastWhisper };
+    }
+  }, [
+    arLastWhisper,
+    effectiveStageConfig.showArSpeech,
+    effectiveStageConfig.stageAnimationDone,
+    stage,
+  ]);
+
+  const arSpeechText = effectiveStageConfig.showArSpeech
+    ? arLastWhisper
+    : postAnimationArSpeechText;
   const topologyAgentBubble = effectiveStageConfig.systemAgentBubble
     ? pinBubbleToSystemAgent(effectiveStageConfig.systemAgentBubble)
     : stage === 9
@@ -1319,7 +1351,7 @@ export default function App() {
   return (
     <div
       ref={appRootRef}
-      className={`video-backed-ui min-h-screen text-white p-4 md:p-8 font-sans overflow-x-hidden flex items-center justify-center relative isolate ${language === "en" ? "lang-en" : "lang-zh"}`}
+      className={`video-backed-ui h-screen w-screen text-white p-1.5 md:p-2 font-sans overflow-hidden flex items-stretch justify-stretch relative isolate ${language === "en" ? "lang-en" : "lang-zh"}`}
     >
       <WebRtcBackground />
       <div className="video-dim-overlay fixed inset-0 -z-10 bg-black/35 pointer-events-none" />
@@ -1463,6 +1495,10 @@ export default function App() {
           font-size: 1rem;
           line-height: 1.05;
         }
+        .lang-en .stepbar-card:nth-child(4) .stepbar-title {
+          font-size: 0.9rem;
+          white-space: nowrap;
+        }
         .lang-en .stepbar-subtitle {
           font-size: 0.875rem;
           line-height: 1.05;
@@ -1481,17 +1517,14 @@ export default function App() {
       `}} />
 
       {/* 主屏幕容器 - 整体升级为全毛玻璃HUD悬浮舱 */}
-      <div className="w-full max-w-[1960px] bg-slate-950/38 backdrop-blur-xl rounded-3xl border-2 border-cyan-300/55 shadow-[0_0_0_1px_rgba(15,23,42,0.85),0_0_34px_rgba(34,211,238,0.18),0_28px_90px_rgba(0,0,0,0.72)] relative overflow-hidden flex flex-col p-6 md:p-8 ring-1 ring-white/10">
-        <div className="absolute inset-0 rounded-3xl border border-slate-950/80 pointer-events-none" />
+      <div className="relative flex h-full w-full max-w-none flex-col overflow-hidden rounded-xl border-2 border-cyan-300/55 bg-slate-950/38 p-3 shadow-[0_0_0_1px_rgba(15,23,42,0.85),0_0_34px_rgba(34,211,238,0.18),0_28px_90px_rgba(0,0,0,0.72)] ring-1 ring-white/10 backdrop-blur-xl md:p-4">
+        <div className="absolute inset-0 rounded-xl border border-slate-950/80 pointer-events-none" />
         <div className="absolute inset-[3px] rounded-[1.35rem] border border-blue-200/15 pointer-events-none" />
         
         {/* 顶部 Header */}
-        <header className="flex items-center justify-between mb-8 relative z-10">
-          <div className="flex items-center gap-2 text-blue-400">
-            <span className="text-4xl font-black italic tracking-tighter">6G</span>
-            <Wifi className="w-8 h-8 animate-pulse" />
-          </div>
-          <div className="text-center absolute left-1/2 -translate-x-1/2">
+        <header className="relative z-10 mb-3 flex min-h-[60px] shrink-0 items-center justify-between">
+          <div className="w-24" aria-hidden="true" />
+          <div className="text-center absolute left-1/2 top-1/2 w-[calc(100%-12rem)] -translate-x-1/2 -translate-y-1/2">
             <h1 className={`text-3xl md:text-5xl font-bold tracking-widest text-white glow-text ${language === "zh" ? "mb-2" : "mb-0"}`}>
               {language === "en" ? "Agent Communication Network" : "智能体通信网络"}
             </h1>
@@ -1505,25 +1538,29 @@ export default function App() {
         </header>
 
         {/* 核心内容区 */}
-        <div className="grid grid-cols-1 md:grid-cols-[2.5fr_9fr] gap-6 flex-1 relative z-10">
+        <div className="relative z-10 grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-[minmax(560px,34vw)_minmax(0,1fr)]">
           
           <LeftPanel
             effectiveStageConfig={effectiveStageConfig}
             stage={stage}
+            language={language}
+            translateText={translateTextNodeValue}
             components={panelComponents}
           />
 
           {/* 中间列：6G核心网 3D 拓扑与平面网元、上方弧线数据流 */}
-          <div>
+          <div className="min-h-0">
             <NetworkTopology3D
               stage={stage}
               activeFlowType={effectiveStageConfig.activeFlowType}
+              coreFunctions={effectiveStageConfig.coreFunctions}
               agentBubble={topologyAgentBubble}
               agentBubbles={childAgentBubbles}
               arSpeechText={arSpeechText}
               hideRobotDogSpeech={effectiveStageConfig.hideRobotDogSpeech}
               title={effectiveStageConfig.topologyTitle}
               topologyLines={effectiveStageConfig.topologyLines}
+              workflow={effectiveStageConfig.workflow}
               highlightedNodes={effectiveStageConfig.highlightedNodes}
               activeConnections={effectiveStageConfig.activeConnections}
               stagePhaseKey={effectiveStageConfig.stagePhaseKey}

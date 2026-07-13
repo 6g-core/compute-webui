@@ -559,8 +559,8 @@ h1, h2, h3, h4, h5 {
   line-height: 1.2;
   text-align: center;
   white-space: normal;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  word-break: keep-all;
+  overflow-wrap: normal;
 }
 .mission-node-role {
   font-size: calc(0.6rem * var(--graph-font-scale, 1));
@@ -571,8 +571,8 @@ h1, h2, h3, h4, h5 {
   max-width: 160px;
   text-align: center;
   white-space: normal;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  word-break: keep-all;
+  overflow-wrap: normal;
 }
 
 /* 静态激活 */

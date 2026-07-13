@@ -8,10 +8,10 @@
           <el-icon :size="14"><Back /></el-icon>
         </button>
         <div class="flex flex-col leading-tight">
-          <span style="font-size:0.72rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#0369a1;">
+          <span style="font-size:calc(0.72rem * var(--ui-font-scale)); font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#0369a1;">
             Architecture Editor
           </span>
-          <span style="font-size:0.92rem; font-weight:700;">架构图编辑器 · {{ viewLabel }}</span>
+          <span style="font-size:calc(0.92rem * var(--ui-font-scale)); font-weight:700;">架构图编辑器 · {{ viewLabel }}</span>
         </div>
         <div class="flex items-center gap-1.5 ml-2">
           <button
@@ -43,7 +43,7 @@
           :title="snap ? '关闭网格吸附' : '打开网格吸附'"
         >
           <el-icon :size="14"><Grid /></el-icon>
-          <span style="font-size:0.74rem; font-weight:600;">吸附 {{ snap ? 'ON' : 'OFF' }}</span>
+          <span style="font-size:calc(0.74rem * var(--ui-font-scale)); font-weight:600;">吸附 {{ snap ? 'ON' : 'OFF' }}</span>
         </button>
         <button
           :class="['icon-button', captionVisible && 'is-on']"
@@ -52,19 +52,19 @@
           :title="captionVisible ? '隐藏标题条' : '显示标题条'"
         >
           <el-icon :size="14"><Postcard /></el-icon>
-          <span style="font-size:0.74rem; font-weight:600;">标题 {{ captionVisible ? 'ON' : 'OFF' }}</span>
+          <span style="font-size:calc(0.74rem * var(--ui-font-scale)); font-weight:600;">标题 {{ captionVisible ? 'ON' : 'OFF' }}</span>
         </button>
         <button class="icon-button" style="width:auto; padding:0 14px; gap:6px;" @click="openIo('export')">
           <el-icon :size="14"><Download /></el-icon>
-          <span style="font-size:0.78rem; font-weight:600;">导出</span>
+          <span style="font-size:calc(0.78rem * var(--ui-font-scale)); font-weight:600;">导出</span>
         </button>
         <button class="icon-button" style="width:auto; padding:0 14px; gap:6px;" @click="openIo('import')">
           <el-icon :size="14"><Upload /></el-icon>
-          <span style="font-size:0.78rem; font-weight:600;">导入</span>
+          <span style="font-size:calc(0.78rem * var(--ui-font-scale)); font-weight:600;">导入</span>
         </button>
         <button class="icon-button" style="width:auto; padding:0 14px; gap:6px;" @click="clearCanvas">
           <el-icon :size="14"><Delete /></el-icon>
-          <span style="font-size:0.78rem; font-weight:600;">清空</span>
+          <span style="font-size:calc(0.78rem * var(--ui-font-scale)); font-weight:600;">清空</span>
         </button>
         <button class="primary-button" @click="save">
           <el-icon :size="14"><Check /></el-icon>
@@ -78,7 +78,7 @@
       v-if="selectedIds.length >= 2"
       class="panel flex items-center gap-2 px-4 py-2"
     >
-      <span class="text-[0.62rem] font-bold tracking-wider uppercase text-ink-500">Align</span>
+      <span class="text-[calc(0.62rem*var(--ui-font-scale))] font-bold tracking-wider uppercase text-ink-500">Align</span>
       <div class="flex items-center gap-1">
         <button class="icon-button icon-button-sm" @click="align('left')" title="左对齐">
           <el-icon :size="14"><AlignLeft /></el-icon>
@@ -100,7 +100,7 @@
           <el-icon :size="14"><AlignBottom /></el-icon>
         </button>
       </div>
-      <span class="text-[0.62rem] font-bold tracking-wider uppercase text-ink-500 ml-3">Distribute</span>
+      <span class="text-[calc(0.62rem*var(--ui-font-scale))] font-bold tracking-wider uppercase text-ink-500 ml-3">Distribute</span>
       <div class="flex items-center gap-1">
         <button
           class="icon-button icon-button-sm"
@@ -119,14 +119,14 @@
           <el-icon :size="14"><Bottom /></el-icon>
         </button>
       </div>
-      <span class="text-[0.62rem] font-bold tracking-wider uppercase text-ink-500 ml-3">Snap</span>
+      <span class="text-[calc(0.62rem*var(--ui-font-scale))] font-bold tracking-wider uppercase text-ink-500 ml-3">Snap</span>
       <button
         class="icon-button icon-button-sm"
         style="width:auto; padding:0 10px;"
         @click="snapSelectedToGrid"
         title="将选中对齐到网格"
       >
-        <span style="font-size:0.7rem; font-weight:600;">对齐到网格</span>
+        <span style="font-size:calc(0.7rem * var(--ui-font-scale)); font-weight:600;">对齐到网格</span>
       </button>
     </div>
 
@@ -150,7 +150,7 @@
             <span class="title-kicker">Canvas</span>
             <span>自由绘制 · 拖拽 · 双击改名</span>
           </div>
-          <div class="flex items-center gap-3 text-[0.7rem] text-ink-500">
+          <div class="flex items-center gap-3 text-[calc(0.7rem*var(--ui-font-scale))] text-ink-500">
             <span class="flex items-center gap-1.5">
               <span class="w-2.5 h-0.5" style="background:#7c3aed;"></span>控制
             </span>
@@ -179,8 +179,8 @@
               >
                 <el-icon :size="28" color="#3b82f6"><Plus /></el-icon>
               </div>
-              <div style="font-size: 0.82rem; font-weight: 700;">空白画布</div>
-              <div class="mt-1 text-ink-500" style="font-size: 0.72rem;">
+              <div style="font-size: calc(0.82rem * var(--ui-font-scale)); font-weight: 700;">空白画布</div>
+              <div class="mt-1 text-ink-500" style="font-size: calc(0.72rem * var(--ui-font-scale));">
                 从左侧工具箱添加节点开始
               </div>
             </div>
@@ -196,7 +196,7 @@
               border-radius: 10px;
               padding: 8px 14px;
               box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
-              font-size: 0.74rem;
+              font-size: calc(0.74rem * var(--ui-font-scale));
               font-weight: 600;
               color: #1e3a8a;
               display: flex;
@@ -252,13 +252,13 @@
               background: rgba(255, 255, 255, 0.95);
               border: 1px solid rgba(59, 130, 246, 0.35);
               box-shadow: 0 4px 14px rgba(15, 23, 42, 0.10);
-              font-size: 0.76rem;
+              font-size: calc(0.76rem * var(--ui-font-scale));
               font-weight: 600;
               color: #1e3a8a;
             "
           >
             <span class="w-2 h-2 rounded-full" style="background:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.22);"></span>
-            <span style="font-size:0.64rem; letter-spacing:0.12em; text-transform:uppercase; color:#2563eb;">
+            <span style="font-size:calc(0.64rem * var(--ui-font-scale)); letter-spacing:0.12em; text-transform:uppercase; color:#2563eb;">
               {{ sequence[previewIdx].kicker || `STAGE ${previewIdx + 1}` }}
             </span>
             <span style="color:#334155;">{{ sequence[previewIdx].title }}</span>
@@ -268,7 +268,7 @@
           </div>
 
           <div
-            class="absolute top-3 right-3 text-[0.66rem] font-mono px-2.5 py-1 rounded-full"
+            class="absolute top-3 right-3 text-[calc(0.66rem*var(--ui-font-scale))] font-mono px-2.5 py-1 rounded-full"
             style="background:rgba(255,255,255,0.92); border:1px solid var(--color-border); color:#475569;"
           >
             <span style="color:#3b82f6; font-weight:700;">●</span>
@@ -1358,7 +1358,7 @@ function refreshSelectionFromCanvas() {
   background: #0f172a;
   color: #e2e8f0;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.76rem;
+  font-size: calc(0.76rem * var(--ui-font-scale));
   line-height: 1.5;
   resize: vertical;
   outline: none;
@@ -1368,7 +1368,7 @@ function refreshSelectionFromCanvas() {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
 }
 .io-error {
-  font-size: 0.78rem;
+  font-size: calc(0.78rem * var(--ui-font-scale));
   color: #b91c1c;
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.24);

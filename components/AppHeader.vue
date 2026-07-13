@@ -15,7 +15,7 @@
         class="dashboard-title"
         style="
           font-family: 'Orbitron', 'Segoe UI', 'PingFang SC', sans-serif;
-          font-size: 1.45rem;
+          font-size: 23.2px;
           font-weight: 700;
           color: #0085D0;
           letter-spacing: 0.06em;
@@ -75,6 +75,38 @@
                 </button>
               </div>
             </div>
+            <div
+              class="font-size-control graph-scale-control"
+              role="group"
+              aria-label="架构图缩放"
+              @click.stop
+              @mousedown.stop
+            >
+              <span class="font-size-control-label">架构图缩放</span>
+              <div class="font-size-stepper">
+                <button
+                  class="font-size-step-button"
+                  type="button"
+                  aria-label="缩小架构图"
+                  title="缩小架构图"
+                  :disabled="!canDecreaseGraphScale"
+                  @click.stop="decreaseGraphScale"
+                >
+                  <el-icon :size="12"><Minus /></el-icon>
+                </button>
+                <span class="font-size-value" aria-live="polite">{{ displayGraphScale }}</span>
+                <button
+                  class="font-size-step-button"
+                  type="button"
+                  aria-label="放大架构图"
+                  title="放大架构图"
+                  :disabled="!canIncreaseGraphScale"
+                  @click.stop="increaseGraphScale"
+                >
+                  <el-icon :size="12"><Plus /></el-icon>
+                </button>
+              </div>
+            </div>
             <el-dropdown-item command="backend-ip">
               <el-icon :size="14"><Link /></el-icon>
               后端地址
@@ -87,7 +119,7 @@
         </template>
       </el-dropdown>
 
-      <span class="font-mono text-[0.75rem] text-ink-500 ml-2 tabular-nums">{{ now }}</span>
+      <span class="font-mono text-[calc(0.75rem*var(--ui-font-scale))] text-ink-500 ml-2 tabular-nums">{{ now }}</span>
     </div>
 
     <!-- 后端地址弹窗 -->
@@ -126,6 +158,14 @@ const {
   decrease: decreaseFontSize,
   increase: increaseFontSize
 } = useUiFontSize()
+
+const {
+  displayPercent: displayGraphScale,
+  canDecrease: canDecreaseGraphScale,
+  canIncrease: canIncreaseGraphScale,
+  decrease: decreaseGraphScale,
+  increase: increaseGraphScale
+} = useGraphScale()
 
 // 后端地址
 const { ips, load: loadIp, save: saveBackendIps, diagnose } = useBackendIp()
@@ -180,9 +220,12 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer) })
   border-bottom: 1px solid #edf2f7;
   background: linear-gradient(135deg, rgba(0, 133, 208, 0.055), rgba(255, 255, 255, 0));
 }
+.graph-scale-control {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.055), rgba(255, 255, 255, 0));
+}
 .font-size-control-label {
   color: var(--color-text-sub);
-  font-size: 0.78rem;
+  font-size: calc(0.78rem * var(--ui-font-scale));
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -227,7 +270,7 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer) })
 .font-size-value {
   color: var(--color-text);
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.7rem;
+  font-size: calc(0.7rem * var(--ui-font-scale));
   font-weight: 700;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -245,14 +288,14 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer) })
   align-items: center;
 }
 .ip-label {
-  font-size: 0.78rem;
+  font-size: calc(0.78rem * var(--ui-font-scale));
   font-weight: 700;
   color: var(--color-text);
   grid-row: 1;
   grid-column: 1;
 }
 .ip-prefix {
-  font-size: 0.66rem;
+  font-size: calc(0.66rem * var(--ui-font-scale));
   font-family: 'IBM Plex Mono', monospace;
   color: #94a3b8;
   grid-row: 2;

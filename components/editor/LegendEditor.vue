@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-2">
     <div class="flex items-center justify-between">
-      <div class="text-[0.62rem] tracking-[0.14em] uppercase font-bold text-ink-500 px-1">
+      <div class="text-[calc(0.62rem*var(--ui-font-scale))] tracking-[0.14em] uppercase font-bold text-ink-500 px-1">
         画布图例
       </div>
       <button
@@ -41,7 +41,7 @@
         <span>添加图例项</span>
       </button>
 
-      <div v-if="!config.items.length" class="text-[0.68rem] text-ink-500 text-center py-1">
+      <div v-if="!config.items.length" class="text-[calc(0.68rem*var(--ui-font-scale))] text-ink-500 text-center py-1">
         点击上方添加第一个图例项
       </div>
     </div>
@@ -104,7 +104,7 @@ function remove(idx: number) {
   flex: 1;
   height: 32px;
   min-height: 32px;
-  font-size: 0.74rem;
+  font-size: calc(0.74rem * var(--ui-font-scale));
 }
 .add-btn {
   display: inline-flex;
@@ -117,7 +117,7 @@ function remove(idx: number) {
   border-radius: var(--radius-btn);
   background: rgba(59, 130, 246, 0.04);
   color: #2563eb;
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--ui-font-scale));
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -133,7 +133,7 @@ function remove(idx: number) {
   border: 1px solid var(--color-border);
   background: rgba(148, 163, 184, 0.10);
   color: var(--color-muted);
-  font-size: 0.6rem;
+  font-size: calc(0.6rem * var(--ui-font-scale));
   font-weight: 800;
   letter-spacing: 0.06em;
   cursor: pointer;

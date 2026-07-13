@@ -73,7 +73,9 @@ const handles = computed<H[]>(() => {
   border-radius: 10px;
   border: 1.5px solid var(--color-border);
   background: rgba(255, 255, 255, 0.95);
-  transition: border-color 0.25s, box-shadow 0.25s;
+  transform: scale(var(--graph-component-scale));
+  transform-origin: center;
+  transition: transform 180ms ease, border-color 0.25s, box-shadow 0.25s;
   min-width: 80px;
 }
 .image-node-active {
@@ -111,7 +113,7 @@ const handles = computed<H[]>(() => {
   height: 100%;
 }
 .image-node-caption {
-  font-size: 0.7rem;
+  font-size: calc(0.7rem * var(--ui-font-scale));
   font-weight: 700;
   color: var(--color-text);
   text-align: center;

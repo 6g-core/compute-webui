@@ -9,7 +9,7 @@
 
     <div class="p-3 space-y-4">
       <div>
-        <div class="text-[0.62rem] tracking-[0.14em] uppercase font-bold text-ink-500 mb-2 px-1">
+        <div class="text-[calc(0.62rem*var(--ui-font-scale))] tracking-[0.14em] uppercase font-bold text-ink-500 mb-2 px-1">
           Mission 节点
         </div>
         <div class="grid grid-cols-2 gap-2">
@@ -35,7 +35,7 @@
       </div>
 
       <div>
-        <div class="text-[0.62rem] tracking-[0.14em] uppercase font-bold text-ink-500 mb-2 px-1">
+        <div class="text-[calc(0.62rem*var(--ui-font-scale))] tracking-[0.14em] uppercase font-bold text-ink-500 mb-2 px-1">
           外观
         </div>
         <div class="grid grid-cols-2 gap-2">
@@ -63,13 +63,13 @@
       />
 
       <div>
-        <div class="text-[0.62rem] tracking-[0.14em] uppercase font-bold text-ink-500 mb-2 px-1">
+        <div class="text-[calc(0.62rem*var(--ui-font-scale))] tracking-[0.14em] uppercase font-bold text-ink-500 mb-2 px-1">
           操作
         </div>
         <div class="flex flex-col gap-2">
           <button class="icon-button" style="width:100%; height:36px; gap:8px; color:#b91c1c;" @click="$emit('clear')">
             <el-icon :size="14"><Delete /></el-icon>
-            <span style="font-size:0.78rem; font-weight:600;">清空画布</span>
+            <span style="font-size:calc(0.78rem * var(--ui-font-scale)); font-weight:600;">清空画布</span>
           </button>
         </div>
       </div>
@@ -122,7 +122,7 @@ const kinds: NodeKind[] = [
   border-radius: var(--radius-btn);
   background: #ffffff;
   color: var(--color-text);
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--ui-font-scale));
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s, transform 0.2s;

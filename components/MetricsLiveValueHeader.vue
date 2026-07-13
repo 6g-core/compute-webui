@@ -77,7 +77,7 @@ function formatNumber(value?: number | null) {
 }
 
 .live-metric-label {
-  font-size: 0.62rem;
+  font-size: calc(0.62rem * var(--ui-font-scale));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -91,7 +91,7 @@ function formatNumber(value?: number | null) {
 }
 
 .live-metric-number {
-  font-size: clamp(1.25rem, 1.8vw, 1.9rem);
+  font-size: calc(clamp(1.25rem, 1.8vw, 1.9rem) * var(--ui-font-scale));
   font-family: 'IBM Plex Mono', monospace;
   font-weight: 800;
   line-height: 0.9;
@@ -99,7 +99,7 @@ function formatNumber(value?: number | null) {
 }
 
 .live-metric-unit {
-  font-size: 0.68rem;
+  font-size: calc(0.68rem * var(--ui-font-scale));
   font-family: 'IBM Plex Mono', monospace;
   font-weight: 700;
   line-height: 1.2;

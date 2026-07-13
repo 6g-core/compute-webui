@@ -13,8 +13,8 @@
     <!-- 空态 -->
     <div v-if="!selection" class="p-6 text-center text-ink-500">
       <el-icon :size="24" class="mb-2"><Pointer /></el-icon>
-      <div style="font-size: 0.82rem; font-weight: 600;">未选择元素</div>
-      <div style="font-size: 0.72rem; margin-top: 4px;">
+      <div style="font-size: calc(0.82rem * var(--ui-font-scale)); font-weight: 600;">未选择元素</div>
+      <div style="font-size: calc(0.72rem * var(--ui-font-scale)); margin-top: 4px;">
         在画布上点击节点或边进行编辑
       </div>
     </div>
@@ -22,13 +22,13 @@
     <!-- 节点表单 -->
     <div v-else-if="selection.type === 'node'" class="p-3 space-y-4">
       <div v-if="inStagePreview" class="preview-banner">
-        <span class="status-badge status-badge-live" style="font-size: 0.58rem;">
+        <span class="status-badge status-badge-live" style="font-size: calc(0.58rem * var(--ui-font-scale));">
           <span class="status-badge-icon"></span>
           PREVIEW Stage {{ previewIdx + 1 }}
         </span>
         <button
           class="icon-button icon-button-sm"
-          style="width:auto; padding:0 10px; color:#b91c1c; border-color:rgba(239,68,68,0.3); font-size:0.7rem; margin-left:auto;"
+          style="width:auto; padding:0 10px; color:#b91c1c; border-color:rgba(239,68,68,0.3); font-size:calc(0.7rem * var(--ui-font-scale)); margin-left:auto;"
           @click="$emit('remove-from-stage', 'node', selection.node.id)"
           title="从当前 Stage 移除此节点的高亮与覆盖"
         >
@@ -175,14 +175,14 @@
           >
             <input
               class="settings-input"
-              style="height:30px; font-size:0.7rem;"
+              style="height:30px; font-size:calc(0.7rem * var(--ui-font-scale));"
               :value="item.label"
               placeholder="任务描述"
               @input="onPlanItemField(idx, 'label', $event)"
             />
             <select
               class="settings-input"
-              style="height:30px; font-size:0.7rem; width:100px;"
+              style="height:30px; font-size:calc(0.7rem * var(--ui-font-scale)); width:100px;"
               :value="item.phase"
               @change="onPlanItemField(idx, 'phase', $event)"
             >
@@ -197,7 +197,7 @@
           <div class="flex items-center gap-2">
             <button
               class="icon-button"
-              style="width:auto; padding:0 12px; height:30px; font-size:0.72rem; gap:4px;"
+              style="width:auto; padding:0 12px; height:30px; font-size:calc(0.72rem * var(--ui-font-scale)); gap:4px;"
               @click="addPlanItem"
             >
               <el-icon :size="12"><Plus /></el-icon>
@@ -205,7 +205,7 @@
             </button>
             <button
               class="icon-button"
-              style="width:auto; padding:0 12px; height:30px; font-size:0.72rem; color:#b91c1c;"
+              style="width:auto; padding:0 12px; height:30px; font-size:calc(0.72rem * var(--ui-font-scale)); color:#b91c1c;"
               @click="removePlan"
             >
               清除 Plan
@@ -215,7 +215,7 @@
         <button
           v-else
           class="icon-button"
-          style="width:100%; padding:0 12px; height:32px; font-size:0.76rem; gap:6px;"
+          style="width:100%; padding:0 12px; height:32px; font-size:calc(0.76rem * var(--ui-font-scale)); gap:6px;"
           @click="initPlan"
         >
           <el-icon :size="14"><Plus /></el-icon>
@@ -314,7 +314,7 @@
           @click="$emit('delete-node', selection.node.id)"
         >
           <el-icon :size="14"><Delete /></el-icon>
-          <span style="font-size: 0.78rem; font-weight: 600;">删除节点</span>
+          <span style="font-size: calc(0.78rem * var(--ui-font-scale)); font-weight: 600;">删除节点</span>
         </button>
       </div>
     </div>
@@ -323,16 +323,16 @@
     <div v-else-if="selection.type === 'edge'" class="p-3 space-y-4">
       <!-- 预览模式提示 -->
       <div v-if="inStagePreview" class="preview-banner">
-        <span class="status-badge status-badge-live" style="font-size: 0.58rem;">
+        <span class="status-badge status-badge-live" style="font-size: calc(0.58rem * var(--ui-font-scale));">
           <span class="status-badge-icon"></span>
           PREVIEW Stage {{ previewIdx + 1 }}
         </span>
-        <span style="font-size: 0.66rem; color: #334155; flex: 1 1 auto;">
+        <span style="font-size: calc(0.66rem * var(--ui-font-scale)); color: #334155; flex: 1 1 auto;">
           修改 <b>流向 · 流光</b> 会写入当前 Stage
         </span>
         <button
           class="icon-button icon-button-sm"
-          style="width:auto; padding:0 10px; color:#b91c1c; border-color:rgba(239,68,68,0.3); font-size:0.7rem;"
+          style="width:auto; padding:0 10px; color:#b91c1c; border-color:rgba(239,68,68,0.3); font-size:calc(0.7rem * var(--ui-font-scale));"
           @click="$emit('remove-from-stage', 'edge', selection.edge.id)"
           title="从当前 Stage 移除此连线"
         >
@@ -493,7 +493,7 @@
           @click="$emit('delete-edge', selection.edge.id)"
         >
           <el-icon :size="14"><Delete /></el-icon>
-          <span style="font-size: 0.78rem; font-weight: 600;">删除连线</span>
+          <span style="font-size: calc(0.78rem * var(--ui-font-scale)); font-weight: 600;">删除连线</span>
         </button>
       </div>
     </div>
@@ -732,7 +732,7 @@ const ToggleField = defineComponent({
   background: linear-gradient(180deg, rgba(59,130,246,0.04), rgba(255,255,255,0.85));
 }
 .section-title {
-  font-size: 0.66rem;
+  font-size: calc(0.66rem * var(--ui-font-scale));
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -744,7 +744,7 @@ const ToggleField = defineComponent({
   gap: 6px;
 }
 .field-label {
-  font-size: 0.64rem;
+  font-size: calc(0.64rem * var(--ui-font-scale));
   font-weight: 800;
   letter-spacing: 0.10em;
   text-transform: uppercase;
@@ -758,7 +758,7 @@ const ToggleField = defineComponent({
   border: 1px solid var(--color-border);
   border-radius: var(--radius-btn);
   background: #ffffff;
-  font-size: 0.78rem;
+  font-size: calc(0.78rem * var(--ui-font-scale));
   font-weight: 600;
   color: var(--color-text);
   cursor: pointer;
@@ -802,7 +802,7 @@ const ToggleField = defineComponent({
   border: 1.5px dashed var(--color-border);
   border-radius: var(--radius-btn);
   background: #f8fafc;
-  font-size: 0.76rem;
+  font-size: calc(0.76rem * var(--ui-font-scale));
   font-weight: 600;
   color: #3b82f6;
   cursor: pointer;

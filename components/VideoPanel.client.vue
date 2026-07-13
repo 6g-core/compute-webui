@@ -34,7 +34,7 @@
         v-if="!connected"
         style="
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 0.86rem;
+          font-size: calc(0.86rem * var(--ui-font-scale));
           font-weight: 700;
           letter-spacing: 0.18em;
           text-transform: uppercase;
@@ -148,7 +148,7 @@ onBeforeUnmount(() => {
     0 10px 28px rgba(180, 160, 140, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.70);
   color: #3f3632;
-  font-size: 0.78rem;
+  font-size: calc(0.78rem * var(--ui-font-scale));
   font-weight: 600;
   letter-spacing: 0.01em;
   pointer-events: none;
@@ -199,7 +199,7 @@ onBeforeUnmount(() => {
 
 .glass-bar-kicker {
   flex: 0 0 auto;
-  font-size: 0.62rem;
+  font-size: calc(0.62rem * var(--ui-font-scale));
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -211,7 +211,7 @@ onBeforeUnmount(() => {
 
 .glass-bar-text {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.82rem;
+  font-size: calc(0.82rem * var(--ui-font-scale));
   color: #3f3632;
   white-space: nowrap;
   overflow: hidden;

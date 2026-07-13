@@ -19,7 +19,7 @@
         </button>
         <button
           class="primary-button"
-          style="height: 32px; padding: 0 14px; font-size: 0.78rem;"
+          style="height: 32px; padding: 0 14px; font-size: calc(0.78rem * var(--ui-font-scale));"
           @click="play"
           :disabled="!steps.length"
         >
@@ -40,7 +40,7 @@
     </div>
 
     <div v-if="!collapsed" class="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-2">
-      <div v-if="!steps.length" class="text-center text-ink-500 py-6" style="font-size: 0.82rem;">
+      <div v-if="!steps.length" class="text-center text-ink-500 py-6" style="font-size: calc(0.82rem * var(--ui-font-scale));">
         暂无步骤，点击 ＋ 添加
       </div>
 
@@ -56,14 +56,14 @@
           <div class="grid grid-cols-3 gap-2">
             <input
               class="settings-input"
-              style="height: 30px; font-size: 0.72rem;"
+              style="height: 30px; font-size: calc(0.72rem * var(--ui-font-scale));"
               :value="step.kicker"
               placeholder="STAGE · X"
               @input="patch(idx, 'kicker', ($event.target as HTMLInputElement).value)"
             />
             <input
               class="settings-input col-span-2"
-              style="height: 30px; font-size: 0.72rem;"
+              style="height: 30px; font-size: calc(0.72rem * var(--ui-font-scale));"
               :value="step.title"
               placeholder="步骤标题"
               @input="patch(idx, 'title', ($event.target as HTMLInputElement).value)"
@@ -71,14 +71,14 @@
           </div>
           <input
             class="settings-input"
-            style="height: 30px; font-size: 0.72rem;"
+            style="height: 30px; font-size: calc(0.72rem * var(--ui-font-scale));"
             :value="step.phase"
             placeholder="阶段说明（如：控制面 · IDM）"
             @input="patch(idx, 'phase', ($event.target as HTMLInputElement).value)"
           />
 
           <!-- 当前 Stage 高亮概览 (只读) -->
-          <div class="text-[0.62rem] text-ink-500 tracking-wider">
+          <div class="text-[calc(0.62rem*var(--ui-font-scale))] text-ink-500 tracking-wider">
             节点 <b class="text-ink-800">{{ step.nodes.length }}</b>
             · 连线 <b class="text-ink-800">{{ step.edges.length }}</b>
             <span class="ml-1 text-ink-400">
@@ -283,7 +283,7 @@ function play() { emit('play') }
   border: 1px solid rgba(148, 163, 184, 0.28);
   background: rgba(248, 250, 252, 0.9);
   color: #475569;
-  font-size: 0.62rem;
+  font-size: calc(0.62rem * var(--ui-font-scale));
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s;

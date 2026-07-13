@@ -1,4 +1,9 @@
 export default defineNuxtPlugin((nuxtApp) => {
-  const { load } = useUiFontSize()
-  nuxtApp.hook('app:mounted', load)
+  const { load: loadFontSize } = useUiFontSize()
+  const { load: loadGraphScale } = useGraphScale()
+
+  nuxtApp.hook('app:mounted', () => {
+    loadFontSize()
+    loadGraphScale()
+  })
 })

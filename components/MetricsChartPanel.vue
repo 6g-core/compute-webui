@@ -169,7 +169,7 @@ function onRetry() {
 }
 
 .state-text {
-  font-size: 0.78rem;
+  font-size: calc(0.78rem * var(--ui-font-scale));
   letter-spacing: 0.02em;
 }
 
@@ -200,7 +200,7 @@ function onRetry() {
   background: rgba(239, 68, 68, 0.08);
   color: #b91c1c;
   border-radius: var(--radius-btn, 6px);
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--ui-font-scale));
   flex: 0 0 auto;
 }
 
@@ -213,7 +213,7 @@ function onRetry() {
 .retry-btn {
   flex: 0 0 auto;
   padding: 3px 10px;
-  font-size: 0.7rem;
+  font-size: calc(0.7rem * var(--ui-font-scale));
   font-weight: 700;
   border: 1px solid rgba(185, 28, 28, 0.4);
   background: #fff;

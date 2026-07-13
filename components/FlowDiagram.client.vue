@@ -43,10 +43,10 @@
           >
             <el-icon :size="32" color="#3b82f6"><Connection /></el-icon>
           </div>
-          <div style="font-size: 0.92rem; font-weight: 700; color: var(--color-text);">
+          <div style="font-size: calc(0.92rem * var(--ui-font-scale)); font-weight: 700; color: var(--color-text);">
             尚未创建架构图
           </div>
-          <div class="mt-1 text-ink-500" style="font-size: 0.76rem;">
+          <div class="mt-1 text-ink-500" style="font-size: calc(0.76rem * var(--ui-font-scale));">
             前往编辑器创建架构图
           </div>
         </div>
@@ -67,6 +67,7 @@
         :elevate-edges-on-select="false"
         fit-view-on-init
         class="!bg-white"
+        @init="onFlowInit"
       >
         <Background :gap="40" :size="1" pattern-color="#f1f5f9" />
         <Controls />
@@ -88,7 +89,7 @@
 
 <script setup lang="ts">
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { VueFlow, type Node, type Edge } from '@vue-flow/core'
+import { VueFlow, type Node, type Edge, type VueFlowStore } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { Connection } from '@element-plus/icons-vue'
@@ -130,6 +131,31 @@ const sequence = ref<SequenceStep[]>([])
 const legend = ref<LegendConfig>({ visible: false, items: [] })
 const captionTop = ref<number>(40)
 const captionVisible = ref(true)
+const { percent: graphScalePercent } = useGraphScale()
+
+let flowInstance: VueFlowStore | null = null
+let componentScaleRefreshTimer: ReturnType<typeof setTimeout> | null = null
+
+function refreshScaledComponents() {
+  if (!flowInstance) return
+  const updateHandles = () => {
+    flowInstance?.updateNodeInternals(
+      nodes.value
+        .filter(node => node.type === 'mission' || node.type === 'image')
+        .map(node => node.id)
+    )
+  }
+  void nextTick(updateHandles)
+  if (componentScaleRefreshTimer) clearTimeout(componentScaleRefreshTimer)
+  componentScaleRefreshTimer = setTimeout(updateHandles, 220)
+}
+
+function onFlowInit(instance: VueFlowStore) {
+  flowInstance = instance
+  refreshScaledComponents()
+}
+
+watch(graphScalePercent, refreshScaledComponents)
 
 const viewTabs: { id: ViewId; label: string }[] = [
   { id: 'public-cloud', label: '公有云' },
@@ -426,5 +452,6 @@ watch(currentStage, (stage) => {
 onBeforeUnmount(() => {
   timers.forEach(clearTimeout)
   stopStagePolling()
+  if (componentScaleRefreshTimer) clearTimeout(componentScaleRefreshTimer)
 })
 </script>

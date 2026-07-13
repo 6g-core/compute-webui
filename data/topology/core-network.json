@@ -348,7 +348,7 @@
         },
         "zIndex": 10,
         "data": {
-          "label": "计算服务功能CSPF(Agentaas)",
+          "label": "计算服务功能 CSPF (Agentaas)",
           "role": "",
           "kind": "csf",
           "handles": [
@@ -391,7 +391,7 @@
         },
         "zIndex": 10,
         "data": {
-          "label": "计算服务功能CSPF(沙箱)",
+          "label": "计算服务功能 CSPF (沙箱)",
           "role": "",
           "kind": "sandbox",
           "handles": [
@@ -434,7 +434,7 @@
         },
         "zIndex": 10,
         "data": {
-          "label": "智算沙箱服务CS",
+          "label": "智算沙箱服务 CS",
           "role": "",
           "kind": "aic",
           "handles": [
@@ -477,7 +477,7 @@
         },
         "zIndex": 10,
         "data": {
-          "label": "计算服务功能CSPF(Maas)",
+          "label": "计算服务功能 CSPF (Maas)",
           "role": "",
           "kind": "maas",
           "handles": [

@@ -8,6 +8,16 @@
    Design Tokens (浅色玻璃态主题, ref: docs/UI_INVENTORY.md)
    ============================================================ */
 :root {
+  --ui-font-scale: 1;
+
+  /* Keep framework typography aligned with the user-selected root size. */
+  --el-font-size-extra-large: 1.25rem;
+  --el-font-size-large: 1.125rem;
+  --el-font-size-medium: 1rem;
+  --el-font-size-base: 0.875rem;
+  --el-font-size-small: 0.8125rem;
+  --el-font-size-extra-small: 0.75rem;
+
   /* 色阶 (Slate, 严格对齐规范) */
   --slate-50:  #f8fafc;
   --slate-200: #e2e8f0;
@@ -84,6 +94,10 @@
 
 html, body, #__nuxt {
   height: 100%;
+}
+
+html {
+  font-size: calc(16px * var(--ui-font-scale));
 }
 
 body {

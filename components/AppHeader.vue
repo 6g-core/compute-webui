@@ -43,6 +43,38 @@
         </button>
         <template #dropdown>
           <el-dropdown-menu>
+            <div
+              class="font-size-control"
+              role="group"
+              aria-label="全局字体大小"
+              @click.stop
+              @mousedown.stop
+            >
+              <span class="font-size-control-label">字体大小</span>
+              <div class="font-size-stepper">
+                <button
+                  class="font-size-step-button"
+                  type="button"
+                  aria-label="减小字体"
+                  title="减小字体"
+                  :disabled="!canDecreaseFontSize"
+                  @click.stop="decreaseFontSize"
+                >
+                  <el-icon :size="12"><Minus /></el-icon>
+                </button>
+                <span class="font-size-value" aria-live="polite">{{ displayFontSize }}</span>
+                <button
+                  class="font-size-step-button"
+                  type="button"
+                  aria-label="增大字体"
+                  title="增大字体"
+                  :disabled="!canIncreaseFontSize"
+                  @click.stop="increaseFontSize"
+                >
+                  <el-icon :size="12"><Plus /></el-icon>
+                </button>
+              </div>
+            </div>
             <el-dropdown-item command="backend-ip">
               <el-icon :size="14"><Link /></el-icon>
               后端地址
@@ -55,7 +87,7 @@
         </template>
       </el-dropdown>
 
-      <span class="font-mono text-[12px] text-ink-500 ml-2 tabular-nums">{{ now }}</span>
+      <span class="font-mono text-[0.75rem] text-ink-500 ml-2 tabular-nums">{{ now }}</span>
     </div>
 
     <!-- 后端地址弹窗 -->
@@ -76,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { Setting, Back, Link, Edit } from '@element-plus/icons-vue'
+import { Setting, Back, Link, Edit, Minus, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { resolveDefaultBackendOrigin } from '~/composables/backendOrigin'
 import type { BackendIps } from '~/composables/useBackendIp'
@@ -86,6 +118,14 @@ const inEditor = computed(() => route.path.startsWith('/editor'))
 
 const now = ref(formatTime(new Date()))
 let timer: ReturnType<typeof setInterval> | null = null
+
+const {
+  displayPercent: displayFontSize,
+  canDecrease: canDecreaseFontSize,
+  canIncrease: canIncreaseFontSize,
+  decrease: decreaseFontSize,
+  increase: increaseFontSize
+} = useUiFontSize()
 
 // 后端地址
 const { ips, load: loadIp, save: saveBackendIps, diagnose } = useBackendIp()
@@ -130,6 +170,68 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer) })
 </script>
 
 <style scoped>
+.font-size-control {
+  min-width: 224px;
+  padding: 10px 12px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid #edf2f7;
+  background: linear-gradient(135deg, rgba(0, 133, 208, 0.055), rgba(255, 255, 255, 0));
+}
+.font-size-control-label {
+  color: var(--color-text-sub);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.font-size-stepper {
+  display: grid;
+  grid-template-columns: 28px 50px 28px;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid #dbe7ef;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.font-size-step-button {
+  width: 28px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px;
+  color: #0369a1;
+  background: rgba(14, 165, 233, 0.09);
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+.font-size-step-button:hover:not(:disabled) {
+  color: #fff;
+  background: #0085d0;
+  transform: translateY(-1px);
+}
+.font-size-step-button:focus-visible {
+  outline: 2px solid rgba(0, 133, 208, 0.45);
+  outline-offset: 1px;
+}
+.font-size-step-button:disabled {
+  color: #a8b6c2;
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
+.font-size-value {
+  color: var(--color-text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
 .ip-form {
   display: flex;
   flex-direction: column;

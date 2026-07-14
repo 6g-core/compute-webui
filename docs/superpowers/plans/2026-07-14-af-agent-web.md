@@ -621,3 +621,61 @@ npm run build
 ```
 
 Expected: PASS。
+
+---
+
+## 增量 Task 5: 使用自定义结果视频控制按钮
+
+**Goal:** 解决 Edge 中结果视频封面和时长可见，但原生播放、音量、全屏控件整体无法点击的问题。
+
+**Finding:** 运行中的前端已包含 `objectUrlStore` 修复，线上 sandbox 返回的视频也是 `h264/avc1/yuv420p`。问题集中在浏览器原生 `<video controls>` 的控件命中或原生控件层行为上，因此前端改用普通 HTML 按钮调用 video API。
+
+**Files:**
+- Modify: `compute-webui/src/af-agent/AfAgentWeb.jsx`
+- Modify: `compute-webui/src/af-agent/AfAgentWeb.css`
+- Create: `compute-webui/src/af-agent/videoControls.js`
+- Create: `compute-webui/src/af-agent/videoControls.test.mjs`
+- Modify: `compute-webui/package.json`
+- Modify: `compute-webui/docs/superpowers/specs/2026-07-14-af-agent-web-design.md`
+- Modify: `compute-webui/docs/superpowers/plans/2026-07-14-af-agent-web.md`
+
+- [x] **Step 1: 写失败测试：视频控制 helper**
+
+新增 `videoControls.test.mjs`，验证：
+
+- 暂停状态调用 `toggleVideoPlayback()` 会调用 `play()`。
+- 播放状态调用 `toggleVideoPlayback()` 会调用 `pause()`。
+- `toggleVideoMuted()` 切换 `muted`。
+- `requestElementFullscreen()` 调用元素的 `requestFullscreen()`，不支持时返回 `false`。
+
+Run:
+
+```bash
+node src/af-agent/videoControls.test.mjs
+```
+
+Expected: FAIL，`videoControls.js` 尚不存在。
+
+- [x] **Step 2: 实现 helper 并替换原生 controls**
+
+新增 `videoControls.js`，`AfAgentWeb.jsx` 中：
+
+- `<video>` 不再使用原生 `controls`。
+- 新增 `resultVideoRef` 和 `resultVideoShellRef`。
+- 使用普通 button 控制播放/暂停、静音、全屏。
+- video 事件同步 `isResultPlaying`、`isResultMuted` 状态，并在播放失败时提示可下载结果视频。
+
+- [x] **Step 3: 样式**
+
+新增 `.af-agent-video-shell` 和 `.af-agent-video-controls`，控制按钮固定在视频底部，保持按钮尺寸稳定。
+
+- [x] **Step 4: 验证**
+
+Run:
+
+```bash
+npm run test:af-agent
+npm run build
+```
+
+Expected: PASS。

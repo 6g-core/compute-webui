@@ -18,6 +18,7 @@
 - 点击开始识别后调用 `http://{payload.host}:{payload.port}/api/v1/{api_desc[0].name}`。
 - 成功收到 `video/mp4` 后使用 blob URL 预览，并提供下载按钮。
 - blob URL 生命周期由独立 store 管理：切换结果或离开页面时释放旧 URL，但不要在依赖 `resultUrl` 的 effect cleanup 中释放当前 URL，避免 React StrictMode 开发模式提前 revoke 导致视频只有封面、无法播放。
+- 结果视频不依赖浏览器原生 `controls`；页面提供独立的播放/暂停、静音、全屏按钮，分别调用 `video.play()/pause()`、`video.muted` 和 `requestFullscreen()`，避免 Edge 原生控件命中异常时无法操作。
 
 ## 非目标
 
@@ -34,6 +35,7 @@
   - 页面组件。
   - 管理 intent、能力描述、上传文件、target、结果视频 URL、错误状态。
   - 结果视频 URL 使用 `objectUrlStore` 显式替换和清理，保证 `<video>` 播放期间 URL 保持有效。
+  - 结果视频控制使用 `videoControls` helper，按钮是普通 DOM button。
 - `afAgentApi.js`
   - 构造 sys agent URL。
   - 调用 capability exposure。

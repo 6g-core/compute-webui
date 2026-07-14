@@ -5,11 +5,15 @@ import {
   Download,
   FileVideo,
   Loader2,
+  Maximize2,
+  Pause,
   Play,
   Send,
   Server,
   Sparkles,
   Upload,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import {
   UnsupportedCapabilityError,
@@ -18,6 +22,11 @@ import {
   resolveCapabilityApiUrl,
 } from './afAgentApi';
 import { createObjectUrlStore } from './objectUrlStore';
+import {
+  requestElementFullscreen,
+  toggleVideoMuted,
+  toggleVideoPlayback,
+} from './videoControls';
 import './AfAgentWeb.css';
 
 const DEFAULT_INTENT = '视觉识别服务';
@@ -36,6 +45,10 @@ export default function AfAgentWeb() {
   const [isRecognizing, setIsRecognizing] = useState(false);
   const [recognitionError, setRecognitionError] = useState('');
   const [resultUrl, setResultUrl] = useState('');
+  const [isResultPlaying, setIsResultPlaying] = useState(false);
+  const [isResultMuted, setIsResultMuted] = useState(false);
+  const resultVideoRef = useRef(null);
+  const resultVideoShellRef = useRef(null);
   const resultUrlStoreRef = useRef(null);
   if (!resultUrlStoreRef.current) {
     resultUrlStoreRef.current = createObjectUrlStore();
@@ -60,6 +73,33 @@ export default function AfAgentWeb() {
   const clearResultUrl = () => {
     resultUrlStoreRef.current.clear();
     setResultUrl('');
+    setIsResultPlaying(false);
+  };
+
+  const toggleResultPlayback = async () => {
+    try {
+      setIsResultPlaying(await toggleVideoPlayback(resultVideoRef.current));
+    } catch (error) {
+      setIsResultPlaying(false);
+      setRecognitionError(error.message || '结果视频播放失败，可尝试下载结果视频');
+    }
+  };
+
+  const toggleResultMuted = () => {
+    setIsResultMuted(toggleVideoMuted(resultVideoRef.current));
+  };
+
+  const enterResultFullscreen = async () => {
+    try {
+      const entered = await requestElementFullscreen(
+        resultVideoShellRef.current || resultVideoRef.current,
+      );
+      if (!entered) {
+        setRecognitionError('当前浏览器不支持全屏播放');
+      }
+    } catch (error) {
+      setRecognitionError(error.message || '进入全屏失败');
+    }
   };
 
   const applyCapability = async () => {
@@ -225,7 +265,46 @@ export default function AfAgentWeb() {
               <Send size={18} />
               <span>识别结果</span>
             </div>
-            <video src={resultUrl} controls />
+            <div className="af-agent-video-shell" ref={resultVideoShellRef}>
+              <video
+                ref={resultVideoRef}
+                src={resultUrl}
+                playsInline
+                preload="metadata"
+                onClick={toggleResultPlayback}
+                onPlay={() => setIsResultPlaying(true)}
+                onPause={() => setIsResultPlaying(false)}
+                onEnded={() => setIsResultPlaying(false)}
+                onVolumeChange={(event) => setIsResultMuted(event.currentTarget.muted)}
+                onError={() => setRecognitionError('结果视频加载失败，可尝试下载结果视频')}
+              />
+              <div className="af-agent-video-controls">
+                <button
+                  type="button"
+                  onClick={toggleResultPlayback}
+                  title={isResultPlaying ? '暂停' : '播放'}
+                  aria-label={isResultPlaying ? '暂停结果视频' : '播放结果视频'}
+                >
+                  {isResultPlaying ? <Pause size={18} /> : <Play size={18} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleResultMuted}
+                  title={isResultMuted ? '取消静音' : '静音'}
+                  aria-label={isResultMuted ? '取消静音' : '静音结果视频'}
+                >
+                  {isResultMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={enterResultFullscreen}
+                  title="全屏"
+                  aria-label="全屏播放结果视频"
+                >
+                  <Maximize2 size={18} />
+                </button>
+              </div>
+            </div>
             <a href={resultUrl} download="visual_recog_result.mp4">
               <Download size={18} />
               <span>下载结果视频</span>

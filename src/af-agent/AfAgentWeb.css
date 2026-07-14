@@ -1,0 +1,283 @@
+.af-agent-shell {
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(17, 24, 39, 0.98), rgba(20, 31, 32, 0.94) 48%, rgba(42, 36, 48, 0.96)),
+    repeating-linear-gradient(90deg, rgba(148, 163, 184, 0.04) 0 1px, transparent 1px 80px);
+  color: #e5eef8;
+  padding: 32px;
+}
+
+.af-agent-workspace {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.af-agent-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.af-agent-kicker {
+  margin: 0 0 6px;
+  color: #67e8f9;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.af-agent-heading h1 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 54px);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.af-agent-status,
+.af-agent-section-title,
+.af-agent-message,
+.af-agent-request-row,
+.af-agent-upload,
+.af-agent-target,
+.af-agent-panel dl div,
+.af-agent-result a {
+  display: flex;
+  align-items: center;
+}
+
+.af-agent-status {
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.62);
+  color: #bae6fd;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.af-agent-panel {
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: 0 24px 70px rgba(2, 6, 23, 0.26);
+  backdrop-filter: blur(16px);
+}
+
+.af-agent-request {
+  padding: 20px;
+}
+
+.af-agent-request label,
+.af-agent-target span {
+  display: block;
+  margin-bottom: 8px;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.af-agent-request-row {
+  gap: 12px;
+}
+
+.af-agent-request-row input,
+.af-agent-target input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.42);
+  color: #f8fafc;
+  padding: 0 12px;
+  font-size: 15px;
+  outline: none;
+}
+
+.af-agent-request-row input:focus,
+.af-agent-target input:focus {
+  border-color: rgba(103, 232, 249, 0.75);
+  box-shadow: 0 0 0 3px rgba(103, 232, 249, 0.12);
+}
+
+.af-agent-request-row button,
+.af-agent-primary,
+.af-agent-result a {
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: #67e8f9;
+  color: #082f49;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 150ms ease, filter 150ms ease, opacity 150ms ease;
+}
+
+.af-agent-request-row button {
+  width: 260px;
+  flex: 0 0 260px;
+}
+
+.af-agent-primary {
+  width: 100%;
+}
+
+.af-agent-request-row button:hover,
+.af-agent-primary:hover,
+.af-agent-result a:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.af-agent-request-row button:disabled,
+.af-agent-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.af-agent-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.af-agent-capability,
+.af-agent-invoke,
+.af-agent-result {
+  padding: 20px;
+}
+
+.af-agent-section-title {
+  gap: 9px;
+  margin-bottom: 14px;
+  color: #f8fafc;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.af-agent-capability p {
+  margin: 0 0 16px;
+  color: #cbd5e1;
+  line-height: 1.65;
+}
+
+.af-agent-panel dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.af-agent-panel dl div {
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 42px;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  padding-top: 10px;
+}
+
+.af-agent-panel dt {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.af-agent-panel dd {
+  margin: 0;
+  max-width: 74%;
+  color: #e2e8f0;
+  font-size: 13px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.af-agent-upload {
+  justify-content: center;
+  gap: 10px;
+  min-height: 108px;
+  border: 1px dashed rgba(103, 232, 249, 0.48);
+  border-radius: 8px;
+  background: rgba(8, 47, 73, 0.36);
+  color: #cffafe;
+  cursor: pointer;
+}
+
+.af-agent-upload input {
+  display: none;
+}
+
+.af-agent-target {
+  align-items: stretch;
+  flex-direction: column;
+  margin: 16px 0;
+}
+
+.af-agent-message {
+  gap: 8px;
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.af-agent-error {
+  color: #fecdd3;
+}
+
+.af-agent-result {
+  margin-top: 18px;
+}
+
+.af-agent-result video {
+  display: block;
+  width: 100%;
+  max-height: 54vh;
+  border-radius: 8px;
+  background: #020617;
+}
+
+.af-agent-result a {
+  width: fit-content;
+  margin-top: 14px;
+  padding: 0 14px;
+  text-decoration: none;
+}
+
+.af-agent-spin {
+  animation: af-agent-spin 900ms linear infinite;
+}
+
+@keyframes af-agent-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .af-agent-shell {
+    padding: 18px;
+  }
+
+  .af-agent-heading,
+  .af-agent-request-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .af-agent-request-row button {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .af-agent-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .af-agent-panel dd {
+    max-width: 68%;
+  }
+}

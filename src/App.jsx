@@ -86,6 +86,14 @@ const UI_TRANSLATIONS = {
   "调用IDM": "Call IDM",
   "调用SMF": "Call SMF",
   "调用UDM": "Call UDM",
+  "动态算力分配": "Dynamic Compute Allocation",
+  "当前模型:": "Current Model:",
+  "模型文件:": "Model File:",
+  "计算量:": "Compute:",
+  "参数量:": "Parameters:",
+  "平均置信度:": "Avg Confidence:",
+  "基础识别模型": "Baseline Recognition Model",
+  "高精度识别模型": "High Accuracy Recognition Model",
   "签发数字身份": "Issue Digital Identity",
   "创建家庭域凭证": "Create Home-Domain Credentials",
   "家庭域凭证": "Home-Domain Credentials",
@@ -1176,8 +1184,12 @@ const BackgroundVideoPanel = ({ visible }) => {
   );
 };
 
-const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
-  const { health, ready, state: gateState } = useDogVideoOfferGate(true);
+const DogVisionStreams = ({ showEnhanced, preloadEnhanced, videoGate }) => {
+  const { health, ready, state: gateState } = videoGate || {
+    health: null,
+    ready: false,
+    state: "waiting-task",
+  };
   const [gateOpened, setGateOpened] = useState(false);
   const streamEpoch = health?.streamEpoch ?? null;
 
@@ -1346,6 +1358,10 @@ export default function App() {
   const { stage, connectionState, error } = useStagePolling();
   const latencySeries = useLatencySeries(stage === 8);
   const effectiveStageConfig = useEffectiveStageConfig(stage);
+  const dogVideoGate = useDogVideoOfferGate(Boolean(
+    effectiveStageConfig.showDogVision || effectiveStageConfig.showEnhancedDogVision
+  ));
+  const computeResource = dogVideoGate.health?.computeResource || null;
   const rawArSpeechText = FIXED_AR_SPEECH_BY_STAGE[stage] || "";
   const arSpeechText = effectiveStageConfig.hideArSpeech ? "" : rawArSpeechText;
   const topologyAgentBubble = effectiveStageConfig.systemAgentBubble
@@ -1568,6 +1584,7 @@ export default function App() {
             effectiveStageConfig={effectiveStageConfig}
             stage={stage}
             components={panelComponents}
+            dogVideoGate={dogVideoGate}
           />
 
           {/* 中间列：6G核心网 3D 拓扑与平面网元、上方弧线数据流 */}
@@ -1593,6 +1610,7 @@ export default function App() {
             effectiveStageConfig={effectiveStageConfig}
             latencySeries={latencySeries}
             stage={stage}
+            computeResource={computeResource}
             components={panelComponents}
           />
         </div>

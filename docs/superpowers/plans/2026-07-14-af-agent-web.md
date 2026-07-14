@@ -565,3 +565,59 @@ git commit -m "feat: route AF agent web page"
 - Spec 覆盖：页面路径、能力申请、失败提示、`host + port + api_desc.name` 拼 URL、blob 预览下载均有任务。
 - 未定项扫描：未发现未完成标记或空泛实现项。
 - 类型一致性：`AfAgentWeb`、`buildVisualRecogUrl`、`requestCapabilityExposure` 名称一致。
+
+---
+
+## 增量 Task 4: 修复结果视频 blob URL 被提前释放
+
+**Goal:** 解决 Edge/Chromium 中结果视频能显示封面和时长，但播放键灰、点击无效的问题。
+
+**Root Cause:** AF 页面运行在 React StrictMode 下，`useEffect([resultUrl])` 的 cleanup 会在开发模式额外执行一次。如果 cleanup 直接 `URL.revokeObjectURL(resultUrl)`，当前 `<video>` 正在使用的 blob URL 可能被提前释放，浏览器仍可显示已读取到的封面和时长，但播放时无法继续读取数据。
+
+**Files:**
+- Modify: `compute-webui/src/af-agent/AfAgentWeb.jsx`
+- Create: `compute-webui/src/af-agent/objectUrlStore.js`
+- Create: `compute-webui/src/af-agent/objectUrlStore.test.mjs`
+- Modify: `compute-webui/package.json`
+- Modify: `compute-webui/docs/superpowers/specs/2026-07-14-af-agent-web-design.md`
+- Modify: `compute-webui/docs/superpowers/plans/2026-07-14-af-agent-web.md`
+
+- [x] **Step 1: 写失败测试：URL store 生命周期**
+
+新增 `objectUrlStore.test.mjs`，验证：
+
+- 初始 `clear()` 不会影响之后创建的 URL。
+- `replace()` 创建新 URL，并只释放旧 URL。
+- 最终 `clear()` 释放当前 URL。
+
+Run:
+
+```bash
+node src/af-agent/objectUrlStore.test.mjs
+```
+
+Expected: FAIL，`objectUrlStore.js` 尚不存在。
+
+- [x] **Step 2: 实现最小 URL store 并接入组件**
+
+新增 `createObjectUrlStore()`，组件内用 `useRef` 保存 store：
+
+- 新结果用 `store.replace(blob)`。
+- 申请能力、重新识别时显式 `store.clear()`。
+- 组件卸载时用空依赖 effect 清理当前 URL。
+- 不再使用依赖 `resultUrl` 的 cleanup，避免 StrictMode 提前 revoke 当前播放 URL。
+
+- [x] **Step 3: 更新测试脚本**
+
+`npm run test:af-agent` 同时运行 API helper 测试和 object URL 生命周期测试。
+
+- [x] **Step 4: 验证**
+
+Run:
+
+```bash
+npm run test:af-agent
+npm run build
+```
+
+Expected: PASS。

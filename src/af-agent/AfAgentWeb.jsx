@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
@@ -17,6 +17,7 @@ import {
   requestCapabilityExposure,
   resolveCapabilityApiUrl,
 } from './afAgentApi';
+import { createObjectUrlStore } from './objectUrlStore';
 import './AfAgentWeb.css';
 
 const DEFAULT_INTENT = '视觉识别服务';
@@ -35,6 +36,10 @@ export default function AfAgentWeb() {
   const [isRecognizing, setIsRecognizing] = useState(false);
   const [recognitionError, setRecognitionError] = useState('');
   const [resultUrl, setResultUrl] = useState('');
+  const resultUrlStoreRef = useRef(null);
+  if (!resultUrlStoreRef.current) {
+    resultUrlStoreRef.current = createObjectUrlStore();
+  }
 
   const selectedApi = capabilityInfo?.apiDescriptions?.[0] || null;
   const apiUrl = useMemo(() => {
@@ -49,20 +54,20 @@ export default function AfAgentWeb() {
   }, [capabilityInfo, selectedApi]);
 
   useEffect(() => () => {
-    if (resultUrl) {
-      URL.revokeObjectURL(resultUrl);
-    }
-  }, [resultUrl]);
+    resultUrlStoreRef.current?.clear();
+  }, []);
+
+  const clearResultUrl = () => {
+    resultUrlStoreRef.current.clear();
+    setResultUrl('');
+  };
 
   const applyCapability = async () => {
     setIsApplying(true);
     setCapabilityError('');
     setRecognitionError('');
     setCapabilityInfo(null);
-    if (resultUrl) {
-      URL.revokeObjectURL(resultUrl);
-      setResultUrl('');
-    }
+    clearResultUrl();
     try {
       const info = await requestCapabilityExposure(intent.trim());
       if (!info.apiDescriptions.length) {
@@ -88,10 +93,7 @@ export default function AfAgentWeb() {
 
     setIsRecognizing(true);
     setRecognitionError('');
-    if (resultUrl) {
-      URL.revokeObjectURL(resultUrl);
-      setResultUrl('');
-    }
+    clearResultUrl();
 
     try {
       const blob = await invokeVisualRecogApi({
@@ -100,7 +102,7 @@ export default function AfAgentWeb() {
         videoFile,
         target: target.trim(),
       });
-      setResultUrl(URL.createObjectURL(blob));
+      setResultUrl(resultUrlStoreRef.current.replace(blob));
     } catch (error) {
       setRecognitionError(error.message || '识别失败');
     } finally {

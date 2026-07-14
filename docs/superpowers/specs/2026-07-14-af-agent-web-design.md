@@ -17,6 +17,7 @@
 - 展示上传 mp4、目标输入框、开始识别按钮。
 - 点击开始识别后调用 `http://{payload.host}:{payload.port}/api/v1/{api_desc[0].name}`。
 - 成功收到 `video/mp4` 后使用 blob URL 预览，并提供下载按钮。
+- blob URL 生命周期由独立 store 管理：切换结果或离开页面时释放旧 URL，但不要在依赖 `resultUrl` 的 effect cleanup 中释放当前 URL，避免 React StrictMode 开发模式提前 revoke 导致视频只有封面、无法播放。
 
 ## 非目标
 
@@ -32,6 +33,7 @@
 - `AfAgentWeb.jsx`
   - 页面组件。
   - 管理 intent、能力描述、上传文件、target、结果视频 URL、错误状态。
+  - 结果视频 URL 使用 `objectUrlStore` 显式替换和清理，保证 `<video>` 播放期间 URL 保持有效。
 - `afAgentApi.js`
   - 构造 sys agent URL。
   - 调用 capability exposure。

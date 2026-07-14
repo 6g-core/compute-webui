@@ -12,7 +12,7 @@
   - 输入框默认值：“视觉识别服务”。
   - 按钮：“通过能力开放平台申请能力”。
 - 点击按钮调用 `POST /api/v1/capability_exposure`。
-- sys agent 返回失败时提示：“当前能力开放平台不支持该能力”。
+- sys agent 返回失败时，前端根据 `reason=capability_not_supported` 提示：“当前能力开放平台不支持该能力”。
 - sys agent 返回成功时展示 `payload.api_desc[0]` 的能力介绍、输入 schema 和输出 schema。
 - 展示上传 mp4、目标输入框、开始识别按钮。
 - 点击开始识别后调用 `http://{payload.host}:{payload.port}/api/v1/{api_desc[0].name}`。
@@ -69,9 +69,8 @@ Body：
 
 失败处理：
 
-- 若 `status !== "success"`，展示：
-  - `payload.display_message`
-  - 否则默认“当前能力开放平台不支持该能力”
+- 若 `status !== "success"` 且 `reason=capability_not_supported`，展示“当前能力开放平台不支持该能力”。
+- 若是其他失败，展示 `reason`，缺省时展示“能力申请失败”。
 
 成功处理：
 

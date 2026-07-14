@@ -4,7 +4,7 @@
 
 **Goal:** 在 `compute-webui` 新增 `/af-agent-web`，完成能力申请、API 描述展示和一次性视觉识别调用。
 
-**Architecture:** 新增 `src/af-agent/` 目录隔离 AF 页面、API helper 和样式；`App.jsx` 只加路径分支。前端直接调用 sys agent 和 sandbox，失败时展示 sys agent 返回的 `display_message`。
+**Architecture:** 新增 `src/af-agent/` 目录隔离 AF 页面、API helper 和样式；`App.jsx` 只加路径分支。前端直接调用 sys agent 和 sandbox，失败时把 `capability_not_supported` 映射为本地提示文案。
 
 **Tech Stack:** React 19、Vite、lucide-react、原生 fetch、Blob URL。
 
@@ -66,10 +66,12 @@ export const buildVisualRecogUrl = (info) => {
 };
 
 export const resolveCapabilityErrorMessage = (payload) => {
-  return payload?.payload?.display_message
-    || payload?.message
+  if (payload?.reason === "capability_not_supported") {
+    return "当前能力开放平台不支持该能力";
+  }
+  return payload?.message
     || payload?.reason
-    || "当前能力开放平台不支持该能力";
+    || "能力申请失败";
 };
 ```
 
@@ -198,7 +200,7 @@ export default function AfAgentWeb() {
       setCapabilityInfo(info);
     } catch (error) {
       setCapabilityInfo(null);
-      setErrorMessage(error.message || "当前能力开放平台不支持该能力");
+      setErrorMessage(error.message || "能力申请失败");
     } finally {
       setRequestingCapability(false);
     }

@@ -13,6 +13,7 @@ import { useLatencySeries, useStagePolling } from './hooks/usePolling';
 import { LeftPanel, RightPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
+import AfAgentWeb from './af-agent/AfAgentWeb.jsx';
 
 const LANGUAGE_STORAGE_KEY = "compute-webui-language";
 
@@ -1329,7 +1330,7 @@ const LatencyChart = ({ points, error }) => {
   );
 };
 
-export default function App() {
+function DemoApp() {
   const appRootRef = useRef(null);
   const [language, setLanguage] = useState(() => (
     typeof window === "undefined"
@@ -1603,4 +1604,11 @@ export default function App() {
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-blue-900/10 to-transparent -z-10 pointer-events-none transform scale-y-[-1] opacity-50 blur-xl"></div>
     </div>
   );
+}
+
+export default function App() {
+  if (typeof window !== "undefined" && window.location.pathname === "/af-agent-web") {
+    return <AfAgentWeb />;
+  }
+  return <DemoApp />;
 }

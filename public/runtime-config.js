@@ -6,6 +6,7 @@
   window.__RUNTIME_CONFIG__ = {
     ...(window.__RUNTIME_CONFIG__ || {}),
     sysAgentApiUrl: mockBase,
+    afSysAgentApiUrl: `${protocol}//${host}:9100`,
     sandboxApiUrl: mockBase,
     stageApiUrl: `${mockBase}/api/stage`,
     arStatusApiUrl: `${mockBase}/api/v1/system/ar/status`,

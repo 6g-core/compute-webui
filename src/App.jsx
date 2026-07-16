@@ -9,11 +9,13 @@ import {
 import { STAGE9_COMPLETED_TASKS, getWorkflowBubbleFromRows, pinBubbleToSystemAgent } from './config/stageConfig.jsx';
 import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, formatVideoState, useBackendVideoStream, useDogVideoOfferGate } from './hooks/useBackendVideo';
 import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
-import { useLatencySeries, useStagePolling } from './hooks/usePolling';
+import { useLatencySeries, useNetworkRecoveryDemo, useStagePolling } from './hooks/usePolling';
 import { LeftPanel, RightPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
 import AfAgentWeb from './af-agent/AfAgentWeb.jsx';
+import { buildRuntimeBackendUrl } from './config/runtimeUrls';
+import { buildNetworkRecoveryPresentation, buildNetworkRecoveryStartPayload, isNetworkRecoveryStartDisabled } from './networkRecoveryDemo';
 
 const LANGUAGE_STORAGE_KEY = "compute-webui-language";
 
@@ -1346,6 +1348,11 @@ function DemoApp() {
 
   const { stage, connectionState, error } = useStagePolling();
   const latencySeries = useLatencySeries(stage === 8);
+  const networkRecoveryDemo = useNetworkRecoveryDemo(stage === 8);
+  const [networkRecoveryPending, setNetworkRecoveryPending] = useState(false);
+  const [networkRecoveryStartLocked, setNetworkRecoveryStartLocked] = useState(false);
+  const [networkRecoveryError, setNetworkRecoveryError] = useState("");
+  const networkRecoveryPresentation = buildNetworkRecoveryPresentation(networkRecoveryDemo.phase);
   const effectiveStageConfig = useEffectiveStageConfig(stage);
   const rawArSpeechText = FIXED_AR_SPEECH_BY_STAGE[stage] || "";
   const arSpeechText = effectiveStageConfig.hideArSpeech ? "" : rawArSpeechText;
@@ -1372,6 +1379,34 @@ function DemoApp() {
     SciFiPanel,
     StatusRow,
     TaskBriefPanel,
+  };
+
+  useEffect(() => {
+    if (networkRecoveryDemo.phase === "idle") {
+      setNetworkRecoveryStartLocked(false);
+    }
+  }, [networkRecoveryDemo.phase]);
+
+  const handleStartNetworkRecoveryDemo = async () => {
+    setNetworkRecoveryPending(true);
+    setNetworkRecoveryError("");
+    try {
+      const url = buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/v1/network_recovery_demo/start", "sandboxHost");
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildNetworkRecoveryStartPayload(stage)),
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.ok !== true) {
+        throw new Error(payload.reason || `HTTP ${response.status}`);
+      }
+      setNetworkRecoveryStartLocked(true);
+    } catch (startError) {
+      setNetworkRecoveryError(startError.message);
+    } finally {
+      setNetworkRecoveryPending(false);
+    }
   };
 
   return (
@@ -1587,6 +1622,7 @@ function DemoApp() {
               activeConnections={effectiveStageConfig.activeConnections}
               stagePhaseKey={effectiveStageConfig.stagePhaseKey}
               language={language}
+              networkRecoveryPresentation={stage === 8 ? networkRecoveryPresentation : null}
             />
           </div>
 
@@ -1595,6 +1631,18 @@ function DemoApp() {
             latencySeries={latencySeries}
             stage={stage}
             components={panelComponents}
+            networkRecoveryDemo={{
+              phase: networkRecoveryDemo.phase,
+              pending: networkRecoveryPending,
+              error: networkRecoveryError || networkRecoveryDemo.error,
+              disabled: isNetworkRecoveryStartDisabled({
+                stage,
+                pending: networkRecoveryPending,
+                phase: networkRecoveryDemo.phase,
+                startLocked: networkRecoveryStartLocked,
+              }),
+              onStart: handleStartNetworkRecoveryDemo,
+            }}
           />
         </div>
 

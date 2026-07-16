@@ -308,8 +308,9 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
   );
 };
 
-export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, components, networkRecoveryDemo }) => {
+export const RightPanel = ({ effectiveStageConfig, latencySeries, bandwidthSeries, stage, components, networkRecoveryDemo }) => {
   const {
+    BandwidthChart,
     CompletedTasksPanel,
     LatencyChart,
     SciFiPanel,
@@ -350,6 +351,13 @@ export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, compone
                         </div>
                       ) : null}
                       <LatencyChart points={latencySeries.points} error={latencySeries.error} />
+                      {BandwidthChart && bandwidthSeries ? (
+                        <BandwidthChart
+                          points={bandwidthSeries.points}
+                          error={bandwidthSeries.error}
+                          unit={bandwidthSeries.unit}
+                        />
+                      ) : null}
                     </>
                   ) : (
                     <>

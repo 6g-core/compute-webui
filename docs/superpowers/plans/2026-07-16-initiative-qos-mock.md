@@ -10,6 +10,42 @@
 
 ---
 
+## 2026-07-16 调整：时长、带宽图和提示位置
+
+**目标:** 在原 Stage 8 网络拥塞恢复 demo 上增加可配置阶段时长、sandbox 下发的保障带宽采样，以及更贴近节点下方的 CMF/RAN/UPF 提示位置。
+
+**文件:**
+- Modify: `sandbox/services/sandbox_service.py`
+- Modify: `sandbox/tests/test_network_recovery_demo.py`
+- Modify: `sandbox/docs/environment-variables.md`
+- Modify: `compute-webui/src/networkRecoveryDemo.js`
+- Modify: `compute-webui/src/networkRecoveryDemo.test.mjs`
+- Modify: `compute-webui/src/hooks/usePolling.js`
+- Modify: `compute-webui/src/App.jsx`
+- Modify: `compute-webui/src/components/DemoPanels.jsx`
+- Modify: `compute-webui/src/components/NetworkTopology3D.jsx`
+- Modify: `compute-webui/docs/superpowers/specs/2026-07-16-initiative-qos-mock-design.md`
+
+- [x] **Step 1: 写 sandbox 失败测试**
+
+覆盖默认 `congested/optimizing` 时长为 `5.0` 秒、环境变量覆盖、health payload 包含 `bandwidthBaseMbps/bandwidthMbps/bandwidthUnit/sampledAtMs`，并确认 phase 对应 `1.2/0.8/0.8/1.5Mbps` 基准值。
+
+- [x] **Step 2: 写 compute-webui 失败测试**
+
+覆盖 `normalizeNetworkRecoveryDemoPayload`、`appendNetworkRecoveryBandwidthPoint` 和 `buildNetworkRecoveryPresentation().labelPositions`。
+
+- [x] **Step 3: 实现 sandbox 最小改动**
+
+新增 `SANDBOX_NETWORK_RECOVERY_DEMO_CONGESTED_S` 与 `SANDBOX_NETWORK_RECOVERY_DEMO_OPTIMIZING_S`，默认 `5.0` 秒；`/api/health.networkRecoveryDemo` 增加带宽采样字段并保留原 phase 字段。
+
+- [x] **Step 4: 实现 web 最小改动**
+
+`useNetworkRecoveryDemo` 读取带宽字段；`DemoApp` 维护最近 24 个带宽采样；Stage 8 右侧面板在时延图下方展示 `保障带宽` 折线图；CMF/RAN/UPF 标签使用集中配置的位置。
+
+- [x] **Step 5: 验证**
+
+运行 targeted unit tests、sandbox 相关回归、compute-webui build，并只暂存本轮相关文件，保留本地 `public/runtime-config.js` 端口配置不提交。
+
 ## File Structure
 
 - Create: `src/networkRecoveryDemo.js`

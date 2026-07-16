@@ -729,7 +729,7 @@ export const NetworkTopology3D = ({
         {networkRecoveryPresentation?.cmfLabel ? (
           <div
             className="pointer-events-none absolute z-[30] max-w-[210px] rounded border border-cyan-200/70 bg-slate-950/90 px-3 py-2 text-xs font-bold leading-snug text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.28)]"
-            style={{ left: "56%", top: "30%" }}
+            style={networkRecoveryPresentation.labelPositions?.CMF || { left: "68%", top: "61%" }}
           >
             {networkRecoveryPresentation.cmfLabel}
           </div>
@@ -737,7 +737,7 @@ export const NetworkTopology3D = ({
         {networkRecoveryPresentation?.guaranteeLabels?.RAN ? (
           <div
             className="pointer-events-none absolute z-[30] rounded border border-cyan-200/70 bg-slate-950/90 px-2 py-1 text-xs font-bold leading-none text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.24)]"
-            style={{ left: "38%", top: "47%" }}
+            style={networkRecoveryPresentation.labelPositions?.RAN || { left: "18%", top: "68%" }}
           >
             {networkRecoveryPresentation.guaranteeLabels.RAN}
           </div>
@@ -745,7 +745,7 @@ export const NetworkTopology3D = ({
         {networkRecoveryPresentation?.guaranteeLabels?.UPF ? (
           <div
             className="pointer-events-none absolute z-[30] rounded border border-cyan-200/70 bg-slate-950/90 px-2 py-1 text-xs font-bold leading-none text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.24)]"
-            style={{ left: "52%", top: "58%" }}
+            style={networkRecoveryPresentation.labelPositions?.UPF || { left: "32%", top: "86%" }}
           >
             {networkRecoveryPresentation.guaranteeLabels.UPF}
           </div>

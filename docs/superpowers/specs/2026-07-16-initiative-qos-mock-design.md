@@ -13,14 +13,14 @@ compute-webui 当前的拓扑蓝线和分段时延主要由前端配置驱动，
 5. `congested` 和必要的 `optimizing` 期间，Stage 8 的用户面链路显示高时延并超过阈值变红。
 6. `optimizing` 期间，在 Computing Agent / CMF 附近显示“检测到网络恶化，保障策略应用中”，并高亮三条控制面优化路径。
 7. `guaranteed` 期间，在 RAN 和 UPF 附近显示“网络保障中”，直到 reset。
+8. Stage 8 右侧面板展示 sandbox 下发的保障带宽折线图：`idle=1.2Mbps`、`congested/optimizing=0.8Mbps`、`guaranteed=1.5Mbps`，允许小幅波动。
 
 ## 非目标
 
 1. 不让 sandbox 下发链路集合。
-2. 不新增带宽折线图。
-3. 不修改其他 stage 的拓扑线语义。
-4. 不改造 Stage 8 右侧端到端时延折线图。
-5. 不引入新的全局状态管理库。
+2. 不修改其他 stage 的拓扑线语义。
+3. 不改造 Stage 8 右侧端到端时延折线图的数据来源。
+4. 不引入新的全局状态管理库。
 
 ## sandbox health 载荷
 
@@ -30,12 +30,27 @@ web 只依赖以下字段：
 {
   "networkRecoveryDemo": {
     "phase": "idle",
-    "updatedAtMs": 0
+    "updatedAtMs": 0,
+    "sampledAtMs": 0,
+    "bandwidthBaseMbps": 1.2,
+    "bandwidthMbps": 1.2,
+    "bandwidthUnit": "Mbps"
   }
 }
 ```
 
 缺失、未知或请求失败时，前端按 `idle` 处理，避免 demo 状态污染正常演示。
+
+## 保障带宽折线图
+
+web 在 Stage 8 轮询 sandbox health，并把 `networkRecoveryDemo.bandwidthMbps` 追加到本地最近 24 个采样点中。sandbox 不返回带宽字段时，web 按 phase 回退到默认基准值：
+
+- `idle`: `1.2Mbps`
+- `congested`: `0.8Mbps`
+- `optimizing`: `0.8Mbps`
+- `guaranteed`: `1.5Mbps`
+
+带宽图放在右侧 `L3级通信保障` 面板内，位于端到端时延图下方。图表只用于 demo 展示，不参与拓扑链路颜色、按钮禁用或 RAYNEO 提示逻辑。
 
 ## Stage 8 用户面链路
 
@@ -61,7 +76,7 @@ web 只依赖以下字段：
 - `SystemAgent->SRF`，使用现有路径 `SRF->SystemAgent` 反向显示；
 - `SRF->gNB`，使用现有路径 `gNB->SRF` 反向显示。
 
-提示文案锚定在 Computing Agent / CMF 附近：
+提示文案锚定在 Computing Agent / CMF 下方：
 
 ```text
 检测到网络恶化，保障策略应用中
@@ -71,8 +86,8 @@ web 只依赖以下字段：
 
 `guaranteed` 期间：
 
-- RAN 节点附近显示 `网络保障中`；
-- UPF 节点附近显示 `网络保障中`；
+- RAN 节点下方显示 `网络保障中`；
+- UPF 节点下方显示 `网络保障中`；
 - 用户面链路恢复蓝色和低时延；
 - 提示保持到 sandbox reset 后 health phase 回到 `idle`。
 
@@ -86,6 +101,6 @@ web 只依赖以下字段：
 
 ## 测试策略
 
-1. 纯函数测试：phase 归一化、按钮禁用条件、用户面覆盖值、控制面高亮集合。
+1. 纯函数测试：phase 归一化、按钮禁用条件、用户面覆盖值、控制面高亮集合、带宽 payload 归一化和采样点追加。
 2. build 校验：`npm run build`。
 3. 手工联调：Stage 8 点击按钮，观察四条用户面红线、CMF 文案、控制面高亮、RAN/UPF 保障标签。

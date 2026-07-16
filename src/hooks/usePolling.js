@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getArStatusApiUrl, getLatencyApiUrl, getSandboxHealthApiUrl, getStageApiUrl, normalizeStage } from '../config/runtimeUrls';
-import { normalizeNetworkRecoveryPhase } from '../networkRecoveryDemo';
+import { normalizeNetworkRecoveryDemoPayload } from '../networkRecoveryDemo';
 
 const useStagePolling = () => {
   const [stage, setStage] = useState(1);
@@ -181,14 +181,14 @@ const useLatencySeries = (enabled) => {
 };
 
 const useNetworkRecoveryDemo = (enabled) => {
-  const [state, setState] = useState({ phase: "idle", updatedAtMs: 0, error: null });
+  const [state, setState] = useState({ ...normalizeNetworkRecoveryDemoPayload({}), error: null });
 
   useEffect(() => {
     let disposed = false;
     let isPolling = false;
 
     if (!enabled) {
-      setState({ phase: "idle", updatedAtMs: 0, error: null });
+      setState({ ...normalizeNetworkRecoveryDemoPayload({}), error: null });
       return undefined;
     }
 
@@ -209,18 +209,17 @@ const useNetworkRecoveryDemo = (enabled) => {
         }
 
         const payload = await response.json();
-        const demo = payload.networkRecoveryDemo || {};
+        const demo = normalizeNetworkRecoveryDemoPayload(payload.networkRecoveryDemo || {});
 
         if (!disposed) {
           setState({
-            phase: normalizeNetworkRecoveryPhase(demo.phase),
-            updatedAtMs: Number(demo.updatedAtMs) || 0,
+            ...demo,
             error: null,
           });
         }
       } catch (healthError) {
         if (!disposed) {
-          setState({ phase: "idle", updatedAtMs: 0, error: healthError.message });
+          setState({ ...normalizeNetworkRecoveryDemoPayload({}), error: healthError.message });
         }
       } finally {
         isPolling = false;

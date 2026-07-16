@@ -98,8 +98,8 @@ export const buildNetworkRecoveryPresentation = (phaseInput) => {
     cmfLabel: phase === "optimizing" ? "检测到网络恶化，保障策略应用中" : "",
     guaranteeLabels: phase === "guaranteed" ? { RAN: "网络保障中", UPF: "网络保障中" } : {},
     labelPositions: {
-      CMF: { left: "68%", top: "61%" },
-      RAN: { left: "18%", top: "68%" },
+      CMF: { left: "56%", top: "57%" },
+      RAN: { left: "18%", top: "64%" },
       UPF: { left: "32%", top: "86%" },
     },
   };

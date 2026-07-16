@@ -56,12 +56,12 @@ assert.equal(congested.lineOverrides["UE->gNB"].color, "#ef4444");
 const optimizing = buildNetworkRecoveryPresentation("optimizing");
 assert.equal(optimizing.cmfLabel, "检测到网络恶化，保障策略应用中");
 assert.equal(optimizing.activeConnections.length, 3);
-assert.deepEqual(optimizing.labelPositions.CMF, { left: "68%", top: "61%" });
+assert.deepEqual(optimizing.labelPositions.CMF, { left: "56%", top: "57%" });
 
 const guaranteed = buildNetworkRecoveryPresentation("guaranteed");
 assert.equal(guaranteed.guaranteeLabels.RAN, "网络保障中");
 assert.equal(guaranteed.guaranteeLabels.UPF, "网络保障中");
-assert.deepEqual(guaranteed.labelPositions.RAN, { left: "18%", top: "68%" });
+assert.deepEqual(guaranteed.labelPositions.RAN, { left: "18%", top: "64%" });
 assert.deepEqual(guaranteed.labelPositions.UPF, { left: "32%", top: "86%" });
 
 const bandwidthPoints = appendNetworkRecoveryBandwidthPoint(

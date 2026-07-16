@@ -334,37 +334,63 @@ const formatConfidence = (confidence) => {
   return `${percent}%`;
 };
 
-const ComputeResourcePanel = ({ computeResource, StatusRow }) => {
+const formatModelDisplayName = (model) => (
+  model === "box0612.pt" ? "yolov8m-worldv2.pt" : model
+);
+
+const getResourceStatusColor = (status) => {
+  switch (status) {
+    case "success": return "text-emerald-300";
+    case "working": return "text-amber-300";
+    case "pending": return "text-blue-300";
+    case "error": return "text-red-300";
+    default: return "text-slate-200";
+  }
+};
+
+const CompactResourceLine = ({ label, value, status = "success", isMono = false }) => (
+  <div className="flex items-center justify-between gap-3 border-b border-cyan-900/35 py-1.5 last:border-b-0">
+    <span className="shrink-0 text-[11px] font-semibold text-blue-100/75">{label}</span>
+    <span className={`min-w-0 truncate text-right text-[12px] font-bold ${getResourceStatusColor(status)} ${isMono ? "font-mono" : ""}`}>
+      {value}
+    </span>
+  </div>
+);
+
+const CompactResourceMetric = ({ label, value, status = "success" }) => (
+  <div className="min-w-0 rounded border border-cyan-300/20 bg-slate-950/25 px-2 py-1.5">
+    <div className="mb-0.5 truncate text-[10px] font-semibold text-blue-100/60">{label}</div>
+    <div className={`truncate text-right text-[12px] font-bold ${getResourceStatusColor(status)}`}>{value}</div>
+  </div>
+);
+
+const ComputeResourcePanel = ({ computeResource, layoutClassName = "flex-none" }) => {
   const hasResource = Boolean(computeResource);
   const confidence = computeResource?.confidence || {};
   const currentProfile = String(computeResource?.currentProfile || "").trim();
   const displayName = String(computeResource?.displayName || currentProfile || "--");
   const model = String(computeResource?.model || "--");
+  const displayModel = formatModelDisplayName(model);
   const modelStatus = !hasResource ? "pending" : currentProfile === "high_accuracy" ? "working" : "success";
   const resourceStatus = hasResource ? "success" : "pending";
   const confidenceStatus = confidence?.available ? "success" : "pending";
 
   return (
-    <div className="flex-none rounded-lg border border-cyan-400/30 bg-cyan-950/18 p-3.5 shadow-[0_0_16px_rgba(34,211,238,0.10)] backdrop-blur-md">
-      <div className="mb-2.5 flex items-center gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded border border-cyan-400/45 bg-cyan-400/10">
-          <Cpu className="h-4 w-4 text-cyan-200" />
+    <div className={`${layoutClassName} rounded-lg border border-cyan-400/30 bg-cyan-950/16 p-2.5 shadow-[0_0_14px_rgba(34,211,238,0.09)] backdrop-blur-md`}>
+      <div className="mb-2 flex items-center gap-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded border border-cyan-400/45 bg-cyan-400/10">
+          <Cpu className="h-3.5 w-3.5 text-cyan-200" />
         </div>
-        <h3 className="text-base font-bold text-white lg:text-lg">动态算力分配</h3>
+        <h3 className="text-sm font-bold text-white lg:text-base">动态算力分配</h3>
       </div>
-      <div className="flex flex-col">
-        <StatusRow label="当前模型:" value={displayName} status={modelStatus} />
-        <StatusRow
-          label="模型文件:"
-          value={model}
-          status={resourceStatus}
-          isMono
-          stacked
-          valueClassName="break-all text-[12px]"
-        />
-        <StatusRow label="计算量:" value={formatComputeMetric(computeResource?.gflops, " GFLOPs")} status={resourceStatus} />
-        <StatusRow label="参数量:" value={formatComputeMetric(computeResource?.parametersM, "M")} status={resourceStatus} />
-        <StatusRow label="平均置信度:" value={formatConfidence(confidence)} status={confidenceStatus} />
+      <div className="rounded border border-cyan-300/15 bg-slate-950/20 px-2">
+        <CompactResourceLine label="当前模型:" value={displayName} status={modelStatus} />
+        <CompactResourceLine label="模型文件:" value={displayModel} status={resourceStatus} isMono />
+      </div>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        <CompactResourceMetric label="计算量" value={formatComputeMetric(computeResource?.gflops, " GFLOPs")} status={resourceStatus} />
+        <CompactResourceMetric label="参数量" value={formatComputeMetric(computeResource?.parametersM, "M")} status={resourceStatus} />
+        <CompactResourceMetric label="置信度" value={formatConfidence(confidence)} status={confidenceStatus} />
       </div>
     </div>
   );
@@ -378,7 +404,7 @@ export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, compute
     StatusRow,
     TaskBriefPanel,
   } = components;
-  const showComputeResourcePanel = Number(stage) === 7 || Number(stage) === 8;
+  const showComputeResourcePanel = Number(stage) !== 9;
 
   return (
     <>
@@ -425,13 +451,6 @@ export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, compute
                   )}
                 </div>
 
-                {showComputeResourcePanel && (
-                  <ComputeResourcePanel
-                    computeResource={computeResource}
-                    StatusRow={StatusRow}
-                  />
-                )}
-
                 {/* 子栏目 2: 意图解析处理摘要 */}
                 <div className="min-h-0 flex-1 overflow-hidden border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-col shadow-md">
                   <div className="flex items-center gap-3 mb-3">
@@ -442,6 +461,12 @@ export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, compute
                   </div>
                   <TaskBriefPanel logs={effectiveStageConfig.intentSummary || effectiveStageConfig.logs} />
                 </div>
+
+                {showComputeResourcePanel && (
+                  <ComputeResourcePanel
+                    computeResource={computeResource}
+                  />
+                )}
               </div>
             )}
           </div>

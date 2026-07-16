@@ -100,7 +100,7 @@ export const buildNetworkRecoveryPresentation = (phaseInput) => {
     labelPositions: {
       CMF: { left: "56%", top: "57%" },
       RAN: { left: "18%", top: "64%" },
-      UPF: { left: "32%", top: "86%" },
+      UPF: { left: "32%", top: "90%" },
     },
   };
 };

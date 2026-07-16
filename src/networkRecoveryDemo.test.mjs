@@ -62,7 +62,7 @@ const guaranteed = buildNetworkRecoveryPresentation("guaranteed");
 assert.equal(guaranteed.guaranteeLabels.RAN, "网络保障中");
 assert.equal(guaranteed.guaranteeLabels.UPF, "网络保障中");
 assert.deepEqual(guaranteed.labelPositions.RAN, { left: "18%", top: "64%" });
-assert.deepEqual(guaranteed.labelPositions.UPF, { left: "32%", top: "86%" });
+assert.deepEqual(guaranteed.labelPositions.UPF, { left: "32%", top: "90%" });
 
 const bandwidthPoints = appendNetworkRecoveryBandwidthPoint(
   [{ timestamp: 1000, bandwidthMbps: 1.2 }],

@@ -1,6 +1,6 @@
-import { ChevronRight, Network, ShieldAlert, ShieldCheck, User } from 'lucide-react';
+import { ChevronRight, Cpu, Network, ShieldAlert, ShieldCheck, User } from 'lucide-react';
 
-export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
+export const LeftPanel = ({ effectiveStageConfig, stage, components, dogVideoGate }) => {
   const {
     ARGlasses,
     ArRegistrationPanel,
@@ -35,6 +35,7 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
                           <DogVisionStreams
                             showEnhanced={Boolean(effectiveStageConfig.showEnhancedDogVision)}
                             preloadEnhanced={Number(stage) >= 5}
+                            videoGate={dogVideoGate}
                           />
                         ) : effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.homeDomainDevicesReady === false ? (
                           <div className="flex-1 min-h-[424px] rounded-xl border border-emerald-500/20 bg-slate-950/10 backdrop-blur-md" aria-hidden="true" />
@@ -308,7 +309,94 @@ export const LeftPanel = ({ effectiveStageConfig, stage, components }) => {
   );
 };
 
-export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, components }) => {
+const toFiniteNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const formatComputeMetric = (value, suffix) => {
+  const parsed = toFiniteNumber(value);
+  if (parsed === null || parsed <= 0) {
+    return "--";
+  }
+  return `${parsed}${suffix}`;
+};
+
+const formatConfidence = (confidence) => {
+  if (!confidence?.available) {
+    return "--";
+  }
+  const average = toFiniteNumber(confidence.average);
+  if (average === null) {
+    return "--";
+  }
+  const percent = Math.round(Math.max(0, Math.min(1, average)) * 100);
+  return `${percent}%`;
+};
+
+const formatModelDisplayName = (model) => (
+  model === "box0612.pt" ? "yolov8m-worldv2.pt" : model
+);
+
+const getResourceStatusColor = (status) => {
+  switch (status) {
+    case "success": return "text-emerald-300";
+    case "working": return "text-amber-300";
+    case "pending": return "text-blue-300";
+    case "error": return "text-red-300";
+    default: return "text-slate-200";
+  }
+};
+
+const CompactResourceLine = ({ label, value, status = "success", isMono = false }) => (
+  <div className="flex items-center justify-between gap-3 border-b border-cyan-900/35 py-1.5 last:border-b-0">
+    <span className="shrink-0 text-[11px] font-semibold text-blue-100/75">{label}</span>
+    <span className={`min-w-0 truncate text-right text-[12px] font-bold ${getResourceStatusColor(status)} ${isMono ? "font-mono" : ""}`}>
+      {value}
+    </span>
+  </div>
+);
+
+const CompactResourceMetric = ({ label, value, status = "success" }) => (
+  <div className="min-w-0 rounded border border-cyan-300/20 bg-slate-950/25 px-2 py-1.5">
+    <div className="mb-0.5 truncate text-[10px] font-semibold text-blue-100/60">{label}</div>
+    <div className={`truncate text-right text-[12px] font-bold ${getResourceStatusColor(status)}`}>{value}</div>
+  </div>
+);
+
+const ComputeResourcePanel = ({ computeResource, layoutClassName = "flex-none" }) => {
+  const hasResource = Boolean(computeResource);
+  const confidence = computeResource?.confidence || {};
+  const currentProfile = String(computeResource?.currentProfile || "").trim();
+  const displayName = String(computeResource?.displayName || currentProfile || "--");
+  const model = String(computeResource?.model || "--");
+  const displayModel = formatModelDisplayName(model);
+  const modelStatus = !hasResource ? "pending" : currentProfile === "high_accuracy" ? "working" : "success";
+  const resourceStatus = hasResource ? "success" : "pending";
+  const confidenceStatus = confidence?.available ? "success" : "pending";
+
+  return (
+    <div className={`${layoutClassName} rounded-lg border border-cyan-400/30 bg-cyan-950/16 p-2.5 shadow-[0_0_14px_rgba(34,211,238,0.09)] backdrop-blur-md`}>
+      <div className="mb-2 flex items-center gap-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded border border-cyan-400/45 bg-cyan-400/10">
+          <Cpu className="h-3.5 w-3.5 text-cyan-200" />
+        </div>
+        <h3 className="text-sm font-bold text-white lg:text-base">动态算力分配</h3>
+      </div>
+      <div className="rounded border border-cyan-300/15 bg-slate-950/20 px-2">
+        <CompactResourceLine label="当前模型:" value={displayName} status={modelStatus} />
+        <CompactResourceLine label="模型文件:" value={displayModel} status={resourceStatus} isMono />
+      </div>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        <CompactResourceMetric label="计算量" value={formatComputeMetric(computeResource?.gflops, " GFLOPs")} status={resourceStatus} />
+        <CompactResourceMetric label="参数量" value={formatComputeMetric(computeResource?.parametersM, "M")} status={resourceStatus} />
+        <CompactResourceMetric label="置信度" value={formatConfidence(confidence)} status={confidenceStatus} />
+      </div>
+    </div>
+  );
+};
+
+export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, computeResource, components }) => {
   const {
     CompletedTasksPanel,
     LatencyChart,
@@ -316,6 +404,7 @@ export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, compone
     StatusRow,
     TaskBriefPanel,
   } = components;
+  const showComputeResourcePanel = Number(stage) !== 9;
 
   return (
     <>
@@ -372,6 +461,12 @@ export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, compone
                   </div>
                   <TaskBriefPanel logs={effectiveStageConfig.intentSummary || effectiveStageConfig.logs} />
                 </div>
+
+                {showComputeResourcePanel && (
+                  <ComputeResourcePanel
+                    computeResource={computeResource}
+                  />
+                )}
               </div>
             )}
           </div>

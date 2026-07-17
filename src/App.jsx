@@ -9,11 +9,18 @@ import {
 import { STAGE9_COMPLETED_TASKS, getWorkflowBubbleFromRows, pinBubbleToSystemAgent } from './config/stageConfig.jsx';
 import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, formatVideoState, useBackendVideoStream, useDogVideoOfferGate } from './hooks/useBackendVideo';
 import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
-import { useLatencySeries, useStagePolling } from './hooks/usePolling';
+import { useLatencySeries, useNetworkRecoveryDemo, useStagePolling } from './hooks/usePolling';
 import { LeftPanel, RightPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
 import AfAgentWeb from './af-agent/AfAgentWeb.jsx';
+import { buildRuntimeBackendUrl } from './config/runtimeUrls';
+import {
+  appendNetworkRecoveryBandwidthPoint,
+  buildNetworkRecoveryPresentation,
+  buildNetworkRecoveryStartPayload,
+  isNetworkRecoveryStartDisabled,
+} from './networkRecoveryDemo';
 
 const LANGUAGE_STORAGE_KEY = "compute-webui-language";
 
@@ -1342,6 +1349,92 @@ const LatencyChart = ({ points, error }) => {
   );
 };
 
+const BandwidthChart = ({ points, error, unit = "Mbps" }) => {
+  const chartWidth = 220;
+  const chartHeight = 74;
+  const padding = { top: 8, right: 10, bottom: 18, left: 28 };
+  const plotWidth = chartWidth - padding.left - padding.right;
+  const plotHeight = chartHeight - padding.top - padding.bottom;
+  const latestPoint = points[points.length - 1];
+  const values = points.map((point) => point.bandwidthMbps);
+  const rawMin = values.length ? Math.min(...values) : 0.8;
+  const rawMax = values.length ? Math.max(...values) : 1.5;
+  const minValue = Math.max(0, Math.floor((rawMin - 0.12) * 10) / 10);
+  const maxValue = Math.max(minValue + 0.2, Math.ceil((rawMax + 0.12) * 10) / 10);
+
+  const chartPoints = points.map((point, index) => {
+    const x = padding.left + (points.length <= 1 ? 0 : (index / (points.length - 1)) * plotWidth);
+    const y = padding.top + ((maxValue - point.bandwidthMbps) / (maxValue - minValue)) * plotHeight;
+    return { x, y, ...point };
+  });
+
+  const linePath = chartPoints.map((point, index) => (
+    `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`
+  )).join(" ");
+  const areaPath = chartPoints.length
+    ? `${linePath} L ${chartPoints[chartPoints.length - 1].x.toFixed(1)} ${padding.top + plotHeight} L ${padding.left} ${padding.top + plotHeight} Z`
+    : "";
+  const startLabel = points[0]
+    ? new Date(points[0].timestamp).toLocaleTimeString("zh-CN", { minute: "2-digit", second: "2-digit" })
+    : "--:--";
+  const endLabel = latestPoint
+    ? new Date(latestPoint.timestamp).toLocaleTimeString("zh-CN", { minute: "2-digit", second: "2-digit" })
+    : "--:--";
+
+  return (
+    <div className="mt-2 rounded-lg border border-cyan-400/25 bg-slate-950/35 p-2.5">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div>
+          <div className="text-xs font-bold text-cyan-100">保障带宽</div>
+          <div className="text-[10px] font-mono text-blue-200/75">Bandwidth / Time</div>
+        </div>
+        <div className="text-right">
+          <div className="font-mono text-base font-black leading-none text-cyan-200">
+            {latestPoint ? latestPoint.bandwidthMbps.toFixed(2) : "--"}{unit}
+          </div>
+          <div className="text-[9px] text-blue-200/70">当前</div>
+        </div>
+      </div>
+
+      <svg className="h-[84px] w-full overflow-visible" viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label="Stage8 保障带宽图表">
+        <defs>
+          <linearGradient id="bandwidth-chart-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(52,211,153,0.24)" />
+            <stop offset="100%" stopColor="rgba(52,211,153,0.02)" />
+          </linearGradient>
+        </defs>
+        <line x1={padding.left} y1={padding.top} x2={padding.left} y2={padding.top + plotHeight} stroke="rgba(125,211,252,0.38)" strokeWidth="0.8" />
+        <line x1={padding.left} y1={padding.top + plotHeight} x2={padding.left + plotWidth} y2={padding.top + plotHeight} stroke="rgba(125,211,252,0.38)" strokeWidth="0.8" />
+        {[0, 0.5, 1].map((ratio) => {
+          const y = padding.top + ratio * plotHeight;
+          const label = (maxValue - ratio * (maxValue - minValue)).toFixed(1);
+          return (
+            <g key={ratio}>
+              <line x1={padding.left} y1={y} x2={padding.left + plotWidth} y2={y} stroke="rgba(125,211,252,0.12)" strokeWidth="0.6" />
+              <text x={padding.left - 4} y={y + 3} textAnchor="end" className="fill-blue-100/65 text-[7px] font-mono">{label}</text>
+            </g>
+          );
+        })}
+        {areaPath && <path d={areaPath} fill="url(#bandwidth-chart-fill)" />}
+        {linePath && <path d={linePath} fill="none" stroke="#34d399" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />}
+        {chartPoints.map((point) => (
+          <circle key={`${point.timestamp}-${point.bandwidthMbps}`} cx={point.x} cy={point.y} r="1.7" fill="#dcfce7" stroke="#059669" strokeWidth="0.8" />
+        ))}
+        <text x={padding.left} y={chartHeight - 4} className="fill-blue-100/65 text-[7px] font-mono">{startLabel}</text>
+        <text x={padding.left + plotWidth} y={chartHeight - 4} textAnchor="end" className="fill-blue-100/65 text-[7px] font-mono">{endLabel}</text>
+        <text x="2" y={padding.top + plotHeight / 2} transform={`rotate(-90 2 ${padding.top + plotHeight / 2})`} textAnchor="middle" className="fill-cyan-100/70 text-[7px] font-mono">{unit}</text>
+      </svg>
+
+      <div className="mt-1 flex items-center justify-between text-[10px] font-mono text-blue-100/70">
+        <span>时间窗口: 最近 {points.length || 0}s</span>
+        <span className={error ? "text-rose-300" : "text-emerald-300"}>
+          {error ? "API error" : "Live"}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 function DemoApp() {
   const appRootRef = useRef(null);
   const [language, setLanguage] = useState(() => (
@@ -1358,6 +1451,12 @@ function DemoApp() {
 
   const { stage, connectionState, error } = useStagePolling();
   const latencySeries = useLatencySeries(stage === 8);
+  const networkRecoveryDemo = useNetworkRecoveryDemo(stage === 8);
+  const [networkRecoveryBandwidthPoints, setNetworkRecoveryBandwidthPoints] = useState([]);
+  const [networkRecoveryPending, setNetworkRecoveryPending] = useState(false);
+  const [networkRecoveryStartLocked, setNetworkRecoveryStartLocked] = useState(false);
+  const [networkRecoveryError, setNetworkRecoveryError] = useState("");
+  const networkRecoveryPresentation = buildNetworkRecoveryPresentation(networkRecoveryDemo.phase);
   const effectiveStageConfig = useEffectiveStageConfig(stage);
   const dogVideoGate = useDogVideoOfferGate(Boolean(
     effectiveStageConfig.showDogVision || effectiveStageConfig.showEnhancedDogVision
@@ -1379,6 +1478,7 @@ function DemoApp() {
   const panelComponents = {
     ARGlasses,
     ArRegistrationPanel,
+    BandwidthChart,
     BackgroundVideoPanel,
     CompletedTasksPanel,
     DogVisionStreams,
@@ -1388,6 +1488,56 @@ function DemoApp() {
     SciFiPanel,
     StatusRow,
     TaskBriefPanel,
+  };
+
+  useEffect(() => {
+    if (networkRecoveryDemo.phase === "idle") {
+      setNetworkRecoveryStartLocked(false);
+    }
+  }, [networkRecoveryDemo.phase]);
+
+  useEffect(() => {
+    if (stage !== 8) {
+      setNetworkRecoveryBandwidthPoints([]);
+      return;
+    }
+    if (networkRecoveryDemo.error) {
+      return;
+    }
+
+    setNetworkRecoveryBandwidthPoints((points) => appendNetworkRecoveryBandwidthPoint(
+      points,
+      networkRecoveryDemo,
+      networkRecoveryDemo.sampledAtMs || Date.now(),
+    ));
+  }, [
+    stage,
+    networkRecoveryDemo.bandwidthMbps,
+    networkRecoveryDemo.error,
+    networkRecoveryDemo.phase,
+    networkRecoveryDemo.sampledAtMs,
+  ]);
+
+  const handleStartNetworkRecoveryDemo = async () => {
+    setNetworkRecoveryPending(true);
+    setNetworkRecoveryError("");
+    try {
+      const url = buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/v1/network_recovery_demo/start", "sandboxHost");
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildNetworkRecoveryStartPayload(stage)),
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.ok !== true) {
+        throw new Error(payload.reason || `HTTP ${response.status}`);
+      }
+      setNetworkRecoveryStartLocked(true);
+    } catch (startError) {
+      setNetworkRecoveryError(startError.message);
+    } finally {
+      setNetworkRecoveryPending(false);
+    }
   };
 
   return (
@@ -1604,15 +1754,33 @@ function DemoApp() {
               activeConnections={effectiveStageConfig.activeConnections}
               stagePhaseKey={effectiveStageConfig.stagePhaseKey}
               language={language}
+              networkRecoveryPresentation={stage === 8 ? networkRecoveryPresentation : null}
             />
           </div>
 
           <RightPanel
             effectiveStageConfig={effectiveStageConfig}
             latencySeries={latencySeries}
+            bandwidthSeries={{
+              points: networkRecoveryBandwidthPoints,
+              error: networkRecoveryDemo.error,
+              unit: networkRecoveryDemo.bandwidthUnit,
+            }}
             stage={stage}
             computeResource={computeResource}
             components={panelComponents}
+            networkRecoveryDemo={{
+              phase: networkRecoveryDemo.phase,
+              pending: networkRecoveryPending,
+              error: networkRecoveryError || networkRecoveryDemo.error,
+              disabled: isNetworkRecoveryStartDisabled({
+                stage,
+                pending: networkRecoveryPending,
+                phase: networkRecoveryDemo.phase,
+                startLocked: networkRecoveryStartLocked,
+              }),
+              onStart: handleStartNetworkRecoveryDemo,
+            }}
           />
         </div>
 

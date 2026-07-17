@@ -3,6 +3,7 @@
   "scripts": {
     "build": "vite build",
     "test:af-agent": "node src/af-agent/afAgentApi.test.mjs && node src/af-agent/objectUrlStore.test.mjs && node src/af-agent/videoControls.test.mjs",
+    "test:qos-demo": "node src/networkRecoveryDemo.test.mjs",
     "dev": "vite --host 0.0.0.0",
     "dev:28449": "vite --host 0.0.0.0 --port 28449 --strictPort",
     "stage:server": "python3 server/stage_server.py --host 0.0.0.0 --port 28448",

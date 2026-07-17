@@ -340,6 +340,7 @@ export const NetworkTopology3D = ({
   activeConnections = [],
   stagePhaseKey = null,
   language = "zh",
+  networkRecoveryPresentation = null,
 }) => {
   const nodes = useMemo(() => (
     language === "en"
@@ -518,15 +519,19 @@ export const NetworkTopology3D = ({
 
   const activeLineConfigByKey = useMemo(() => (
     Object.fromEntries(
-      activeFlowConfig.lines.map((line) => [
-        line.key,
-        {
-          ...line,
-          displayLatencyMs: randomLatency(line.latencyMs),
-        },
-      ])
+      activeFlowConfig.lines.map((line) => {
+        const override = networkRecoveryPresentation?.lineOverrides?.[line.key];
+        return [
+          line.key,
+          {
+            ...line,
+            displayLatencyMs: override?.latencyMs ?? randomLatency(line.latencyMs),
+            demoColor: override?.color,
+          },
+        ];
+      })
     )
-  ), [stage, activeFlowType, latencySampleTick]);
+  ), [stage, activeFlowType, latencySampleTick, networkRecoveryPresentation]);
 
   const getPathGeometry = ([from, to]) => {
     const a = nodes[from] || TOPOLOGY_CONNECTOR_POINTS[from];
@@ -555,6 +560,8 @@ export const NetworkTopology3D = ({
   };
 
   const isActive = (key) => Boolean(activeLineConfigByKey[key]);
+  const demoActiveConnections = networkRecoveryPresentation?.activeConnections || [];
+  const mergedActiveConnections = [...activeConnections, ...demoActiveConnections];
 
   const renderActiveConnection = (connectionConfig) => {
     const key = typeof connectionConfig === "string" ? connectionConfig : connectionConfig.key;
@@ -630,8 +637,9 @@ export const NetworkTopology3D = ({
           </defs>
           {connections.map((connection) => {
             const key = `${connection[0]}->${connection[1]}`;
-            const active = isActive(key) && (stage !== 9 || stage9BlinkActive);
-            const color = activeFlowConfig.color || "#22f5ff";
+            const lineConfig = activeLineConfigByKey[key];
+            const active = Boolean(lineConfig) && (stage !== 9 || stage9BlinkActive);
+            const color = lineConfig?.demoColor || activeFlowConfig.color || "#22f5ff";
             const path = buildPath(connection);
 
             return (
@@ -713,10 +721,35 @@ export const NetworkTopology3D = ({
               </feMerge>
             </filter>
           </defs>
-          {activeConnections.map(renderActiveConnection)}
+          {mergedActiveConnections.map(renderActiveConnection)}
         </svg>
 
         <UnifiedToolPanel toolStates={toolStates} />
+
+        {networkRecoveryPresentation?.cmfLabel ? (
+          <div
+            className="pointer-events-none absolute z-[30] max-w-[210px] rounded border border-cyan-200/70 bg-slate-950/90 px-3 py-2 text-xs font-bold leading-snug text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.28)]"
+            style={networkRecoveryPresentation.labelPositions?.CMF || { left: "68%", top: "61%" }}
+          >
+            {networkRecoveryPresentation.cmfLabel}
+          </div>
+        ) : null}
+        {networkRecoveryPresentation?.guaranteeLabels?.RAN ? (
+          <div
+            className="pointer-events-none absolute z-[30] rounded border border-cyan-200/70 bg-slate-950/90 px-2 py-1 text-xs font-bold leading-none text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.24)]"
+            style={networkRecoveryPresentation.labelPositions?.RAN || { left: "18%", top: "68%" }}
+          >
+            {networkRecoveryPresentation.guaranteeLabels.RAN}
+          </div>
+        ) : null}
+        {networkRecoveryPresentation?.guaranteeLabels?.UPF ? (
+          <div
+            className="pointer-events-none absolute z-[30] rounded border border-cyan-200/70 bg-slate-950/90 px-2 py-1 text-xs font-bold leading-none text-cyan-50 shadow-[0_0_14px_rgba(34,211,238,0.24)]"
+            style={networkRecoveryPresentation.labelPositions?.UPF || { left: "32%", top: "86%" }}
+          >
+            {networkRecoveryPresentation.guaranteeLabels.UPF}
+          </div>
+        ) : null}
 
         <div className="absolute inset-0 z-20">
           {Object.entries(nodes).map(([key, value]) => {

@@ -396,8 +396,17 @@ const ComputeResourcePanel = ({ computeResource, layoutClassName = "flex-none" }
   );
 };
 
-export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, computeResource, components }) => {
+export const RightPanel = ({
+  effectiveStageConfig,
+  latencySeries,
+  bandwidthSeries,
+  stage,
+  computeResource,
+  components,
+  networkRecoveryDemo,
+}) => {
   const {
+    BandwidthChart,
     CompletedTasksPanel,
     LatencyChart,
     SciFiPanel,
@@ -422,7 +431,31 @@ export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, compute
                 {/* 子栏目 1: 实时状态 */}
                 <div className="flex-none border border-blue-500/30 rounded-lg p-3.5 bg-slate-900/30 backdrop-blur-md flex flex-col justify-center shadow-md">
                   {stage === 8 ? (
-                    <LatencyChart points={latencySeries.points} error={latencySeries.error} />
+                    <>
+                      {networkRecoveryDemo ? (
+                        <div className="mb-3 rounded border border-cyan-300/35 bg-slate-950/55 p-3">
+                          <button
+                            type="button"
+                            disabled={networkRecoveryDemo.disabled}
+                            onClick={networkRecoveryDemo.onStart}
+                            className="w-full rounded border border-cyan-300/60 bg-cyan-400/15 px-3 py-2 text-sm font-bold text-cyan-50 transition hover:bg-cyan-300/25 disabled:cursor-not-allowed disabled:border-slate-500/40 disabled:bg-slate-800/50 disabled:text-slate-400"
+                          >
+                            {networkRecoveryDemo.pending ? "启动中..." : "模拟网络拥塞恢复"}
+                          </button>
+                          {networkRecoveryDemo.error ? (
+                            <div className="mt-2 text-xs text-amber-200">{networkRecoveryDemo.error}</div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      <LatencyChart points={latencySeries.points} error={latencySeries.error} />
+                      {BandwidthChart && bandwidthSeries ? (
+                        <BandwidthChart
+                          points={bandwidthSeries.points}
+                          error={bandwidthSeries.error}
+                          unit={bandwidthSeries.unit}
+                        />
+                      ) : null}
+                    </>
                   ) : (
                     <>
                       <div className="flex items-center gap-3 mb-3">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getArStatusApiUrl, getLatencyApiUrl, getStageApiUrl, normalizeStage } from '../config/runtimeUrls';
+import { getArStatusApiUrl, getLatencyApiUrl, getSandboxHealthApiUrl, getStageApiUrl, normalizeStage } from '../config/runtimeUrls';
+import { normalizeNetworkRecoveryDemoPayload } from '../networkRecoveryDemo';
 
 const useStagePolling = () => {
   const [stage, setStage] = useState(1);
@@ -179,5 +180,62 @@ const useLatencySeries = (enabled) => {
   return { points, error };
 };
 
+const useNetworkRecoveryDemo = (enabled) => {
+  const [state, setState] = useState({ ...normalizeNetworkRecoveryDemoPayload({}), error: null });
 
-export { useArLastWhisper, useLatencySeries, useStagePolling };
+  useEffect(() => {
+    let disposed = false;
+    let isPolling = false;
+
+    if (!enabled) {
+      setState({ ...normalizeNetworkRecoveryDemoPayload({}), error: null });
+      return undefined;
+    }
+
+    const pollHealth = async () => {
+      if (isPolling) {
+        return;
+      }
+
+      isPolling = true;
+
+      try {
+        const response = await fetch(getSandboxHealthApiUrl(), {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Sandbox health API failed: ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const demo = normalizeNetworkRecoveryDemoPayload(payload.networkRecoveryDemo || {});
+
+        if (!disposed) {
+          setState({
+            ...demo,
+            error: null,
+          });
+        }
+      } catch (healthError) {
+        if (!disposed) {
+          setState({ ...normalizeNetworkRecoveryDemoPayload({}), error: healthError.message });
+        }
+      } finally {
+        isPolling = false;
+      }
+    };
+
+    pollHealth();
+    const interval = window.setInterval(pollHealth, 1000);
+
+    return () => {
+      disposed = true;
+      window.clearInterval(interval);
+    };
+  }, [enabled]);
+
+  return state;
+};
+
+export { useArLastWhisper, useLatencySeries, useNetworkRecoveryDemo, useStagePolling };

@@ -12,6 +12,7 @@ import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
 import { useLatencySeries, useStagePolling } from './hooks/usePolling';
 import { LeftPanel, RightPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
+import VideoResolutionTestPanel from './components/VideoResolutionTestPanel.jsx';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
 
 const LANGUAGE_STORAGE_KEY = "compute-webui-language";
@@ -1217,6 +1218,7 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
     return (
       <>
         <DogVisionPanel label="机器狗原始视野" state={raw.state} videoRef={raw.videoRef} />
+        <VideoResolutionTestPanel raw={raw} enhanced={enhanced} />
         {preloadEnhanced && (
           <video
             ref={enhanced.videoRef}
@@ -1235,6 +1237,7 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
     <div className="flex flex-1 min-h-[424px] flex-col gap-2">
       <DogVisionPanel label="机器狗原始视野" state={raw.state} videoRef={raw.videoRef} tall />
       <DogVisionPanel label="机器狗增强后的视野" state={enhanced.state} videoRef={enhanced.videoRef} tall />
+      <VideoResolutionTestPanel raw={raw} enhanced={enhanced} />
     </div>
   );
 };

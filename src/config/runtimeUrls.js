@@ -42,6 +42,13 @@ export const getSandboxHealthApiUrl = () => {
     || buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/health", "sandboxHost");
 };
 
+export const getVideoResolutionTestResultsApiUrl = () => {
+  const runtimeConfig = getRuntimeConfig();
+  return runtimeConfig.videoResolutionTestResultsApiUrl
+    || import.meta.env.VITE_VIDEO_RESOLUTION_TEST_RESULTS_API_URL
+    || buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/v1/video-resolution-test/results", "sandboxHost");
+};
+
 export const normalizeStage = (value) => {
   const parsed = Number(value);
   if (parsed === 3) {

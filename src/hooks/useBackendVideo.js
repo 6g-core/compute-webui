@@ -130,8 +130,58 @@ const connectBackendVideoPeer = async (pc, offerUrl, clientId, streamType) => {
   await pc.setRemoteDescription(payload.sdp_answer);
 };
 
+const pickInboundVideoReport = (stats) => {
+  let fallback = null;
+  for (const report of stats.values()) {
+    if (report.type !== "inbound-rtp") {
+      continue;
+    }
+    if (report.kind !== "video" && report.mediaType !== "video") {
+      continue;
+    }
+    if (report.frameWidth || report.frameHeight || report.framesPerSecond) {
+      return report;
+    }
+    fallback = fallback || report;
+  }
+  return fallback;
+};
+
+const numberOrZero = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const buildVideoStatsSnapshot = (report, previousReport) => {
+  if (!report) {
+    return null;
+  }
+
+  const elapsedMs = previousReport
+    ? Math.max(1, numberOrZero(report.timestamp) - numberOrZero(previousReport.timestamp))
+    : 0;
+  const bytesDelta = previousReport
+    ? Math.max(0, numberOrZero(report.bytesReceived) - numberOrZero(previousReport.bytesReceived))
+    : 0;
+
+  return {
+    updatedAtMs: Math.round(numberOrZero(report.timestamp) || Date.now()),
+    frameWidth: Math.round(numberOrZero(report.frameWidth)),
+    frameHeight: Math.round(numberOrZero(report.frameHeight)),
+    framesPerSecond: numberOrZero(report.framesPerSecond),
+    bitrateKbps: elapsedMs > 0 ? Math.round((bytesDelta * 8) / elapsedMs) : 0,
+    bytesReceived: Math.round(numberOrZero(report.bytesReceived)),
+    framesDropped: Math.round(numberOrZero(report.framesDropped)),
+    packetsLost: Math.round(numberOrZero(report.packetsLost)),
+    jitterMs: Math.round(numberOrZero(report.jitter) * 1000),
+    freezeCount: Math.round(numberOrZero(report.freezeCount)),
+    totalFreezesDurationMs: Math.round(numberOrZero(report.totalFreezesDuration) * 1000),
+  };
+};
+
 const DOG_VIDEO_HEALTH_POLL_MS = 500;
 const DOG_VIDEO_CONNECT_TIMEOUT_MS = 10000;
+const VIDEO_STATS_POLL_MS = 1000;
 
 const getDogVideoGateState = (health, hasError = false) => {
   if (hasError) {
@@ -255,12 +305,14 @@ const useBackendVideoStream = ({
   const videoRef = useRef(null);
   const [state, setState] = useState(enabled ? "waiting-task" : "idle");
   const [stream, setStream] = useState(null);
+  const [stats, setStats] = useState(null);
   const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     if (!enabled) {
       setState("idle");
       setStream(null);
+      setStats(null);
       setRetryToken(0);
       if (videoRef.current) {
         videoRef.current.srcObject = null;
@@ -271,6 +323,7 @@ const useBackendVideoStream = ({
     if (!ready) {
       setState(gateState);
       setStream(null);
+      setStats(null);
       setRetryToken(0);
     }
   }, [enabled, gateState, ready]);
@@ -294,7 +347,9 @@ const useBackendVideoStream = ({
     let disposed = false;
     let retryTimer = null;
     let connectTimeout = null;
+    let statsTimer = null;
     let receivedTrack = false;
+    let previousInboundReport = null;
     const iceServers = getWebRtcIceServers();
     const pc = new RTCPeerConnection({
       iceServers,
@@ -313,6 +368,35 @@ const useBackendVideoStream = ({
       if (connectTimeout !== null) {
         window.clearTimeout(connectTimeout);
         connectTimeout = null;
+      }
+    };
+
+    const clearStatsTimer = () => {
+      if (statsTimer !== null) {
+        window.clearTimeout(statsTimer);
+        statsTimer = null;
+      }
+    };
+
+    const pollVideoStats = async () => {
+      if (disposed || pc.connectionState === "closed") {
+        return;
+      }
+
+      try {
+        const rtcStats = await pc.getStats();
+        const inboundReport = pickInboundVideoReport(rtcStats);
+        const snapshot = buildVideoStatsSnapshot(inboundReport, previousInboundReport);
+        previousInboundReport = inboundReport || previousInboundReport;
+        if (!disposed && snapshot) {
+          setStats(snapshot);
+        }
+      } catch (error) {
+        console.warn(`${label} WebRTC stats polling failed`, error);
+      }
+
+      if (!disposed) {
+        statsTimer = window.setTimeout(pollVideoStats, VIDEO_STATS_POLL_MS);
       }
     };
 
@@ -342,6 +426,7 @@ const useBackendVideoStream = ({
       });
       clearConnectTimeout();
       setState("failed");
+      setStats(null);
       scheduleRetry(delayMs);
       pc.close();
     };
@@ -368,6 +453,8 @@ const useBackendVideoStream = ({
         clearConnectTimeout();
         setStream(event.streams[0]);
         setState("receiving");
+        clearStatsTimer();
+        pollVideoStats();
       }
     };
 
@@ -384,6 +471,7 @@ const useBackendVideoStream = ({
         console.error(`${label} WebRTC connection failed`, error);
         if (!disposed) {
           setState("failed");
+          setStats(null);
           scheduleRetry();
         }
         pc.close();
@@ -396,7 +484,9 @@ const useBackendVideoStream = ({
       disposed = true;
       clearScheduledRetry();
       clearConnectTimeout();
+      clearStatsTimer();
       setStream(null);
+      setStats(null);
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
@@ -404,7 +494,7 @@ const useBackendVideoStream = ({
     };
   }, [clientId, enabled, gateState, label, offerUrl, ready, retryToken, streamEpoch, streamType]);
 
-  return { state, videoRef, hasStream: Boolean(stream) };
+  return { state, videoRef, hasStream: Boolean(stream), stats };
 };
 
 

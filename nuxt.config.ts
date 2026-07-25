@@ -47,9 +47,9 @@ export default defineNuxtConfig({
   vite: {
     server: {
       proxy: {
-        // /api/v1/* 走 FastAPI（默认本机，实际请求走 useBackendIp 的绝对 URL，proxy 仅作兜底）
+        // /api/v1/* 走 FastAPI/mock backend（默认本机，实际请求走 useBackendIp 的绝对 URL，proxy 仅作兜底）
         // /api/topology、/api/upload 由 Nuxt Nitro 自己的 server/api 处理，不代理
-        '/api/v1': { target: 'http://localhost:8000', changeOrigin: true },
+        '/api/v1': { target: 'http://localhost:3001', changeOrigin: true },
       }
     }
   }

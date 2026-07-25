@@ -8,7 +8,7 @@
 
     <!-- 右侧：流程图 -->
     <div class="col-span-12 lg:col-span-7 xl:col-span-7 h-full min-h-0">
-      <FlowDiagram />
+      <MbbfTopology />
     </div>
   </div>
 </template>

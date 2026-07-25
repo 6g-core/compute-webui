@@ -1,5 +1,6 @@
 import { normalizeBackendOriginForRuntime, resolveDefaultBackendOrigin } from './backendOrigin'
 
+const DEFAULT_IDENTITY_IP = 'http://localhost:3002'
 const STORAGE_KEY = 'backend-ips'
 
 export interface BackendIps {
@@ -7,6 +8,7 @@ export interface BackendIps {
   metrics: string
   stage: string
   ar: string
+  identity: string
 }
 
 function createDefaultBackendIps(defaultOrigin = resolveDefaultBackendOrigin()): BackendIps {
@@ -14,7 +16,8 @@ function createDefaultBackendIps(defaultOrigin = resolveDefaultBackendOrigin()):
     sdp:     defaultOrigin,
     metrics: defaultOrigin,
     stage:   defaultOrigin,
-    ar:      defaultOrigin
+    ar:      defaultOrigin,
+    identity: DEFAULT_IDENTITY_IP
   }
 }
 
@@ -24,6 +27,7 @@ const _ips = ref<BackendIps>(createDefaultBackendIps())
 const PREFIX_MAP: [string, keyof BackendIps][] = [
   ['/api/v1/web/sdp',         'sdp'],
   ['/api/v1/metrics',         'metrics'],
+  ['/api/v1/digital-identity', 'identity'],
   ['/api/v1/system/topology', 'stage'],
   ['/api/v1/system/ar',       'ar']
 ]
@@ -32,6 +36,7 @@ const PREFIX_MAP: [string, keyof BackendIps][] = [
 const SAMPLE_PATHS: Record<keyof BackendIps, string> = {
   sdp:     '/api/v1/web/sdp/offer',
   metrics: '/api/v1/metrics/history',
+  identity: '/api/v1/digital-identity/visibility',
   stage:   '/api/v1/system/topology/stage',
   ar:      '/api/v1/system/ar/status'
 }
@@ -44,17 +49,18 @@ function normalizeOrigin(raw: unknown, defaultOrigin: string): string {
 
 /** 旧 schema 迁移：apiV1/apiLogs/apiMetrics/stream 或含 reset 的 5 字段 → 4 字段。 */
 function migrate(raw: Record<string, unknown>, defaults = createDefaultBackendIps()): BackendIps {
-  const hasNew = 'sdp' in raw || 'metrics' in raw || 'stage' in raw || 'ar' in raw
+  const hasNew = 'sdp' in raw || 'metrics' in raw || 'stage' in raw || 'ar' in raw || 'identity' in raw
   if (hasNew) {
     return {
       sdp:     normalizeOrigin(raw.sdp, defaults.sdp),
       metrics: normalizeOrigin(raw.metrics, defaults.metrics),
       stage:   normalizeOrigin(raw.stage, defaults.stage),
-      ar:      normalizeOrigin(raw.ar, defaults.ar)
+      ar:      normalizeOrigin(raw.ar, defaults.ar),
+      identity: normalizeOrigin(raw.identity, defaults.identity)
     }
   }
   const legacy = normalizeOrigin(raw.apiV1, defaults.sdp)
-  return { sdp: legacy, metrics: legacy, stage: legacy, ar: legacy }
+  return { sdp: legacy, metrics: legacy, stage: legacy, ar: legacy, identity: defaults.identity }
 }
 
 /** 轮询状态翻转跟踪：只在成功/失败边界打日志，避免刷屏。 */
@@ -104,7 +110,7 @@ export function useBackendIp() {
       ip:   _ips.value[k],
       url:  backendUrl(SAMPLE_PATHS[k])
     }))
-    console.groupCollapsed(`[${tag}] 当前 4 个接口解析后 URL`)
+    console.groupCollapsed(`[${tag}] 当前 5 个接口解析后 URL`)
     // eslint-disable-next-line no-console
     console.table(rows)
     console.groupEnd()

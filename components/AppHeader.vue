@@ -170,7 +170,7 @@ const {
 // 后端地址
 const { ips, load: loadIp, save: saveBackendIps, diagnose } = useBackendIp()
 const ipDialogVisible = ref(false)
-const ipDraft = ref<BackendIps>({ sdp: '', metrics: '', stage: '', ar: '' })
+const ipDraft = ref<BackendIps>({ sdp: '', metrics: '', stage: '', ar: '', identity: '' })
 const defaultBackendOrigin = computed(() => resolveDefaultBackendOrigin())
 
 const ipFields = computed<{ key: keyof BackendIps; label: string; prefix: string; placeholder: string }[]>(() => [
@@ -178,6 +178,7 @@ const ipFields = computed<{ key: keyof BackendIps; label: string; prefix: string
   { key: 'metrics', label: '指标历史', prefix: 'GET  /api/v1/metrics/history',       placeholder: defaultBackendOrigin.value },
   { key: 'stage',   label: '业务阶段', prefix: 'GET  /api/v1/system/topology/stage', placeholder: defaultBackendOrigin.value },
   { key: 'ar',      label: 'AR 状态',  prefix: 'GET  /api/v1/system/ar/status',      placeholder: defaultBackendOrigin.value },
+  { key: 'identity', label: '数字身份', prefix: 'GET  /api/v1/digital-identity/visibility', placeholder: 'http://localhost:3002' },
 ])
 
 function onMenuCommand(cmd: string) {

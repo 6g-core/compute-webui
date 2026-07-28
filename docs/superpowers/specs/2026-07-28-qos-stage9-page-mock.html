@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stage 9 QoS Page Mock</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #06101f;
+      --panel: rgba(8, 18, 34, 0.82);
+      --line: rgba(103, 232, 249, 0.95);
+      --line-soft: rgba(34, 211, 238, 0.3);
+      --text: #e8fbff;
+      --muted: #9bc6d7;
+      --cyan: #22d3ee;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --blue: #60a5fa;
+      --rose: #fb7185;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(34, 211, 238, 0.16), transparent 24%),
+        linear-gradient(145deg, #030712 0%, var(--bg) 45%, #020617 100%);
+      color: var(--text);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .page {
+      display: grid;
+      grid-template-rows: 68px minmax(0, 1fr);
+      gap: 14px;
+      height: 100vh;
+      padding: 18px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid rgba(125, 211, 252, 0.35);
+      background: rgba(6, 18, 34, 0.76);
+      box-shadow: 0 0 28px rgba(34, 211, 238, 0.16);
+      padding: 0 20px;
+    }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .title strong {
+      font-size: 22px;
+      line-height: 1;
+      color: #f8fdff;
+    }
+
+    .title span,
+    .stage-chip span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .stage-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(34, 211, 238, 0.42);
+      background: rgba(8, 47, 73, 0.5);
+      padding: 10px 12px;
+    }
+
+    .stage-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 14px var(--green);
+    }
+
+    .stage-chip strong {
+      font-size: 13px;
+      color: #c8f7ff;
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: minmax(360px, 34%) minmax(0, 1fr);
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .video-card,
+    .topology-card {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid rgba(96, 165, 250, 0.38);
+      background: var(--panel);
+      box-shadow:
+        inset 0 0 34px rgba(14, 165, 233, 0.08),
+        0 20px 60px rgba(0, 0, 0, 0.36);
+    }
+
+    .video-card {
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 34px;
+      color: #dff9ff;
+      font-size: 15px;
+      font-weight: 800;
+      border-bottom: 1px solid rgba(96, 165, 250, 0.25);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+
+    .panel-title small {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .video-feed {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid rgba(52, 211, 153, 0.34);
+      background:
+        linear-gradient(rgba(34, 211, 238, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 211, 238, 0.06) 1px, transparent 1px),
+        linear-gradient(145deg, #0b1c2d 0%, #13283b 45%, #04111e 100%);
+      background-size: 24px 24px, 24px 24px, 100% 100%;
+    }
+
+    .video-feed::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 64% 24%, rgba(52, 211, 153, 0.3), transparent 13%),
+        radial-gradient(circle at 28% 56%, rgba(96, 165, 250, 0.24), transparent 16%),
+        linear-gradient(0deg, rgba(2, 6, 23, 0.35), rgba(2, 6, 23, 0.04));
+      animation: videoPan 7s ease-in-out infinite alternate;
+    }
+
+    .video-feed::after {
+      content: "ENHANCED VIDEO";
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      border: 1px solid rgba(52, 211, 153, 0.45);
+      background: rgba(2, 6, 23, 0.68);
+      color: #bbf7d0;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 7px 10px;
+      letter-spacing: 0.08em;
+    }
+
+    .qos-dialogs {
+      position: absolute;
+      inset: 16px 16px auto 16px;
+      z-index: 8;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 92%;
+    }
+
+    .qos-message {
+      width: min(92%, 420px);
+      border: 1px solid rgba(125, 211, 252, 0.5);
+      background: rgba(3, 15, 30, 0.86);
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.38), 0 0 20px rgba(34, 211, 238, 0.12);
+      padding: 10px;
+      backdrop-filter: blur(10px);
+      animation: bubbleIn 900ms ease-out both;
+    }
+
+    .qos-message:nth-child(2) {
+      align-self: flex-end;
+      animation-delay: 600ms;
+    }
+
+    .qos-image {
+      height: 98px;
+      overflow: hidden;
+      border: 1px solid rgba(34, 211, 238, 0.32);
+      background:
+        linear-gradient(120deg, rgba(34, 211, 238, 0.28), rgba(52, 211, 153, 0.14)),
+        radial-gradient(circle at 72% 26%, rgba(248, 250, 252, 0.38), transparent 18%),
+        #082f49;
+      margin-bottom: 9px;
+    }
+
+    .qos-image.gif {
+      background:
+        linear-gradient(100deg, rgba(251, 191, 36, 0.24), rgba(34, 211, 238, 0.12)),
+        repeating-linear-gradient(90deg, rgba(248, 250, 252, 0.15) 0 7px, transparent 7px 18px),
+        #0f172a;
+      animation: gifBands 1.4s linear infinite;
+      margin: 9px 0 0;
+    }
+
+    .qos-text {
+      color: #e0faff;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.42;
+      word-break: break-word;
+    }
+
+    .qos-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      margin-top: 8px;
+    }
+
+    .topology-card {
+      padding: 14px;
+    }
+
+    .topology-map {
+      position: relative;
+      height: calc(100% - 46px);
+      min-height: 0;
+      border: 1px solid rgba(96, 165, 250, 0.24);
+      background:
+        linear-gradient(rgba(34, 211, 238, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 211, 238, 0.04) 1px, transparent 1px),
+        rgba(2, 6, 23, 0.28);
+      background-size: 26px 26px;
+    }
+
+    .zone {
+      position: absolute;
+      border: 1px solid;
+      background: rgba(15, 23, 42, 0.46);
+    }
+
+    .zone-label {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      border: 1px solid currentColor;
+      background: rgba(2, 6, 23, 0.74);
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .cp {
+      left: 30%;
+      top: 4%;
+      width: 67%;
+      height: 55%;
+      border-color: rgba(251, 146, 60, 0.65);
+    }
+
+    .up {
+      left: 30%;
+      top: 62%;
+      width: 40%;
+      height: 34%;
+      border-color: rgba(52, 211, 153, 0.65);
+    }
+
+    .ott {
+      left: 73%;
+      top: 62%;
+      width: 24%;
+      height: 34%;
+      border-color: rgba(125, 211, 252, 0.68);
+    }
+
+    .chart-layer {
+      position: absolute;
+      inset: 34px 10px 12px 10px;
+      z-index: 6;
+      border: 1px solid rgba(125, 211, 252, 0.36);
+      background: rgba(3, 12, 25, 0.8);
+      padding: 8px;
+      box-shadow: 0 0 22px rgba(34, 211, 238, 0.12);
+    }
+
+    .chart-title {
+      display: flex;
+      justify-content: space-between;
+      color: #e0faff;
+      font-size: 11px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .chart-title span {
+      color: #fde68a;
+    }
+
+    .chart {
+      width: 100%;
+      height: calc(100% - 20px);
+    }
+
+    .chart-grid {
+      stroke: rgba(148, 163, 184, 0.24);
+      stroke-width: 0.4;
+    }
+
+    .sendrate {
+      fill: none;
+      stroke: var(--cyan);
+      stroke-width: 2.4;
+      filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.72));
+      stroke-dasharray: 140;
+      animation: chartDraw 3s ease-in-out infinite alternate;
+    }
+
+    .gbr {
+      fill: none;
+      stroke: var(--amber);
+      stroke-width: 2;
+      filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.62));
+      stroke-dasharray: 120;
+      animation: chartDraw 3s ease-in-out infinite alternate-reverse;
+    }
+
+    .node {
+      position: absolute;
+      z-index: 7;
+      width: 90px;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .node-icon {
+      display: grid;
+      place-items: center;
+      width: 58px;
+      height: 48px;
+      margin: 0 auto 7px;
+      border: 1px solid rgba(125, 211, 252, 0.46);
+      background: rgba(3, 15, 30, 0.88);
+      box-shadow: 0 0 18px rgba(34, 211, 238, 0.18);
+      color: #ecfeff;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .node-label {
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(2, 6, 23, 0.82);
+      color: #dff9ff;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.1;
+      padding: 5px 7px;
+      white-space: normal;
+    }
+
+    .node.ue { left: 11%; top: 55%; }
+    .node.ran { left: 31%; top: 54%; }
+    .node.upf { left: 51%; top: 78%; }
+    .node.compute { left: 54%; top: 29%; }
+    .node.agent { left: 82%; top: 28%; }
+
+    .flow-svg {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .base-line {
+      fill: none;
+      stroke: rgba(125, 211, 252, 0.16);
+      stroke-width: 1.2;
+    }
+
+    .active-line {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 2.6;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 7px rgba(34, 211, 238, 0.72));
+    }
+
+    .flow-dash {
+      fill: none;
+      stroke: #ecfeff;
+      stroke-width: 1.3;
+      stroke-linecap: round;
+      stroke-dasharray: 7 11;
+      animation: topologyFlow 950ms linear infinite;
+    }
+
+    .phase-one {
+      animation: phaseOne 6s steps(1, end) infinite;
+    }
+
+    .phase-two {
+      animation: phaseTwo 6s steps(1, end) infinite;
+    }
+
+    .reverse {
+      animation-direction: reverse;
+    }
+
+    .phase-board {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      width: 280px;
+    }
+
+    .phase-pill {
+      display: flex;
+      justify-content: space-between;
+      border: 1px solid rgba(125, 211, 252, 0.32);
+      background: rgba(3, 15, 30, 0.8);
+      padding: 8px 10px;
+      color: #dff9ff;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .phase-pill span {
+      color: var(--muted);
+    }
+
+    .phase-pill:first-child {
+      animation: phasePillOne 6s steps(1, end) infinite;
+    }
+
+    .phase-pill:last-child {
+      animation: phasePillTwo 6s steps(1, end) infinite;
+    }
+
+    @keyframes topologyFlow {
+      from { stroke-dashoffset: 18; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    @keyframes phaseOne {
+      0%, 49.99% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    @keyframes phaseTwo {
+      0%, 49.99% { opacity: 0; }
+      50%, 100% { opacity: 1; }
+    }
+
+    @keyframes phasePillOne {
+      0%, 49.99% { border-color: rgba(34, 211, 238, 0.8); color: #ffffff; }
+      50%, 100% { border-color: rgba(125, 211, 252, 0.24); color: #8fb5c5; }
+    }
+
+    @keyframes phasePillTwo {
+      0%, 49.99% { border-color: rgba(125, 211, 252, 0.24); color: #8fb5c5; }
+      50%, 100% { border-color: rgba(52, 211, 153, 0.85); color: #ffffff; }
+    }
+
+    @keyframes chartDraw {
+      from { stroke-dashoffset: 55; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    @keyframes videoPan {
+      from { transform: scale(1.02) translateX(-1%); }
+      to { transform: scale(1.06) translateX(1%); }
+    }
+
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes gifBands {
+      from { background-position: 0 0; }
+      to { background-position: 36px 0; }
+    }
+
+    @media (max-width: 980px) {
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .stage {
+        grid-template-columns: 1fr;
+      }
+
+      .video-card,
+      .topology-card {
+        min-height: 520px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <div class="title">
+        <strong>Stage 9 随路 QoS 保障用户体验</strong>
+        <span>页面示意稿：对话层、图表层、两段式拓扑流动动画</span>
+      </div>
+      <div class="stage-chip">
+        <i class="stage-dot" aria-hidden="true"></i>
+        <div>
+          <strong>STAGE 9</strong>
+          <span>QoS Assurance</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="stage">
+      <aside class="video-card">
+        <div class="panel-title">
+          <span>机器狗增强视频</span>
+          <small>Dialog/Image Overlay</small>
+        </div>
+        <div class="video-feed">
+          <div class="qos-dialogs">
+            <article class="qos-message">
+              <div class="qos-image" role="img" aria-label="QoS image above dialog"></div>
+              <div class="qos-text">检测到视频链路瞬时波动，已启用随路 QoS 保障策略。</div>
+              <div class="qos-meta">
+                <span>dialogs/images push</span>
+                <span>image: above</span>
+              </div>
+            </article>
+            <article class="qos-message">
+              <div class="qos-text">保障带宽已抬升，AR 端视频体验恢复稳定。</div>
+              <div class="qos-image gif" role="img" aria-label="QoS image below dialog"></div>
+              <div class="qos-meta">
+                <span>dialogs/images push</span>
+                <span>image: below</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </aside>
+
+      <section class="topology-card">
+        <div class="panel-title">
+          <span>核心网拓扑</span>
+          <small>Flow Animation + OTT Chart</small>
+        </div>
+
+        <div class="topology-map">
+          <div class="zone cp"><span class="zone-label">CP</span></div>
+          <div class="zone up"><span class="zone-label">UP</span></div>
+          <div class="zone ott">
+            <span class="zone-label">OTT</span>
+            <div class="chart-layer">
+              <div class="chart-title">
+                <strong>QoS Metrics</strong>
+                <span>q_lvl 3</span>
+              </div>
+              <svg class="chart" viewBox="0 0 220 120" preserveAspectRatio="none" aria-label="QoS metrics chart">
+                <path class="chart-grid" d="M 18 18 H 210 M 18 48 H 210 M 18 78 H 210 M 18 108 H 210" />
+                <path class="chart-grid" d="M 18 18 V 108 M 66 18 V 108 M 114 18 V 108 M 162 18 V 108 M 210 18 V 108" />
+                <path class="gbr" d="M 18 72 C 54 70, 74 60, 102 58 S 160 45, 210 40" />
+                <path class="sendrate" d="M 18 94 C 50 92, 70 82, 98 84 S 148 52, 210 46" />
+              </svg>
+            </div>
+          </div>
+
+          <svg class="flow-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="1.2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <path class="base-line" d="M 11 55 Q 21 45 31 54" />
+            <path class="base-line" d="M 31 54 Q 42 58 51 78" />
+            <path class="base-line" d="M 51 78 Q 48 48 54 29" />
+
+            <g class="phase-one" filter="url(#glow)">
+              <path class="active-line" d="M 11 55 Q 21 45 31 54" />
+              <path class="flow-dash" d="M 11 55 Q 21 45 31 54" />
+              <path class="active-line" d="M 31 54 Q 42 58 51 78" />
+              <path class="flow-dash" d="M 31 54 Q 42 58 51 78" />
+            </g>
+
+            <g class="phase-two" filter="url(#glow)">
+              <path class="active-line" d="M 51 78 Q 42 58 31 54" />
+              <path class="flow-dash reverse" d="M 31 54 Q 42 58 51 78" />
+              <path class="active-line" d="M 31 54 Q 21 45 11 55" />
+              <path class="flow-dash reverse" d="M 11 55 Q 21 45 31 54" />
+              <path class="active-line" d="M 51 78 Q 48 48 54 29" />
+              <path class="flow-dash" d="M 51 78 Q 48 48 54 29" />
+            </g>
+          </svg>
+
+          <div class="node ue">
+            <div class="node-icon">AR</div>
+            <div class="node-label">AR Glasses</div>
+          </div>
+          <div class="node ran">
+            <div class="node-icon">RAN</div>
+            <div class="node-label">RAN</div>
+          </div>
+          <div class="node upf">
+            <div class="node-icon">UPF</div>
+            <div class="node-label">UPF</div>
+          </div>
+          <div class="node compute">
+            <div class="node-icon">CN</div>
+            <div class="node-label">Computing Node</div>
+          </div>
+          <div class="node agent">
+            <div class="node-icon">SA</div>
+            <div class="node-label">System Agent</div>
+          </div>
+
+          <div class="phase-board">
+            <div class="phase-pill">
+              <strong>0s - 3s</strong>
+              <span>AR Glasses -> RAN -> UPF</span>
+            </div>
+            <div class="phase-pill">
+              <strong>3s - 6s</strong>
+              <span>UPF -> AR + Computing Node</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

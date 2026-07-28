@@ -6,13 +6,14 @@
 
 现有 `stage=9` 表示“物品交接/任务完成”。新增需求要求插入一个新的 `stage=9`，表示“随路 QoS 保障用户体验”，并将原有 `stage=9` 整体顺延为 `stage=10`。
 
-同时新增一个 QoS 数据入口：后端主动向前端侧 `POST /api/v1/qos`，请求体为 JSON，包含 `metrics`、`dialogs`、`images` 三个字段。前端在新 `stage=9` 展示 QoS 对话、图片和指标曲线，进入 `stage=10` 后清空并隐藏这些 QoS 展示。
+同时新增一个 QoS 数据入口：后端主动向前端侧 `POST /api/v1/qos`。QoS 数据分两类独立推送：只包含 `metrics` 的推送用于刷新图表，只包含 `dialogs` 和 `images` 的推送用于刷新视频对话图层。前端不主动 `GET /api/v1/qos`。前端在新 `stage=9` 展示 QoS 对话、图片和指标曲线，进入 `stage=10` 后清空并隐藏这些 QoS 展示。
 
 ## 目标
 
 - 新增 `stage=9` 页面语义：随路 QoS 保障用户体验。
 - 原有 `stage=9` 的物品交接/任务完成展示变为 `stage=10`。
-- 前端侧支持接收 `POST /api/v1/qos` 的 JSON 数据。
+- 前端侧支持接收后端主动 `POST /api/v1/qos` 的 JSON 数据，页面不主动 `GET /api/v1/qos`。
+- `metrics` 与 `dialogs/images` 单独发送、单独刷新。
 - `dialogs` 和 `images` 按数组下标配对，以对话形式叠加在视频上方。
 - 图片可通过配置显示在对应对话文本上方或下方。
 - `metrics` 以 `timestamp` 为横轴，绘制 `sendrate_kbps` 和 `gbr_kbps` 两条曲线。
@@ -29,24 +30,27 @@
 
 ## 推荐方案
 
-采用“QoS 接收层 + 页面读取最新 QoS 状态”的方案。
+采用“QoS POST 接收层 + 前端内部状态分发”的方案。
 
 前端仓提供 `/api/v1/qos` 的接收契约：
 
 - 后端生产者：`POST /api/v1/qos`
-- 前端页面：读取同一路径的最新 QoS 快照，推荐使用 `GET /api/v1/qos` 或等价的同源状态 feed
-- 接收层保存最后一次有效 QoS 快照
-- 页面只在 `stage=9` 启用 QoS 数据读取和渲染
+- 前端页面：不主动 `GET /api/v1/qos`
+- 接收层识别两类独立 payload：
+  - `metrics` payload：只更新 QoS 图表数据
+  - `dialogs/images` payload：只更新视频对话图层数据
+- 接收层通过前端内部状态通道把更新送到页面；具体可以是同源事件通道、WebSocket/SSE、框架服务端状态注入或本地 mock 事件分发，但不使用页面主动 GET
+- 页面只在 `stage=9` 启用 QoS 数据展示
 - 页面进入 `stage=10` 时清空本地 QoS 状态并隐藏 UI
 
-这个方案与当前 `stage_server.py`、`usePolling.js`、`pollingPayloads.js` 的模式一致，第一版风险最低，也方便本地演示和自动化测试。
+这个方案保留后端主动 POST 的接口语义，同时把图表刷新和对话图层刷新解耦，避免两个数据源互相覆盖。
 
 备选方案：
 
-- SSE：`POST /api/v1/qos` 写入接收层，再由 `/api/v1/qos/events` 推给浏览器。实时性更好，但要新增连接生命周期和断线重连逻辑。
-- WebSocket：适合高频指标流，但对当前“快照式 JSON + stage gate”的需求偏重。
+- SSE：`POST /api/v1/qos` 写入接收层，再由内部事件通道推给浏览器。适合单向实时推送。
+- WebSocket：适合高频指标流和双向状态确认，但第一版实现成本更高。
 
-第一版推荐不使用 SSE/WebSocket，除非 QoS 刷新频率明显高于 1 秒一次。
+第一版推荐先把页面消费侧设计为“订阅式状态更新”，具体桥接方式由前端运行环境决定，但不要实现页面主动 GET。
 
 ## 改动前流程
 
@@ -90,11 +94,13 @@ flowchart TD
     K1 --> K2[清空第一段动画]
     K2 --> K3[Stage9 动画第二段: UPF -> RAN -> AR Glasses 与 UPF -> Computing Node, 3 秒]
 
-    Q[QoS 后端生产者] -->|POST /api/v1/qos| R[前端侧 QoS 接收层]
-    R --> S[保存最新有效 QoS 快照]
-    S --> T[WebUI 读取 QoS 快照]
-    T --> U[视频上层展示 dialogs/images]
-    T --> V[OTT 域上层展示 QoS 曲线]
+    QM[QoS 后端生产者] -->|POST /api/v1/qos, metrics-only| RM[前端侧 QoS 接收层]
+    RM --> SM[刷新 metrics 状态]
+    SM --> V[OTT 域上层刷新 QoS 曲线]
+
+    QD[QoS 后端生产者] -->|POST /api/v1/qos, dialogs/images-only| RD[前端侧 QoS 接收层]
+    RD --> SD[刷新 dialogs/images 状态]
+    SD --> U[视频上层刷新 dialogs/images]
 
     W[sandbox 进入原物品交接条件] --> X[sandbox 通知 sys-agent stage=10]
     X --> Y[前端轮询得到 stage=10]
@@ -108,6 +114,8 @@ flowchart TD
 - sandbox 收到 `/api/v1/image/reasoning` 后通知 sys-agent 进入 `stage=9`。
 - sandbox 原来通知 `stage=9` 的位置改为通知 `stage=10`。
 - 前端只在 `stage=9` 展示 QoS overlay。
+- 前端不主动 `GET /api/v1/qos`，只消费后端主动 POST 进入前端侧后的状态更新。
+- `metrics` 推送只刷新 OTT 图表；`dialogs/images` 推送只刷新视频对话层。
 - 前端进入 `stage=9` 后播放两段式拓扑流动动画，每段 3 秒，阶段之间清空上一段动画。
 - 进入 `stage=10` 后必须隐藏并清理 QoS UI。
 
@@ -133,7 +141,11 @@ flowchart TD
 
 ### POST /api/v1/qos
 
-请求体：
+`/api/v1/qos` 只接受后端主动 POST。请求体分为两种互斥类型。
+
+#### Metrics 推送
+
+只包含 `metrics` 字段，用于刷新 OTT QoS 图表：
 
 ```json
 {
@@ -144,7 +156,22 @@ flowchart TD
       "gbr_kbps": 1000,
       "q_lvl": 3
     }
-  ],
+  ]
+}
+```
+
+处理规则：
+
+- 收到合法 `metrics` 推送后，只刷新图表数据。
+- 不改变当前视频对话图层。
+- 每次 `metrics` 推送视为一份完整图表数据源，前端用最新数组重绘曲线。
+
+#### Dialog/Image 推送
+
+只包含 `dialogs` 和 `images` 字段，用于刷新视频上层对话图层：
+
+```json
+{
   "dialogs": [
     "检测到视频链路波动，已启用随路 QoS 保障。"
   ],
@@ -156,16 +183,18 @@ flowchart TD
 
 字段规则：
 
-- `metrics` 必须是数组。
+- `metrics` payload 中，`metrics` 必须是数组。
 - `metrics[].timestamp` 必须是有限数字，建议毫秒时间戳。
 - `metrics[].sendrate_kbps` 必须是有限数字。
 - `metrics[].gbr_kbps` 必须是有限数字。
 - `metrics[].q_lvl` 必须是有限数字或可转换为数字的等级值。
-- `dialogs` 必须是字符串数组。
-- `images` 必须是字符串数组。
+- `dialogs/images` payload 中，`dialogs` 必须是字符串数组。
+- `dialogs/images` payload 中，`images` 必须是字符串数组。
 - `dialogs.length` 必须等于 `images.length`。
 - `images[]` 支持 `data:image/png;base64,...`、`data:image/jpeg;base64,...`、`data:image/gif;base64,...` 或 `http(s)` 图片 URL。
-- 接收层把每次有效 POST 当作一个完整快照，新快照替换旧快照。
+- `metrics` 与 `dialogs/images` 必须单独发送，不允许在同一个 payload 中混合。
+- 混合 payload 按非法请求处理，避免出现“同时刷新图表和对话”的歧义。
+- 收到合法 `dialogs/images` 推送后，只刷新对话图层，默认把这次 payload 作为完整对话层快照并替换旧对话层。
 
 建议响应：
 
@@ -185,19 +214,14 @@ flowchart TD
 }
 ```
 
-### 页面读取 QoS 状态
+### 页面消费 QoS 状态
 
-推荐使用同路径 `GET /api/v1/qos` 返回最新有效快照：
+页面不主动 `GET /api/v1/qos`。QoS 接收层收到合法 POST 后，把更新分发到页面状态：
 
-```json
-{
-  "metrics": [],
-  "dialogs": [],
-  "images": []
-}
-```
-
-如果尚未收到 QoS 数据，返回空数组快照。这样页面无需处理 `404` 或空响应。
+- `metrics` 推送进入 `qosMetrics` 状态，只触发 `QosMetricsChart` 刷新。
+- `dialogs/images` 推送进入 `qosDialogItems` 状态，只触发 `QosDialogOverlay` 刷新。
+- 两个状态互不覆盖。
+- 进入非 `stage=9` 时，页面清空两个状态并取消显示。
 
 ## 前端组件设计
 
@@ -249,23 +273,25 @@ stateDiagram-v2
 
 新增纯函数模块，建议放在 `src/utils/qosPayloads.js`：
 
-- `parseQosPayload(payload)`：校验并归一化 QoS 快照。
+- `parseQosPushPayload(payload)`：识别 payload 类型并校验。
+- `parseQosMetricsPayload(payload)`：校验并归一化 metrics 推送。
+- `parseQosDialogImagePayload(payload)`：校验并归一化 dialogs/images 推送。
 - `isSupportedQosImageSource(value)`：校验图片来源。
 - `buildQosDialogItems(dialogs, images, placement)`：按下标生成 UI 可消费的对话项。
 
-解析失败不应破坏 stage 页面，只记录错误并保留上一份有效 QoS 快照或显示空态。
+解析失败不应破坏 stage 页面，只记录错误并保留对应状态的上一份有效数据或显示空态。`metrics` 解析失败不影响当前对话图层，`dialogs/images` 解析失败不影响当前图表。
 
-### QoS 数据读取
+### QoS 推送状态订阅
 
-新增 hook，建议放在 `src/hooks/useQosFeed.js` 或并入 `usePolling.js`：
+新增 hook，建议放在 `src/hooks/useQosFeed.js`：
 
 - 入参：`enabled`
-- 当 `stage === 9` 时启用。
-- 当 `stage !== 9` 时停止读取并清空数据。
-- 默认读取周期与 stage/AR status 一致，可先使用 1000ms。
-- 返回 `{ payload, error }`。
+- 当 `stage === 9` 时订阅 QoS 推送状态。
+- 当 `stage !== 9` 时取消订阅并清空 `metrics`、`dialogItems`。
+- 不主动 `fetch(GET /api/v1/qos)`。
+- 返回 `{ metrics, dialogItems, error }`。
 
-虽然后端是主动 POST 给前端侧接收层，浏览器页面仍需要从接收层读取最新快照。第一版使用 GET 读取最简单，也最符合当前工程模式。
+具体订阅实现可以按运行环境选择：同源事件通道、WebSocket/SSE、框架服务端注入或本地 mock 事件分发。hook 的职责是消费已经进入前端侧的 QoS 状态，而不是主动拉取接口。
 
 ### 视频上方 QoS 对话层
 
@@ -310,20 +336,20 @@ stateDiagram-v2
 
 ```js
 window.__RUNTIME_CONFIG__ = {
-  qosApiUrl: "http://frontend-host:28448/api/v1/qos",
+  qosPushChannelUrl: "ws://frontend-host:28448/api/v1/qos/events",
   qosDialogImagePlacement: "above"
 }
 ```
 
 配置规则：
 
-- `qosApiUrl` 用于浏览器读取最新 QoS 快照。
+- `qosPushChannelUrl` 只在页面需要显式订阅事件通道时使用；如果运行环境可以直接注入 QoS 状态，可不配置。
 - `qosDialogImagePlacement` 允许值为 `above` 或 `below`。
 - 未配置时：
-  - `qosApiUrl` 默认同当前页面 host 下的 `/api/v1/qos`，或复用 `stage_server.py` 端口。
+  - 页面不主动请求 `/api/v1/qos`。
   - `qosDialogImagePlacement` 默认为 `above`。
 
-由于 POST 发送方不由前端控制，后端只需要按照部署给出的前端接收地址发送即可。
+由于 POST 发送方不由前端控制，后端只需要按照部署给出的前端接收地址发送 `POST /api/v1/qos` 即可。浏览器 runtime config 不负责声明后端 POST 目标。
 
 ## 显示生命周期
 
@@ -331,8 +357,9 @@ window.__RUNTIME_CONFIG__ = {
 stateDiagram-v2
     [*] --> Hidden
     Hidden --> Hidden: stage != 9
-    Hidden --> Visible: stage == 9 且收到有效 QoS 快照
-    Visible --> Visible: stage == 9 且收到新 QoS 快照
+    Hidden --> Visible: stage == 9 且收到 metrics 或 dialogs/images 推送
+    Visible --> Visible: stage == 9 且收到 metrics 推送, 只刷新图表
+    Visible --> Visible: stage == 9 且收到 dialogs/images 推送, 只刷新对话图层
     Visible --> Hidden: stage == 10
     Visible --> Hidden: stage != 9
 ```
@@ -340,19 +367,21 @@ stateDiagram-v2
 生命周期规则：
 
 - `stage=9` 前：不显示 QoS overlay。
-- 进入 `stage=9`：启用 QoS 数据读取，收到有效快照后显示。
-- `stage=9` 中：新快照替换旧快照。
+- 进入 `stage=9`：启用 QoS 推送状态订阅，收到有效推送后显示对应 UI。
+- `stage=9` 中：`metrics` 推送只替换图表数据，`dialogs/images` 推送只替换对话图层数据。
 - 进入 `stage=10`：立即清空并隐藏 QoS 对话和图表。
 - 进入其他 stage：同样清空并隐藏 QoS 对话和图表。
 
 ## 错误处理
 
-- QoS POST JSON 无法解析：返回 `400`，不更新快照。
-- `dialogs.length !== images.length`：返回 `400`，不更新快照。
-- 图片来源不是允许的 data URI 或 `http(s)` URL：返回 `400`，不更新快照。
+- QoS POST JSON 无法解析：返回 `400`，不更新任何 QoS 状态。
+- 同时包含 `metrics` 和 `dialogs/images` 的混合 payload：返回 `400`，不更新任何 QoS 状态。
+- `metrics` payload 非法：返回 `400`，不更新图表，不影响当前对话图层。
+- `dialogs.length !== images.length`：返回 `400`，不更新对话图层，不影响当前图表。
+- 图片来源不是允许的 data URI 或 `http(s)` URL：返回 `400`，不更新对话图层，不影响当前图表。
 - 单张图片加载失败：前端隐藏该图片，只显示对应 dialog。
 - `metrics` 中存在非法点：解析层可丢弃非法点；如果全部非法，则图表不显示。
-- QoS 读取失败：不影响 stage 展示，只隐藏 QoS 新数据并保留错误状态供调试。
+- QoS 推送状态通道异常：不影响 stage 展示，只保留错误状态供调试。
 - `stage=10` 时即使 QoS 接收层仍收到 POST，页面也不显示。
 
 ## 需要关注的现有代码点
@@ -361,11 +390,13 @@ stateDiagram-v2
 
 - `src/config/runtimeUrls.js`
   - `normalizeStage` 支持 `10`。
-  - 新增 `getQosApiUrl`。
+  - 不新增用于主动 GET `/api/v1/qos` 的 URL helper。
+  - 如需要浏览器订阅事件通道，可新增 `getQosPushChannelUrl`。
 - `src/utils/pollingPayloads.js` 或新 `src/utils/qosPayloads.js`
-  - 增加 QoS payload 解析和校验。
-- `src/hooks/usePolling.js` 或新 `src/hooks/useQosFeed.js`
-  - 增加 QoS 数据读取 hook。
+  - 增加 metrics payload 和 dialogs/images payload 的互斥解析和校验。
+- `src/hooks/useQosFeed.js`
+  - 增加 QoS 推送状态订阅 hook。
+  - 禁止在该 hook 中主动 `GET /api/v1/qos`。
 - `src/config/stageConfig.jsx`
   - 新增 `STAGE_CONFIG[9]`。
   - 新增 `STAGE9_QOS_PHASES`，包含两段 3 秒动画配置。
@@ -390,7 +421,8 @@ stateDiagram-v2
   - 遗留 `RightPanel` 中 `stage === 9` 完成态判断迁移为 `stage === 10`。
 - `server/stage_server.py`
   - 本地 mock stage 支持 `10`。
-  - 增加 `POST /api/v1/qos` 接收和 `GET /api/v1/qos` 读取能力。
+  - 增加 `POST /api/v1/qos` 接收能力。
+  - 本地联调如需页面实时刷新，应通过事件通道或 mock 状态分发，不通过 `GET /api/v1/qos`。
 
 需要同步更新文档和测试：
 
@@ -399,9 +431,11 @@ stateDiagram-v2
   - “Stage 9 handoff” 描述改为 “Stage 10 handoff”。
 - `test/runtimeUrls.test.js`
   - `normalizeStage(10)` 应返回 `10`。
-  - 覆盖 `getQosApiUrl` runtime config。
+  - 如新增 `getQosPushChannelUrl`，覆盖 runtime config。
 - `test/pollingPayloads.test.js` 或新 `test/qosPayloads.test.js`
-  - 覆盖 QoS payload 校验、图片来源、dialogs/images 数量一致性。
+  - 覆盖 metrics-only payload 校验。
+  - 覆盖 dialogs/images-only payload 校验。
+  - 覆盖混合 payload 拒绝、图片来源、dialogs/images 数量一致性。
 - `test/topologySummary.test.js`
   - 原 idle Stage 9 相关测试迁移到 Stage 10。
 
@@ -410,10 +444,10 @@ stateDiagram-v2
 - 前端可识别 `stage=10`。
 - 新 `stage=9` 不显示原物品交接完成态。
 - 原物品交接完成态在 `stage=10` 显示。
-- 向前端侧 `POST /api/v1/qos` 后，`stage=9` 页面能展示：
-  - 对话文本。
-  - 对应图片。
-  - `sendrate_kbps` 和 `gbr_kbps` 曲线。
+- 前端页面不主动 `GET /api/v1/qos`。
+- 向前端侧 `POST /api/v1/qos` 且 payload 只包含 `metrics` 后，`stage=9` 页面只刷新 QoS 图表，不改变对话图层。
+- 向前端侧 `POST /api/v1/qos` 且 payload 只包含 `dialogs/images` 后，`stage=9` 页面只刷新对话文本和对应图片，不改变 QoS 图表。
+- 同一个 QoS payload 同时包含 `metrics` 和 `dialogs/images` 时按非法请求处理。
 - 进入 `stage=9` 后，先播放 `AR Glasses -> RAN -> UPF` 流动动画，持续 3 秒。
 - 第一段结束时，第一段动画连线和高亮被清空。
 - 第二段播放 `UPF -> RAN -> AR Glasses` 与 `UPF -> Computing Node` 并行流动动画，持续 3 秒。
@@ -429,9 +463,9 @@ stateDiagram-v2
 1. 更新 stage 合法值和本地 mock server。
 2. 迁移原 `stage=9` 到 `stage=10`，消除旧语义特判。
 3. 新增 stage 9 两段式 QoS 拓扑动画配置和 phase 计时逻辑。
-4. 新增 QoS payload 解析和测试。
-5. 新增 QoS 接收层本地 mock。
-6. 新增 `useQosFeed`。
+4. 新增 metrics-only 与 dialogs/images-only QoS payload 解析和测试。
+5. 新增 QoS POST 接收层本地 mock，按 payload 类型分发状态。
+6. 新增 `useQosFeed` 推送状态订阅，不做 GET 轮询。
 7. 新增视频 QoS 对话 overlay。
 8. 新增 OTT QoS 图表 overlay。
 9. 接入 `App.jsx`，按 stage 控制显示生命周期。

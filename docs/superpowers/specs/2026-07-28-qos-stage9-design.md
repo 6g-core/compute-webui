@@ -17,6 +17,7 @@
 - 图片可通过配置显示在对应对话文本上方或下方。
 - `metrics` 以 `timestamp` 为横轴，绘制 `sendrate_kbps` 和 `gbr_kbps` 两条曲线。
 - QoS 图表显示在拓扑图 OTT 域上层，尺寸稳定，不挤压拓扑布局。
+- 进入 `stage=9` 后新增两段式拓扑流动动画，每段持续 3 秒，第二段开始时清空第一段动画。
 - 一旦进入 `stage=10`，QoS 对话、图片、图表都不再显示。
 
 ## 非目标
@@ -85,6 +86,9 @@ flowchart TD
     H[sandbox 收到 /api/v1/image/reasoning] --> I[sandbox 通知 sys-agent stage=9]
     I --> J[前端轮询得到 stage=9]
     J --> K[WebUI 进入随路 QoS 保障展示]
+    K --> K1[Stage9 动画第一段: AR Glasses -> RAN -> UPF, 3 秒]
+    K1 --> K2[清空第一段动画]
+    K2 --> K3[Stage9 动画第二段: UPF -> RAN -> AR Glasses 与 UPF -> Computing Node, 3 秒]
 
     Q[QoS 后端生产者] -->|POST /api/v1/qos| R[前端侧 QoS 接收层]
     R --> S[保存最新有效 QoS 快照]
@@ -104,6 +108,7 @@ flowchart TD
 - sandbox 收到 `/api/v1/image/reasoning` 后通知 sys-agent 进入 `stage=9`。
 - sandbox 原来通知 `stage=9` 的位置改为通知 `stage=10`。
 - 前端只在 `stage=9` 展示 QoS overlay。
+- 前端进入 `stage=9` 后播放两段式拓扑流动动画，每段 3 秒，阶段之间清空上一段动画。
 - 进入 `stage=10` 后必须隐藏并清理 QoS UI。
 
 ## Stage 状态设计
@@ -195,6 +200,50 @@ flowchart TD
 如果尚未收到 QoS 数据，返回空数组快照。这样页面无需处理 `404` 或空响应。
 
 ## 前端组件设计
+
+### Stage 9 拓扑动画
+
+现有拓扑活动连接已经是流动式动画。`NetworkTopology3D` 中活动连接使用 `strokeDasharray` 和 `topology-flow` CSS 动画绘制流动线，支持 `reverse` 反向流动。因此新 `stage=9` 动画应复用现有流动线机制，不新增另一套视觉语言。
+
+新增 `stage=9` 两段动画：
+
+| 阶段 | 持续时间 | 流动路径 | 高亮节点 | 清理规则 |
+| --- | --- | --- | --- | --- |
+| `stage9_qos_uplink` | 3 秒 | `AR Glasses -> RAN -> UPF` | `UE`, `gNB`, `UPF` | 进入下一段前清空本段 `topologyLines`、`activeConnections`、`highlightedNodes` |
+| `stage9_qos_downlink_compute` | 3 秒 | `UPF -> RAN -> AR Glasses` 与 `UPF -> Computing Node` 并行 | `UPF`, `gNB`, `UE`, `Computing` | 本段结束后清空本段动画，只保留 QoS overlay 和图表 |
+
+路径映射建议：
+
+- `AR Glasses -> RAN` 使用现有节点键 `UE->gNB`。
+- `RAN -> UPF` 使用现有节点键 `gNB->UPF`。
+- `UPF -> RAN -> AR Glasses` 使用反向连接：
+  - `{ key: "UPF->gNB", pathKey: "gNB->UPF", reverse: true }`
+  - `{ key: "gNB->UE", pathKey: "UE->gNB", reverse: true }`
+- `UPF -> Computing Node` 如果没有现成路径键，需要新增一条 `UPF->Computing` 几何路径；如果现有拓扑无法直连，则用 `UPF -> Gateway -> Computing` 作为实现 fallback，但设计语义仍显示为 `UPF -> Computing Node`。
+
+动画生命周期：
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Uplink: stage == 9
+    Uplink --> ClearUplink: 3 秒后
+    ClearUplink --> DownlinkAndCompute
+    DownlinkAndCompute --> ClearAll: 3 秒后
+    ClearAll --> QoSOnly
+    QoSOnly --> Idle: stage != 9
+    Uplink --> Idle: stage != 9
+    DownlinkAndCompute --> Idle: stage != 9
+```
+
+设计规则：
+
+- 每段持续 3 秒。
+- 第二段开始前必须清空第一段动画，不叠加残留连线。
+- 第二段同时展示两路流动：一路回到 AR Glasses，一路到 Computing Node。
+- 两段动画结束后，`stage=9` 仍停留在 QoS 展示态，但不再保留拓扑流动线。
+- 如果 `stage=9` 期间重新收到 stage 9，不重复播放，除非后续实现显式引入动画重播 epoch。
+- 进入 `stage=10` 或其他 stage 时立即清空 stage 9 动画状态。
 
 ### QoS 数据解析
 
@@ -319,9 +368,12 @@ stateDiagram-v2
   - 增加 QoS 数据读取 hook。
 - `src/config/stageConfig.jsx`
   - 新增 `STAGE_CONFIG[9]`。
+  - 新增 `STAGE9_QOS_PHASES`，包含两段 3 秒动画配置。
   - 原 `STAGE_CONFIG[9]` 迁移为 `STAGE_CONFIG[10]`。
   - 原 `STAGE9_COMPLETED_TASKS` 建议迁移为 `STAGE10_COMPLETED_TASKS`。
 - `src/hooks/useEffectiveStageConfig.js`
+  - 新增 stage 9 phase index/timer 状态，每段 3 秒推进。
+  - 每段 phase 切换时只暴露当前段的 `topologyLines`、`activeConnections`、`highlightedNodes`。
   - 将原 stage 9 物品交接动画状态迁移到 stage 10。
   - 新 stage 9 不复用原 handoff flash。
 - `src/App.jsx`
@@ -330,6 +382,8 @@ stateDiagram-v2
   - `topologyAgentBubble` 中原 `stage === 9 ? null` 需要改为新语义判断。
 - `src/components/NetworkTopology3D.jsx`
   - 新增 OTT 上层 `QosMetricsChart` 挂载点。
+  - 复用现有 `topology-flow` 流动线动画绘制 stage 9 QoS 链路。
+  - 如当前路径表不支持 `UPF->Computing`，补充对应几何路径或 connector point。
   - 原 stage 9 handoff blink 逻辑迁移到 stage 10。
 - `src/components/DemoPanels.jsx`
   - `DogVisionPanel` 支持 overlay。
@@ -360,6 +414,10 @@ stateDiagram-v2
   - 对话文本。
   - 对应图片。
   - `sendrate_kbps` 和 `gbr_kbps` 曲线。
+- 进入 `stage=9` 后，先播放 `AR Glasses -> RAN -> UPF` 流动动画，持续 3 秒。
+- 第一段结束时，第一段动画连线和高亮被清空。
+- 第二段播放 `UPF -> RAN -> AR Glasses` 与 `UPF -> Computing Node` 并行流动动画，持续 3 秒。
+- 第二段结束后，拓扑流动动画清空，只保留 QoS overlay 和图表。
 - 图片位置可通过配置在 dialog 上方或下方切换。
 - QoS 图表固定在 OTT 域上层，不改变拓扑布局尺寸。
 - 进入 `stage=10` 后，QoS 对话和图表立即隐藏。
@@ -370,11 +428,12 @@ stateDiagram-v2
 
 1. 更新 stage 合法值和本地 mock server。
 2. 迁移原 `stage=9` 到 `stage=10`，消除旧语义特判。
-3. 新增 QoS payload 解析和测试。
-4. 新增 QoS 接收层本地 mock。
-5. 新增 `useQosFeed`。
-6. 新增视频 QoS 对话 overlay。
-7. 新增 OTT QoS 图表 overlay。
-8. 接入 `App.jsx`，按 stage 控制显示生命周期。
-9. 更新文档和测试。
-10. 运行验证并提交实现。
+3. 新增 stage 9 两段式 QoS 拓扑动画配置和 phase 计时逻辑。
+4. 新增 QoS payload 解析和测试。
+5. 新增 QoS 接收层本地 mock。
+6. 新增 `useQosFeed`。
+7. 新增视频 QoS 对话 overlay。
+8. 新增 OTT QoS 图表 overlay。
+9. 接入 `App.jsx`，按 stage 控制显示生命周期。
+10. 更新文档和测试。
+11. 运行验证并提交实现。

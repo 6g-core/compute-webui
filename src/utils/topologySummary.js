@@ -40,6 +40,9 @@ export const PHASE_TASK_SUMMARY = {
   stage7_5_policy_dispatch: "网络算力节点识别标注",
   stage7_5_policy: "网络算力节点识别标注",
   stage7_5_policy_done: "标注结果回传AR眼镜",
+
+  stage9_qos_uplink: "随路QoS保障用户体验",
+  stage9_qos_downlink_compute: "随路QoS保障用户体验",
 };
 
 export const FLOW_TASK_SUMMARY = {
@@ -65,9 +68,9 @@ export const shouldShowTaskSummary = ({
   activeConnections = [],
   highlightedNodes = [],
   topologyLines = [],
-  stage9BlinkActive = false,
+  stage10BlinkActive = false,
 } = {}) => Boolean(
-  stage9BlinkActive
+  stage10BlinkActive
   || activeConnections.length
   || highlightedNodes.length
   || topologyLines.length
@@ -78,9 +81,9 @@ export const getTaskSummaryText = ({
   stagePhaseKey,
   activeFlowType,
   workflow = [],
-  stage9BlinkActive = false,
+  stage10BlinkActive = false,
 } = {}) => {
-  if (stage === 9 && !stage9BlinkActive) {
+  if (stage === 10 && !stage10BlinkActive) {
     return "";
   }
 

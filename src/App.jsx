@@ -4,10 +4,11 @@ import {
   ShieldCheck,
   CircleDot,
 } from 'lucide-react';
-import { STAGE9_COMPLETED_TASKS, getWorkflowBubbleFromRows, pinBubbleToSystemAgent } from './config/stageConfig.jsx';
+import { STAGE10_COMPLETED_TASKS, getWorkflowBubbleFromRows, pinBubbleToSystemAgent } from './config/stageConfig.jsx';
 import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, formatVideoState, useBackendVideoStream, useDogVideoOfferGate } from './hooks/useBackendVideo';
 import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
 import { useArLastWhisper, useStagePolling } from './hooks/usePolling';
+import { useQosFeed } from './hooks/useQosFeed';
 import { LeftPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
@@ -117,7 +118,22 @@ const UI_TRANSLATIONS = {
   "识别任务进入运行态，视频流开始进入算力节点处理": "The recognition task is running and the video stream enters compute-node processing",
   "将识别结果与交接任务结果同步回系统门户": "Synchronize recognition and handover results back to the system portal",
   "阶段9任务完成，整条作业闭环成功": "Stage 9 is complete and the full task loop is closed",
+  "阶段10任务完成，整条作业闭环成功": "Stage 10 is complete and the full task loop is closed",
   "机器狗与超市智能体完成商品取件交接动作": "The robot dog completes item pickup and handover with the supermarket agent",
+  "随路QoS保障用户体验，视频链路体验进入动态保障态。": "In-path QoS assures user experience while the video link enters dynamic assurance.",
+  "随路QoS保障用户体验": "In-Path QoS Experience Assurance",
+  "收到视觉推理请求后启用随路QoS保障策略": "Enable in-path QoS assurance after receiving the visual reasoning request",
+  "RAN、UPF与算力节点建立QoS保障路径": "RAN, UPF, and the compute node establish a QoS assurance path",
+  "QoS指标和用户对话层进入实时刷新": "QoS metrics and the user dialog layer refresh in real time",
+  "端侧状态：随路QoS保障": "Device Status:\nIn-Path QoS Assurance",
+  "随路QoS保障": "In-Path QoS Assurance",
+  "GBR动态保障": "Dynamic GBR Assurance",
+  "QoS随路优化中": "QoS In-Path Optimization",
+  "视频体验持续保障": "Video experience remains assured",
+  "GBR带宽保障": "GBR Bandwidth Assurance",
+  "体验质量感知": "Experience Quality Awareness",
+  "QoS保障曲线": "QoS Assurance Curve",
+  "等待QoS推送": "Waiting for QoS Push",
   "为机器狗申请可验证数字身份，建立后续网络接入前提": "Apply for a verifiable digital identity for the robot dog",
   "启用统一数字身份管理和可信接入控制能力": "Enable unified digital identity management and trusted access control",
   "将用户意图拆分为身份签发、能力注册和网络接入准备": "Split user intent into identity issuance, capability registration, and access preparation",
@@ -153,6 +169,7 @@ const UI_TRANSLATIONS = {
   "核心网：数字身份申请": "Core Network: Digital Identity Application",
   "核心网：生成式网络": "Core Network: Generative Networking",
   "核心网：算力卸载": "Core Network: Compute Offload",
+  "核心网：随路QoS保障": "Core Network: In-Path QoS Assurance",
   "6G核心网作用": "6G Core Network Functions",
   "L3按需组网": "L3 On-Demand Networking",
   "ACN Agent:创建管理家庭域": "ACN Agent:\nCreate and manage home domain",
@@ -660,7 +677,7 @@ const CompletedTasksPanel = () => (
   <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-emerald-400/35 bg-slate-950/42 shadow-[0_0_22px_rgba(16,185,129,0.12)]">
     <div className="completed-tasks-scroll min-h-0 flex-1 overflow-y-auto px-3 py-3">
       <div className="flex flex-col gap-2.5">
-        {STAGE9_COMPLETED_TASKS.map((group, index) => (
+        {STAGE10_COMPLETED_TASKS.map((group, index) => (
           <section
             key={group.title}
             className="rounded-md border border-blue-400/20 bg-blue-950/18 px-3 py-3 shadow-[inset_0_0_14px_rgba(59,130,246,0.06)]"
@@ -1045,7 +1062,46 @@ const HandoffPanel = () => (
   </div>
 );
 
-const DogVisionPanel = ({ label, state, videoRef, tall = false, tags }) => {
+const QosDialogOverlay = ({ items = [] }) => {
+  const visibleItems = items.slice(-3);
+
+  if (!visibleItems.length) {
+    return null;
+  }
+
+  const renderImage = (item) => (
+    <img
+      src={item.image}
+      alt=""
+      className="max-h-24 w-full rounded-md border border-cyan-200/25 object-cover shadow-[0_0_14px_rgba(34,211,238,0.22)]"
+      draggable="false"
+    />
+  );
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end gap-2 px-4 pb-14 pt-14">
+      {visibleItems.map((item, index) => {
+        const imageAbove = item.imagePlacement === "above";
+        const alignClassName = index % 2 === 0 ? "self-end" : "self-start";
+        const bubbleClassName = index % 2 === 0
+          ? "border-cyan-200/60 bg-cyan-950/88 text-cyan-50"
+          : "border-emerald-200/55 bg-emerald-950/84 text-emerald-50";
+
+        return (
+          <div key={item.id} className={`flex max-w-[78%] flex-col gap-1.5 ${alignClassName}`}>
+            {imageAbove && renderImage(item)}
+            <div className={`rounded-lg border px-3 py-2 text-[12px] font-bold leading-snug shadow-[0_0_18px_rgba(15,23,42,0.42)] backdrop-blur-md ${bubbleClassName}`}>
+              {item.dialog}
+            </div>
+            {!imageAbove && renderImage(item)}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const DogVisionPanel = ({ label, state, videoRef, tall = false, tags, overlay = null }) => {
   const live = state === "receiving" || state === "connected";
   const panelTags = tags || ["DOG-CAM", "MOQT", live ? "SYNCED" : formatVideoState(state)];
 
@@ -1064,6 +1120,7 @@ const DogVisionPanel = ({ label, state, videoRef, tall = false, tags }) => {
         <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.9)]" : "bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.9)]"}`} />
         {label}
       </div>
+      {overlay}
       <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2 text-[11px] font-mono text-cyan-100/90">
         {panelTags.map((item) => (
           <div key={item} className="rounded border border-cyan-400/25 bg-slate-950/62 px-2 py-1 text-center backdrop-blur-md">
@@ -1082,9 +1139,9 @@ const BackgroundVideoPanel = ({ visible }) => {
     gateState: "ready",
     streamEpoch: null,
     offerUrl: getWebRtcOfferUrl(),
-    clientId: "react-stage9-background",
+    clientId: "react-stage10-background",
     streamType: "background",
-    label: "Stage9 background video",
+    label: "Stage10 background video",
     attachKey: visible,
   });
   const backgroundLive = background.hasStream && (background.state === "receiving" || background.state === "connected");
@@ -1115,7 +1172,7 @@ const BackgroundVideoPanel = ({ visible }) => {
   );
 };
 
-const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
+const DogVisionStreams = ({ showEnhanced, preloadEnhanced, qosDialogItems = [] }) => {
   const { health, ready, state: gateState } = useDogVideoOfferGate(true);
   const [gateOpened, setGateOpened] = useState(false);
   const streamEpoch = health?.streamEpoch ?? null;
@@ -1173,7 +1230,13 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced }) => {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <DogVisionPanel label="机器狗原始视野" state={raw.state} videoRef={raw.videoRef} tall />
-      <DogVisionPanel label="机器狗增强后的视野" state={enhanced.state} videoRef={enhanced.videoRef} tall />
+      <DogVisionPanel
+        label="机器狗增强后的视野"
+        state={enhanced.state}
+        videoRef={enhanced.videoRef}
+        tall
+        overlay={<QosDialogOverlay items={qosDialogItems} />}
+      />
     </div>
   );
 };
@@ -1285,6 +1348,7 @@ export default function App() {
   const { stage, connectionState, error } = useStagePolling();
   const arLastWhisper = useArLastWhisper();
   const effectiveStageConfig = useEffectiveStageConfig(stage);
+  const qosFeed = useQosFeed(stage === 9);
   const postAnimationWhisperBaselineRef = useRef({ stage, whisper: arLastWhisper });
   const [postAnimationArSpeechText, setPostAnimationArSpeechText] = useState("");
 
@@ -1294,7 +1358,7 @@ export default function App() {
   }, [stage]);
 
   useEffect(() => {
-    if (stage <= 1 || stage === 8) {
+    if (stage <= 1 || stage === 8 || stage === 9) {
       setPostAnimationArSpeechText("");
       postAnimationWhisperBaselineRef.current = { stage, whisper: arLastWhisper };
       return;
@@ -1329,7 +1393,7 @@ export default function App() {
     : postAnimationArSpeechText;
   const topologyAgentBubble = effectiveStageConfig.systemAgentBubble
     ? pinBubbleToSystemAgent(effectiveStageConfig.systemAgentBubble)
-    : stage === 9
+    : stage === 9 || stage === 10
     ? null
     : pinBubbleToSystemAgent(
         getWorkflowBubbleFromRows(effectiveStageConfig.workflow, stage)
@@ -1546,6 +1610,7 @@ export default function App() {
             language={language}
             translateText={translateTextNodeValue}
             components={panelComponents}
+            qosDialogItems={qosFeed.dialogItems}
           />
 
           {/* 中间列：6G核心网 3D 拓扑与平面网元、上方弧线数据流 */}
@@ -1565,6 +1630,7 @@ export default function App() {
               activeConnections={effectiveStageConfig.activeConnections}
               stagePhaseKey={effectiveStageConfig.stagePhaseKey}
               language={language}
+              qosMetrics={qosFeed.metrics}
             />
           </div>
 

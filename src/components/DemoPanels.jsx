@@ -1,6 +1,6 @@
 import { ChevronRight, Network, ShieldAlert, ShieldCheck, User } from 'lucide-react';
 
-export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", translateText = (text) => text, components }) => {
+export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", translateText = (text) => text, components, qosDialogItems = [] }) => {
   const {
     ARGlasses,
     ArRegistrationPanel,
@@ -41,6 +41,7 @@ export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", transl
                           <DogVisionStreams
                             showEnhanced={Boolean(effectiveStageConfig.showEnhancedDogVision)}
                             preloadEnhanced={Number(stage) >= 5}
+                            qosDialogItems={Number(stage) === 9 ? qosDialogItems : []}
                           />
                         ) : effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.homeDomainDevicesReady === false ? (
                           <div className="min-h-[520px] flex-1 rounded-xl border border-emerald-500/20 bg-slate-950/10 backdrop-blur-md" aria-hidden="true" />
@@ -330,9 +331,9 @@ export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, compone
         <SciFiPanel className="h-full">
           <div className="flex h-full min-h-0 flex-col">
             <h2 className="text-blue-200 text-base lg:text-lg font-bold text-center mb-4 pb-3 border-b border-blue-500/30">
-              {stage === 9 ? "已完成任务" : "实时状态"}
+              {stage === 10 ? "已完成任务" : "实时状态"}
             </h2>
-            {stage === 9 ? (
+            {stage === 10 ? (
               <CompletedTasksPanel />
             ) : (
               <div className="flex min-h-0 flex-1 flex-col gap-4">

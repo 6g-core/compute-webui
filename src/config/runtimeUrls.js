@@ -50,10 +50,17 @@ export const getSandboxHealthApiUrl = () => {
     || buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/health", "sandboxHost");
 };
 
+export const getQosPushChannelUrl = () => {
+  const runtimeConfig = getRuntimeConfig();
+  return runtimeConfig.qosPushChannelUrl
+    || getViteEnv().VITE_QOS_PUSH_CHANNEL_URL
+    || buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/v1/qos/events", "sandboxHost");
+};
+
 export const normalizeStage = (value) => {
   const parsed = Number(value);
   if (parsed === 3) {
     return 2;
   }
-  return [1, 2, 4, 5, 6, 7, 8, 9].includes(parsed) ? parsed : null;
+  return [1, 2, 4, 5, 6, 7, 8, 9, 10].includes(parsed) ? parsed : null;
 };

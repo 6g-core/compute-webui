@@ -346,18 +346,17 @@ stateDiagram-v2
 
 ```js
 window.__RUNTIME_CONFIG__ = {
-  qosPushChannelUrl: "ws://frontend-host:28448/api/v1/qos/events",
-  qosDialogDefaultImagePlacement: "above"
+  qosPushChannelUrl: "http://frontend-host:28448/api/v1/qos/events"
 }
 ```
 
 配置规则：
 
-- `qosPushChannelUrl` 只在页面需要显式订阅事件通道时使用；如果运行环境可以直接注入 QoS 状态，可不配置。
-- `qosDialogDefaultImagePlacement` 允许值为 `above` 或 `below`，只作为缺失单条配置时的兜底。
+- `qosPushChannelUrl` 只在页面需要显式订阅 SSE 事件通道时使用；如果运行环境可以直接注入 QoS 状态，可不配置。
+- 图片和文本的上下关系由 payload 中的 `imagePlacements[i]` 分别控制：`above` 表示 `images[i]` 显示在 `dialogs[i]` 上方，`below` 表示显示在下方。
 - 未配置时：
   - 页面不主动请求 `/api/v1/qos`。
-  - `qosDialogDefaultImagePlacement` 默认为 `above`。
+  - 页面使用 `sandboxApiUrl`/`sandboxPort` 推导 `/api/v1/qos/events` 事件流地址。
 
 由于 POST 发送方不由前端控制，后端只需要按照部署给出的前端接收地址发送 `POST /api/v1/qos` 即可。浏览器 runtime config 不负责声明后端 POST 目标。
 

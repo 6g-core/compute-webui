@@ -20,6 +20,8 @@ import {
   STAGE7_PHASES,
   STAGE7_LOGS,
   STAGE7_WORKFLOW,
+  STAGE9_QOS_PHASE_TIMING,
+  STAGE9_QOS_PHASES,
   STAGE_ANIMATION_TIMING,
   STAGE_CONFIG,
   normalizeWorkflowLabel,
@@ -50,7 +52,7 @@ const buildCompletedStageIntentSummary = (summaryItems, phases) => (
   buildStageIntentSummary(summaryItems, phases, phases.length - 1)
 );
 
-const STAGE9_HANDOFF_FLASH_MS = 5000;
+const STAGE10_HANDOFF_FLASH_MS = 5000;
 
 export const useEffectiveStageConfig = (stage) => {
   const stageConfig = STAGE_CONFIG[stage] || STAGE_CONFIG[1];
@@ -82,7 +84,8 @@ export const useEffectiveStageConfig = (stage) => {
   const [stage5FinalFlashActive, setStage5FinalFlashActive] = useState(false);
   const [stage7PhaseIndex, setStage7PhaseIndex] = useState(0);
   const [stage7FinalFlashActive, setStage7FinalFlashActive] = useState(false);
-  const [stage9HandoffFlashActive, setStage9HandoffFlashActive] = useState(false);
+  const [stage9QosPhaseIndex, setStage9QosPhaseIndex] = useState(0);
+  const [stage10HandoffFlashActive, setStage10HandoffFlashActive] = useState(false);
 
   useEffect(() => {
     if (stage !== 2) {
@@ -244,14 +247,36 @@ export const useEffectiveStageConfig = (stage) => {
 
   useEffect(() => {
     if (stage !== 9) {
-      setStage9HandoffFlashActive(false);
+      setStage9QosPhaseIndex(0);
       return undefined;
     }
 
-    setStage9HandoffFlashActive(true);
+    setStage9QosPhaseIndex(0);
+    return undefined;
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage !== 9 || stage9QosPhaseIndex >= STAGE9_QOS_PHASES.length - 1) {
+      return undefined;
+    }
+
     const timer = window.setTimeout(() => {
-      setStage9HandoffFlashActive(false);
-    }, STAGE9_HANDOFF_FLASH_MS);
+      setStage9QosPhaseIndex((index) => Math.min(index + 1, STAGE9_QOS_PHASES.length - 1));
+    }, STAGE9_QOS_PHASE_TIMING[stage9QosPhaseIndex] || 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [stage, stage9QosPhaseIndex]);
+
+  useEffect(() => {
+    if (stage !== 10) {
+      setStage10HandoffFlashActive(false);
+      return undefined;
+    }
+
+    setStage10HandoffFlashActive(true);
+    const timer = window.setTimeout(() => {
+      setStage10HandoffFlashActive(false);
+    }, STAGE10_HANDOFF_FLASH_MS);
 
     return () => window.clearTimeout(timer);
   }, [stage]);
@@ -721,13 +746,36 @@ export const useEffectiveStageConfig = (stage) => {
       };
     }
 
+    if (stage === 9) {
+      const phase = STAGE9_QOS_PHASES[stage9QosPhaseIndex] || STAGE9_QOS_PHASES[0];
+      const allDone = stage9QosPhaseIndex >= STAGE9_QOS_PHASES.length - 1;
+
+      return {
+        ...stageConfig,
+        activeFlowType: null,
+        topologyLines: phase.topologyLines || [],
+        stagePhaseKey: phase.key,
+        highlightedNodes: phase.highlightedNodes || [],
+        activeConnections: phase.activeConnections || [],
+        systemAgentBubble: null,
+        agentBubbles: [],
+        showArSpeech: false,
+        hideArSpeech: true,
+        hideRobotDogSpeech: true,
+        stageAnimationDone: allDone,
+        intentSummary: buildCumulativeIntentSummary(),
+        workflow: [],
+        agentBubble: null,
+      };
+    }
+
     if (stage !== 4) {
       return {
         ...stageConfig,
         intentSummary: buildCumulativeIntentSummary(),
-        showArSpeech: stage === 8 || (stage === 9 && stage9HandoffFlashActive),
-        hideArSpeech: stage === 8 ? false : stage === 9 ? !stage9HandoffFlashActive : true,
-        stageAnimationDone: stage === 8 || (stage === 9 && !stage9HandoffFlashActive),
+        showArSpeech: stage === 8 || (stage === 10 && stage10HandoffFlashActive),
+        hideArSpeech: stage === 8 ? false : stage === 10 ? !stage10HandoffFlashActive : true,
+        stageAnimationDone: stage === 8 || (stage === 10 && !stage10HandoffFlashActive),
       };
     }
 

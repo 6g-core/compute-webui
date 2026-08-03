@@ -85,7 +85,7 @@ const STAGE7_WORKFLOW = [
   },
 ];
 
-const STAGE9_WORKFLOW = [
+const STAGE10_WORKFLOW = [
   { label: "数字身份申请:", value: "IDM Tool颁发数字身份；能力注册；接入网络", status: "success", stacked: true },
   { label: "生成式网络:", value: "创建家庭域；更新签约数据；下发域接入凭证；下发物理组网配置", status: "success", stacked: true },
   { label: "机器狗实时视野:", value: "机器狗抵达商店并回传实时视野", status: "success", stacked: true },
@@ -95,7 +95,7 @@ const STAGE9_WORKFLOW = [
   { label: "物品交接:", value: "机器狗与超市智能体交接物品；算力卸载已完成", status: "success", stacked: true },
 ];
 
-const STAGE9_COMPLETED_TASKS = [
+const STAGE10_COMPLETED_TASKS = [
   {
     title: "数字身份申请",
     tasks: ["IDM Tool颁发数字身份", "能力注册", "接入网络"],
@@ -802,6 +802,40 @@ const STAGE5_PHASES = [
   },
 ];
 
+const STAGE9_QOS_PHASE_TIMING = [3000, 3000];
+
+const STAGE9_QOS_PHASES = [
+  {
+    key: "stage9_qos_uplink",
+    topologyLines: [
+      { key: "UE->gNB", latencyMs: { min: 4, max: 7 } },
+      { key: "gNB->UPF", latencyMs: { min: 8, max: 14 }, labelPosition: "below" },
+    ],
+    activeConnections: ["UE->gNB", "gNB->UPF"],
+    highlightedNodes: ["UE", "gNB", "UPF"],
+  },
+  {
+    key: "stage9_qos_downlink_compute",
+    topologyLines: [
+      { key: "UE->gNB", latencyMs: { min: 4, max: 7 } },
+      { key: "gNB->UPF", latencyMs: { min: 8, max: 14 }, labelPosition: "below" },
+      { key: "UPF->Gateway", latencyMs: { min: 6, max: 11 }, labelPosition: "below" },
+    ],
+    activeConnections: [
+      { key: "UPF->gNB", pathKey: "gNB->UPF", reverse: true },
+      { key: "gNB->UE", pathKey: "UE->gNB", reverse: true },
+      "UPF->Gateway",
+    ],
+    highlightedNodes: ["UPF", "gNB", "UE", "Gateway"],
+  },
+  {
+    key: "stage9_qos_clear",
+    topologyLines: [],
+    activeConnections: [],
+    highlightedNodes: [],
+  },
+];
+
 const STAGE_ANIMATION_TIMING = {
   2: { workingMs: 560, successMs: 180 },
   4: { workingMs: 500, successMs: 150 },
@@ -842,7 +876,8 @@ const STAGE_STORY_LINES = {
   6: "机器狗、AR眼镜与商店智能体完成双向认证。",
   7: "机器狗寻找目标物品，算力不足无法识别，申请算力卸载到网络。",
   8: "网络算力节点识别商品并回传标注结果。",
-  9: "机器狗与超市智能体完成商品交接。",
+  9: "随路QoS保障用户体验，视频链路体验进入动态保障态。",
+  10: "机器狗与超市智能体完成商品交接。",
 };
 
 const STAGE_CONFIG = {
@@ -1084,6 +1119,48 @@ STAGE_CONFIG[8] = {
 
 STAGE_CONFIG[9] = {
   ...STAGE_CONFIG[8],
+  leftPanelTitle: "随路QoS保障",
+  topologyTitle: "核心网：随路QoS保障",
+  activeFlowType: null,
+  showBackgroundVideo: false,
+  showHandoff: false,
+  showEnhancedDogVision: true,
+  showDogVision: false,
+  showHomeDomainDevice: false,
+  showRegisteredDevice: false,
+  showArRegistration: false,
+  coreFunctions: [
+    "随路QoS保障",
+    "GBR带宽保障",
+    "体验质量感知",
+  ],
+  statusTitle: "端侧状态：随路QoS保障",
+  statusRows: [
+    { label: "端侧带宽:", value: "GBR动态保障", status: "working" },
+    { label: "平均时延:", value: "QoS随路优化中", status: "working" },
+    { label: "保障效果:", value: "视频体验持续保障", status: "working", stacked: true, valueClassName: "break-words" },
+  ],
+  userStatus: {
+    credential: { value: "已颁发", status: "success" },
+    robotDogId: { value: "DID:2168nLB3G@CMCC.org", status: "success", isMono: true },
+  },
+  logs: [
+    ...STAGE_CONFIG[8].logs,
+    ["10:31:25", "业务目标", "随路QoS保障用户体验"],
+    ["10:31:26", "系统决策", "收到视觉推理请求后启用随路QoS保障策略"],
+    ["10:31:27", "核心网能力", "RAN、UPF与算力节点建立QoS保障路径"],
+    ["10:31:28", "当前结果", "QoS指标和用户对话层进入实时刷新"],
+  ],
+  workflow: [],
+  steps: STAGE_CONFIG[8].steps.map((step) => (
+    step.id === "05"
+      ? { ...step, subtitle: "进行中 / Working", status: "working" }
+      : step
+  )),
+};
+
+STAGE_CONFIG[10] = {
+  ...STAGE_CONFIG[9],
   leftPanelTitle: "物品交接",
   topologyTitle: "核心网：算力卸载",
   activeFlowType: "handoff",
@@ -1094,6 +1171,7 @@ STAGE_CONFIG[9] = {
   showHomeDomainDevice: false,
   showRegisteredDevice: false,
   showArRegistration: false,
+  coreFunctions: STAGE_CONFIG[8].coreFunctions,
   statusTitle: "已完成任务",
   statusRows: [
     {
@@ -1151,13 +1229,13 @@ STAGE_CONFIG[9] = {
     robotDogId: { value: "1saR84Q2Z@market.com", status: "success", isMono: true },
   },
   logs: [
-    ...STAGE_CONFIG[8].logs,
-    ["10:31:25", "业务目标", "机器狗与超市智能体完成商品取件交接动作"],
-    ["10:31:26", "系统决策", "将识别结果与交接任务结果同步回系统门户"],
-    ["10:31:27", "核心网能力", "RAN->UPF->Agent GW->Market Agent 任务链路完成调度"],
-    ["10:31:28", "当前结果", "阶段9任务完成，整条作业闭环成功"],
+    ...STAGE_CONFIG[9].logs,
+    ["10:31:29", "业务目标", "机器狗与超市智能体完成商品取件交接动作"],
+    ["10:31:30", "系统决策", "将识别结果与交接任务结果同步回系统门户"],
+    ["10:31:31", "核心网能力", "RAN->UPF->Agent GW->Market Agent 任务链路完成调度"],
+    ["10:31:32", "当前结果", "阶段10任务完成，整条作业闭环成功"],
   ],
-  workflow: STAGE9_WORKFLOW,
+  workflow: STAGE10_WORKFLOW,
   steps: STAGE_CONFIG[8].steps.map((step) => (
     { ...step, subtitle: "已完成 / Completed", status: "success" }
   )),
@@ -1247,7 +1325,7 @@ const getWorkflowBubbleFromRows = (workflow = [], stage) => {
     };
   }
 
-  if (stage === 8) {
+  if (stage === 8 || stage === 9) {
     return null;
   }
 
@@ -1304,7 +1382,9 @@ export {
   STAGE7_PHASES,
   STAGE7_LOGS,
   STAGE7_WORKFLOW,
-  STAGE9_COMPLETED_TASKS,
+  STAGE9_QOS_PHASE_TIMING,
+  STAGE9_QOS_PHASES,
+  STAGE10_COMPLETED_TASKS,
   STAGE_ANIMATION_TIMING,
   STAGE_CONFIG,
   STAGE_STORY_LINES,

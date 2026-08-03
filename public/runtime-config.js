@@ -11,6 +11,7 @@
     arStatusApiUrl: `${mockBase}/api/v1/system/ar/status`,
     sandboxHealthApiUrl: `${mockBase}/api/health`,
     latencyApiUrl: `${mockBase}/api/latency`,
+    qosPushChannelUrl: `${mockBase}/api/v1/qos/events`,
     webRtcSignalUrl: `${mockBase}/api/v1/web/sdp/offer`,
     dogWebRtcSignalUrl: `${mockBase}/api/v1/web/sdp/offer`,
     dogEnhancedWebRtcSignalUrl: `${mockBase}/api/v1/web/sdp/offer`,

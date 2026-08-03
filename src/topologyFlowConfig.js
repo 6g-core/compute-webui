@@ -96,7 +96,7 @@ export const TOPOLOGY_STAGE_FLOW_CONFIG = {
       ],
     },
   },
-  9: {
+  10: {
     handoff: {
       color: "#f97316",
       lines: [

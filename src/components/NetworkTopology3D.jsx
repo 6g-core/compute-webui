@@ -339,13 +339,102 @@ const UnifiedToolPanel = ({ toolStates }) => (
   </div>
 );
 
+const QosMetricsChart = ({ metrics = [] }) => {
+  const chartWidth = 240;
+  const chartHeight = 122;
+  const padding = { top: 16, right: 14, bottom: 24, left: 38 };
+  const plotWidth = chartWidth - padding.left - padding.right;
+  const plotHeight = chartHeight - padding.top - padding.bottom;
+  const latestPoint = metrics[metrics.length - 1];
+  const values = metrics.flatMap((point) => [point.sendrate_kbps, point.gbr_kbps]);
+  const rawMin = values.length ? Math.min(...values) : 0;
+  const rawMax = values.length ? Math.max(...values) : 1000;
+  const minValue = Math.max(0, Math.floor(rawMin - 200));
+  const maxValue = Math.max(minValue + 500, Math.ceil(rawMax + 200));
+
+  const chartPoints = metrics.map((point, index) => {
+    const x = padding.left + (metrics.length <= 1 ? 0 : (index / (metrics.length - 1)) * plotWidth);
+    const sendrateY = padding.top + ((maxValue - point.sendrate_kbps) / (maxValue - minValue)) * plotHeight;
+    const gbrY = padding.top + ((maxValue - point.gbr_kbps) / (maxValue - minValue)) * plotHeight;
+    return { ...point, x, sendrateY, gbrY };
+  });
+
+  const buildLinePath = (key) => chartPoints.map((point, index) => (
+    `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point[key].toFixed(1)}`
+  )).join(" ");
+  const sendratePath = buildLinePath("sendrateY");
+  const gbrPath = buildLinePath("gbrY");
+  const startLabel = metrics[0]
+    ? new Date(metrics[0].timestamp).toLocaleTimeString("zh-CN", { minute: "2-digit", second: "2-digit" })
+    : "--:--";
+  const endLabel = latestPoint
+    ? new Date(latestPoint.timestamp).toLocaleTimeString("zh-CN", { minute: "2-digit", second: "2-digit" })
+    : "--:--";
+
+  return (
+    <div className="pointer-events-none absolute left-[74%] top-[64.5%] z-[27] flex h-[27%] w-[22.5%] flex-col overflow-hidden rounded-lg border border-cyan-200/55 bg-slate-950/88 px-2.5 py-2 text-cyan-50 shadow-[0_0_22px_rgba(34,211,238,0.28)] backdrop-blur-md">
+      <div className="mb-1 flex shrink-0 items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate text-[11px] font-black leading-tight text-cyan-50">QoS保障曲线</div>
+          <div className="font-mono text-[8px] leading-tight text-blue-100/70">sendrate / GBR</div>
+        </div>
+        <div className="shrink-0 text-right font-mono">
+          <div className="text-[12px] font-black leading-none text-emerald-200">
+            Q{latestPoint ? latestPoint.q_lvl : "--"}
+          </div>
+          <div className="text-[8px] leading-tight text-blue-100/60">q_lvl</div>
+        </div>
+      </div>
+
+      <svg className="min-h-0 flex-1 overflow-visible" viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label="QoS metrics chart">
+        <line x1={padding.left} y1={padding.top} x2={padding.left} y2={padding.top + plotHeight} stroke="rgba(125,211,252,0.42)" strokeWidth="0.8" />
+        <line x1={padding.left} y1={padding.top + plotHeight} x2={padding.left + plotWidth} y2={padding.top + plotHeight} stroke="rgba(125,211,252,0.42)" strokeWidth="0.8" />
+        {[0, 0.5, 1].map((ratio) => {
+          const y = padding.top + ratio * plotHeight;
+          const label = Math.round(maxValue - ratio * (maxValue - minValue));
+          return (
+            <g key={ratio}>
+              <line x1={padding.left} y1={y} x2={padding.left + plotWidth} y2={y} stroke="rgba(125,211,252,0.14)" strokeWidth="0.6" />
+              <text x={padding.left - 5} y={y + 3} textAnchor="end" className="fill-blue-100/70 text-[7px] font-mono">{label}</text>
+            </g>
+          );
+        })}
+        {metrics.length ? (
+          <>
+            <path d={gbrPath} fill="none" stroke="#fbbf24" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={sendratePath} fill="none" stroke="#22d3ee" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            {chartPoints.map((point) => (
+              <g key={`${point.timestamp}-${point.sendrate_kbps}-${point.gbr_kbps}`}>
+                <circle cx={point.x} cy={point.gbrY} r="1.6" fill="#fde68a" stroke="#92400e" strokeWidth="0.5" />
+                <circle cx={point.x} cy={point.sendrateY} r="1.7" fill="#e0f2fe" stroke="#0891b2" strokeWidth="0.6" />
+              </g>
+            ))}
+          </>
+        ) : (
+          <text x="50%" y="50%" textAnchor="middle" className="fill-blue-100/70 text-[9px] font-bold">
+            等待QoS推送
+          </text>
+        )}
+        <text x={padding.left} y={chartHeight - 6} className="fill-blue-100/65 text-[7px] font-mono">{startLabel}</text>
+        <text x={padding.left + plotWidth} y={chartHeight - 6} textAnchor="end" className="fill-blue-100/65 text-[7px] font-mono">{endLabel}</text>
+        <text x="5" y={padding.top + plotHeight / 2} transform={`rotate(-90 5 ${padding.top + plotHeight / 2})`} textAnchor="middle" className="fill-cyan-100/70 text-[7px] font-mono">kbps</text>
+      </svg>
+
+      <div className="mt-1 flex shrink-0 items-center justify-between gap-2 font-mono text-[8px] leading-none text-blue-100/75">
+        <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-cyan-300" />sendrate</span>
+        <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-300" />GBR</span>
+      </div>
+    </div>
+  );
+};
+
 const CurrentTaskSummaryOverlay = ({
   stage,
   workflow = [],
   activeConnections = [],
   highlightedNodes = [],
   topologyLines = [],
-  stage9BlinkActive = false,
+  stage10BlinkActive = false,
   stagePhaseKey = null,
   activeFlowType = null,
 }) => {
@@ -353,7 +442,7 @@ const CurrentTaskSummaryOverlay = ({
     activeConnections,
     highlightedNodes,
     topologyLines,
-    stage9BlinkActive,
+    stage10BlinkActive,
   })) {
     return null;
   }
@@ -363,7 +452,7 @@ const CurrentTaskSummaryOverlay = ({
     stagePhaseKey,
     activeFlowType,
     workflow,
-    stage9BlinkActive,
+    stage10BlinkActive,
   });
 
   if (!summary) {
@@ -395,6 +484,7 @@ export const NetworkTopology3D = ({
   activeConnections = [],
   stagePhaseKey = null,
   language = "zh",
+  qosMetrics = [],
 }) => {
   const nodes = useMemo(() => (
     language === "en"
@@ -416,7 +506,7 @@ export const NetworkTopology3D = ({
     ? { color: "#22f5ff", lines: topologyLines }
     : getTopologyFlowConfig(stage, activeFlowType);
   const highlightedNodeSet = useMemo(() => new Set(highlightedNodes), [highlightedNodes]);
-  const [stage9BlinkActive, setStage9BlinkActive] = useState(false);
+  const [stage10BlinkActive, setStage10BlinkActive] = useState(false);
   const resolveAgentBubblePosition = (bubble) => {
     if (!bubble?.targetNode) {
       return bubble;
@@ -562,14 +652,14 @@ export const NetworkTopology3D = ({
   }, [stage, activeFlowType, activeFlowConfig.lines.length]);
 
   useEffect(() => {
-    if (stage !== 9 || !activeFlowConfig.lines.length) {
-      setStage9BlinkActive(false);
+    if (stage !== 10 || !activeFlowConfig.lines.length) {
+      setStage10BlinkActive(false);
       return undefined;
     }
 
-    setStage9BlinkActive(true);
+    setStage10BlinkActive(true);
     const timer = window.setTimeout(() => {
-      setStage9BlinkActive(false);
+      setStage10BlinkActive(false);
     }, 5000);
 
     return () => window.clearTimeout(timer);
@@ -687,9 +777,11 @@ export const NetworkTopology3D = ({
           activeFlowType={activeFlowType}
           activeConnections={activeConnections}
           highlightedNodes={highlightedNodes}
-          topologyLines={stage === 9 && !stage9BlinkActive ? [] : (topologyLines || activeFlowConfig.lines)}
-          stage9BlinkActive={stage9BlinkActive}
+          topologyLines={stage === 10 && !stage10BlinkActive ? [] : (topologyLines || activeFlowConfig.lines)}
+          stage10BlinkActive={stage10BlinkActive}
         />
+
+        {stage === 9 && <QosMetricsChart metrics={qosMetrics} />}
 
         <svg className="absolute inset-0 z-10 h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
@@ -703,7 +795,7 @@ export const NetworkTopology3D = ({
           </defs>
           {connections.map((connection) => {
             const key = `${connection[0]}->${connection[1]}`;
-            const active = isActive(key) && (stage !== 9 || stage9BlinkActive);
+            const active = isActive(key) && (stage !== 10 || stage10BlinkActive);
             const color = activeFlowConfig.color || "#22f5ff";
             const path = buildPath(connection);
 
@@ -750,7 +842,7 @@ export const NetworkTopology3D = ({
         <div className="pointer-events-none absolute inset-0 z-[18]">
           {connections.map((connection) => {
             const key = `${connection[0]}->${connection[1]}`;
-            const lineConfig = stage !== 9 || stage9BlinkActive ? activeLineConfigByKey[key] : null;
+            const lineConfig = stage !== 10 || stage10BlinkActive ? activeLineConfigByKey[key] : null;
 
             if (!lineConfig) {
               return null;

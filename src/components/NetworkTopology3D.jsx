@@ -403,12 +403,6 @@ const QosMetricsChart = ({ metrics = [] }) => {
           <>
             <path d={gbrPath} fill="none" stroke="#fbbf24" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             <path d={sendratePath} fill="none" stroke="#22d3ee" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            {chartPoints.map((point) => (
-              <g key={`${point.timestamp}-${point.sendrate_kbps}-${point.gbr_kbps}`}>
-                <circle cx={point.x} cy={point.gbrY} r="1.6" fill="#fde68a" stroke="#92400e" strokeWidth="0.5" />
-                <circle cx={point.x} cy={point.sendrateY} r="1.7" fill="#e0f2fe" stroke="#0891b2" strokeWidth="0.6" />
-              </g>
-            ))}
           </>
         ) : (
           <text x="50%" y="50%" textAnchor="middle" className="fill-blue-100/70 text-[9px] font-bold">

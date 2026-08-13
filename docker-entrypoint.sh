@@ -20,6 +20,8 @@ export DOG_WEBRTC_HOST="${DOG_WEBRTC_HOST:-${DOG_WEBRTC_IP:-}}"
 export DOG_ENHANCED_WEBRTC_HOST="${DOG_ENHANCED_WEBRTC_HOST:-${DOG_ENHANCED_WEBRTC_IP:-}}"
 export STAGE_API_URL="${STAGE_API_URL:-}"
 export LATENCY_API_URL="${LATENCY_API_URL:-}"
+export QOS_PUSH_CHANNEL="${QOS_PUSH_CHANNEL:-}"
+export QOS_PUSH_CHANNEL_URL="${QOS_PUSH_CHANNEL_URL:-$QOS_PUSH_CHANNEL}"
 export WEBRTC_SIGNAL_URL="${WEBRTC_SIGNAL_URL:-}"
 export DOG_WEBRTC_SIGNAL_URL="${DOG_WEBRTC_SIGNAL_URL:-}"
 export DOG_ENHANCED_WEBRTC_SIGNAL_URL="${DOG_ENHANCED_WEBRTC_SIGNAL_URL:-}"
@@ -36,6 +38,7 @@ config = {
     "stageApiPort": int(os.environ["BACKEND_PORT"]),
     "stageApiUrl": os.environ.get("STAGE_API_URL") or None,
     "latencyApiUrl": os.environ.get("LATENCY_API_URL") or None,
+    "qosPushChannelUrl": os.environ.get("QOS_PUSH_CHANNEL_URL") or None,
     "webRtcHost": os.environ.get("WEBRTC_HOST") or None,
     "dogWebRtcHost": os.environ.get("DOG_WEBRTC_HOST") or None,
     "dogEnhancedWebRtcHost": os.environ.get("DOG_ENHANCED_WEBRTC_HOST") or None,
@@ -69,9 +72,13 @@ shutdown() {
 
 trap shutdown INT TERM EXIT
 
-if [ "${ENABLE_STAGE_SERVER:-true}" != "false" ]; then
-  start_service python3 /app/server/stage_server.py --host "$STAGE_HOST" --port "$STAGE_PORT" --stage "${INITIAL_STAGE:-1}"
+api_stage_flag="--enable-stage"
+api_latency_flag="--enable-latency"
+if [ "${ENABLE_STAGE_SERVER:-true}" = "false" ]; then
+  api_stage_flag="--disable-stage"
+  api_latency_flag="--disable-latency"
 fi
+start_service python3 /app/server/webui_api_server.py --host "$STAGE_HOST" --port "$STAGE_PORT" --stage "${INITIAL_STAGE:-1}" "$api_stage_flag" "$api_latency_flag"
 
 if [ "${ENABLE_WEBRTC_SERVERS:-true}" != "false" ]; then
   start_service python3 /app/server/webrtc_mp4_server.py --host "$WEBRTC_HOST_BIND" --port "$WEBRTC_PORT" --media /app/fixed_camera_moving_personmp_.mp4 --advertise-ip "$WEBRTC_ADVERTISE_IP"
@@ -82,7 +89,7 @@ fi
 start_service python3 -m http.server "$FRONTEND_PORT" --bind 0.0.0.0 --directory /app/dist
 
 echo "Frontend: http://0.0.0.0:${FRONTEND_PORT}"
-echo "Stage API: http://${STAGE_HOST}:${STAGE_PORT}"
+echo "WebUI API: http://${STAGE_HOST}:${STAGE_PORT}"
 echo "WebRTC offer ports: ${WEBRTC_PORT}, ${DOG_WEBRTC_PORT}, ${DOG_ENHANCED_WEBRTC_PORT}"
 
 wait

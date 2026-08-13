@@ -22,6 +22,7 @@ The UI keeps React components focused on rendering and moves deterministic rules
 - `src/utils/topologySummary.js` owns the task summary mapping and CSS class constants used by `NetworkTopology3D`.
 - `src/hooks/usePolling.js` remains responsible for polling cadence, connection state, and hook cleanup.
 - `src/components/NetworkTopology3D.jsx` renders topology state but no longer owns task-summary business rules.
+- `server/webui_api_server.py` owns the WebUI-side QoS POST receiver and SSE fan-out; `server/stage_server.py` remains only as the compatibility mock-stage launcher.
 
 This split makes the main reliability rules testable with Node's built-in test runner without a browser or extra dependencies.
 
@@ -40,6 +41,8 @@ Priority order for API URLs:
 1. Explicit runtime config, such as `window.__RUNTIME_CONFIG__.stageApiUrl`
 2. Vite environment variable, such as `VITE_STAGE_API_URL`
 3. Runtime host/port fallback, such as `http://localhost:8000/api/stage`
+
+Docker runtime config writes `qosPushChannelUrl` from `QOS_PUSH_CHANNEL_URL`, falling back to the alias `QOS_PUSH_CHANNEL`. When both are empty, the browser keeps the existing fallback behavior and derives `/api/v1/qos/events` from `sandboxApiUrl`/`sandboxPort`.
 
 ### Polling Payload Parsing
 
@@ -103,6 +106,11 @@ Current test files:
   - Verifies metrics-only payload parsing.
   - Verifies dialog/image payload parsing with per-item placement.
   - Verifies mixed payloads and unsupported images are rejected.
+
+- `test/test_webui_api_server.py`
+  - Verifies QoS POST and SSE fan-out remain available when local mock stage is disabled.
+  - Verifies mock `/api/stage` behavior is preserved when enabled.
+  - Verifies Docker entrypoint writes `qosPushChannelUrl` runtime config.
 
 Build verification:
 

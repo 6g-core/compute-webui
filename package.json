@@ -2,7 +2,9 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "test": "node --test",
+    "test": "npm run test:js && npm run test:server",
+    "test:js": "node --test",
+    "test:server": "python3 -m unittest discover -s test -p 'test_*.py'",
     "dev": "vite --host 0.0.0.0",
     "dev:28449": "vite --host 0.0.0.0 --port 28449 --strictPort",
     "stage:server": "python3 server/stage_server.py --host 0.0.0.0 --port 28448",

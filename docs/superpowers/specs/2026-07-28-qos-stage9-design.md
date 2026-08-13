@@ -352,6 +352,7 @@ window.__RUNTIME_CONFIG__ = {
 
 配置规则：
 
+- Docker 运行时支持 `QOS_PUSH_CHANNEL_URL`，也兼容 `QOS_PUSH_CHANNEL` 作为别名；两者都配置时 `QOS_PUSH_CHANNEL_URL` 优先。
 - `qosPushChannelUrl` 只在页面需要显式订阅 SSE 事件通道时使用；如果运行环境可以直接注入 QoS 状态，可不配置。
 - 图片和文本的上下关系由 payload 中的 `imagePlacements[i]` 分别控制：`above` 表示 `images[i]` 显示在 `dialogs[i]` 上方，`below` 表示显示在下方。
 - 未配置时：
@@ -359,6 +360,8 @@ window.__RUNTIME_CONFIG__ = {
   - 页面使用 `sandboxApiUrl`/`sandboxPort` 推导 `/api/v1/qos/events` 事件流地址。
 
 由于 POST 发送方不由前端控制，后端只需要按照部署给出的前端接收地址发送 `POST /api/v1/qos` 即可。浏览器 runtime config 不负责声明后端 POST 目标。
+
+WebUI 镜像内的正式 API 服务由 `server/webui_api_server.py` 提供，默认监听 `STAGE_PORT=28448`。`POST /api/v1/qos` 和 `GET /api/v1/qos/events` 不依赖 mock stage 开关，`ENABLE_STAGE_SERVER=false` 时仍然可用。`ENABLE_STAGE_SERVER` 只控制本地 mock `/api/stage` 和 `/api/latency` 行为；关闭时，原有真实 sys-agent/sandbox 对接配置不改变。
 
 ## 显示生命周期
 

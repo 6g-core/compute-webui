@@ -49,6 +49,17 @@ test("parseQosPushPayload rejects mixed metrics and dialog/image payloads", () =
   }), /cannot mix metrics/);
 });
 
+test("parseQosPushPayload accepts reset payloads", () => {
+  assert.deepEqual(parseQosPushPayload({ type: "reset" }), { type: "reset" });
+  assert.deepEqual(parseQosPushPayload({ reset: true }), { type: "reset" });
+  assert.throws(() => parseQosPushPayload({
+    type: "reset",
+    dialogs: [],
+    images: [],
+    imagePlacements: [],
+  }), /cannot mix reset/);
+});
+
 test("parseQosPushPayload validates dialog/image array shape", () => {
   assert.throws(() => parseQosPushPayload({
     dialogs: ["QoS保障已启用"],

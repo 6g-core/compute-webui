@@ -60,6 +60,8 @@ Docker runtime config writes `qosPushChannelUrl` from `QOS_PUSH_CHANNEL_URL`, fa
 
 - `metrics` payloads must contain only a metrics array and update the OTT chart.
 - `dialogs/images/imagePlacements` payloads must contain equal-length arrays and update only the video dialog layer.
+- The frontend QoS receiving server caches accumulated `dialogs/images/imagePlacements` records and replays them to new SSE subscribers, so dialog pushes received before the page enters stage 9 are not lost.
+- A QoS reset payload, such as `{ "type": "reset" }`, clears the cached dialog/image records and notifies current subscribers with an empty dialog layer.
 - Mixed metrics and dialog/image payloads are rejected.
 - Images must be `http(s)` URLs or png/jpeg/gif base64 data URIs.
 - `imagePlacements[i]` controls whether `images[i]` renders above or below `dialogs[i]`.
@@ -81,6 +83,7 @@ Run all tests:
 
 ```bash
 npm test
+python3 -m unittest discover -s test -p 'test_*.py'
 ```
 
 Current test files:
@@ -111,6 +114,11 @@ Current test files:
   - Verifies QoS POST and SSE fan-out remain available when local mock stage is disabled.
   - Verifies mock `/api/stage` behavior is preserved when enabled.
   - Verifies Docker entrypoint writes `qosPushChannelUrl` runtime config.
+
+- `test/test_stage_server.py`
+  - Verifies WebUI API state dialog/image cache replay for new QoS SSE subscribers.
+  - Verifies accumulated dialog/image snapshots and reset cache clearing.
+  - Verifies metrics payloads are not replayed as cached dialog state.
 
 Build verification:
 

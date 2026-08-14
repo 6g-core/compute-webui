@@ -46,6 +46,15 @@ export const useQosFeed = (enabled) => {
             dialogItems: parsed.dialogItems,
             error: null,
           }));
+          return;
+        }
+
+        if (parsed.type === "reset") {
+          setQosState((current) => ({
+            ...current,
+            dialogItems: [],
+            error: null,
+          }));
         }
       } catch (parseError) {
         setQosState((current) => ({

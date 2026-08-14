@@ -8,6 +8,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
 ALLOWED_STAGES = (1, 2, 4, 5, 6, 7, 8, 9, 10)
+QOS_DIALOG_CACHE_LIMIT = 20
+QOS_DIALOG_EMPTY_PAYLOAD = {
+    "dialogs": [],
+    "images": [],
+    "imagePlacements": [],
+}
 
 
 class WebUiApiState:
@@ -17,11 +23,19 @@ class WebUiApiState:
         self.enable_latency = enable_latency
         self._qos_lock = threading.Lock()
         self._qos_subscribers = []
+        self._qos_dialog_cache = {
+            "dialogs": [],
+            "images": [],
+            "imagePlacements": [],
+        }
 
     def subscribe_qos(self):
         subscriber = queue.Queue(maxsize=20)
         with self._qos_lock:
             self._qos_subscribers.append(subscriber)
+            cached_dialogs = self._build_qos_dialog_cache_payload_locked()
+            if cached_dialogs is not None:
+                self._enqueue_qos(subscriber, cached_dialogs)
         return subscriber
 
     def unsubscribe_qos(self, subscriber):
@@ -31,19 +45,49 @@ class WebUiApiState:
                 if current is not subscriber
             ]
 
-    def publish_qos(self, payload):
+    @staticmethod
+    def _enqueue_qos(subscriber, payload):
+        try:
+            subscriber.put_nowait(payload)
+        except queue.Full:
+            try:
+                subscriber.get_nowait()
+                subscriber.put_nowait(payload)
+            except queue.Empty:
+                pass
+
+    def _build_qos_dialog_cache_payload_locked(self):
+        if not self._qos_dialog_cache["dialogs"]:
+            return None
+        return {
+            "dialogs": list(self._qos_dialog_cache["dialogs"]),
+            "images": list(self._qos_dialog_cache["images"]),
+            "imagePlacements": list(self._qos_dialog_cache["imagePlacements"]),
+        }
+
+    def _append_qos_dialog_cache_locked(self, payload):
+        for key in ("dialogs", "images", "imagePlacements"):
+            self._qos_dialog_cache[key].extend(payload[key])
+            self._qos_dialog_cache[key] = self._qos_dialog_cache[key][-QOS_DIALOG_CACHE_LIMIT:]
+        return self._build_qos_dialog_cache_payload_locked() or dict(QOS_DIALOG_EMPTY_PAYLOAD)
+
+    def _clear_qos_dialog_cache_locked(self):
+        for key in ("dialogs", "images", "imagePlacements"):
+            self._qos_dialog_cache[key] = []
+        return dict(QOS_DIALOG_EMPTY_PAYLOAD)
+
+    def publish_qos(self, payload, payload_type=None):
         with self._qos_lock:
+            if payload_type == "dialogImages":
+                outgoing_payload = self._append_qos_dialog_cache_locked(payload)
+            elif payload_type == "reset":
+                outgoing_payload = self._clear_qos_dialog_cache_locked()
+            else:
+                outgoing_payload = payload
             subscribers = list(self._qos_subscribers)
 
         for subscriber in subscribers:
-            try:
-                subscriber.put_nowait(payload)
-            except queue.Full:
-                try:
-                    subscriber.get_nowait()
-                    subscriber.put_nowait(payload)
-                except queue.Empty:
-                    pass
+            self._enqueue_qos(subscriber, outgoing_payload)
 
 
 def write_json(handler, payload, status=200):
@@ -89,6 +133,12 @@ def validate_qos_payload(payload):
 
     has_metrics = "metrics" in payload
     has_dialog_layer = any(key in payload for key in ("dialogs", "images", "imagePlacements"))
+    has_reset = payload.get("reset") is True or str(payload.get("type") or "").strip().lower() == "reset"
+
+    if has_reset:
+        if has_metrics or has_dialog_layer:
+            raise ValueError("payload cannot mix reset with metrics or dialogs/images")
+        return "reset"
 
     if has_metrics and has_dialog_layer:
         raise ValueError("payload cannot mix metrics with dialogs/images")
@@ -125,7 +175,7 @@ def validate_qos_payload(payload):
                 raise ValueError(f"imagePlacements[{index}] must be above or below")
         return "dialogImages"
 
-    raise ValueError("payload must include metrics or dialogs/images")
+    raise ValueError("payload must include metrics, dialogs/images, or reset")
 
 
 class WebUiApiRequestHandler(BaseHTTPRequestHandler):
@@ -217,7 +267,7 @@ class WebUiApiRequestHandler(BaseHTTPRequestHandler):
             write_json(self, {"error": str(exc)}, status=400)
             return
 
-        self.server.state.publish_qos(payload)
+        self.server.state.publish_qos(payload, payload_type)
         write_json(self, {"ok": True, "type": payload_type})
 
     def handle_qos_events(self):

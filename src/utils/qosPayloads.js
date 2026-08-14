@@ -113,6 +113,16 @@ export const parseQosPushPayload = (payload) => {
 
   const hasMetrics = hasOwn(payload, "metrics");
   const hasDialogLayer = hasOwn(payload, "dialogs") || hasOwn(payload, "images") || hasOwn(payload, "imagePlacements");
+  const hasReset = payload?.reset === true || String(payload?.type || "").trim().toLowerCase() === "reset";
+
+  if (hasReset) {
+    if (hasMetrics || hasDialogLayer) {
+      throw new Error("QoS push payload cannot mix reset with metrics or dialogs/images");
+    }
+    return {
+      type: "reset",
+    };
+  }
 
   if (hasMetrics && hasDialogLayer) {
     throw new Error("QoS push payload cannot mix metrics with dialogs/images");

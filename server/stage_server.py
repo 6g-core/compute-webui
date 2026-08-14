@@ -10,4 +10,8 @@ from server.webui_api_server import main  # noqa: E402
 
 
 if __name__ == "__main__":
-    main(description="Serve and mutate the current demo stage.")
+    main(
+        enable_stage_default=True,
+        enable_latency_default=True,
+        description="Serve and mutate the current demo stage.",
+    )

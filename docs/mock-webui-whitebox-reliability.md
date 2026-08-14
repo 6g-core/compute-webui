@@ -64,7 +64,7 @@ Docker runtime config writes `qosPushChannelUrl` from `QOS_PUSH_CHANNEL_URL`, fa
 - A QoS reset payload, such as `{ "type": "reset" }` or empty `dialogs/images/imagePlacements` arrays, clears the cached dialog/image records and notifies current subscribers with an empty dialog layer.
 - Mixed metrics and dialog/image payloads are rejected.
 - Images must be `http(s)` URLs or png/jpeg/gif base64 data URIs.
-- `imagePlacements[i]` controls whether `images[i]` renders above or below `dialogs[i]`.
+- `imagePlacements[i]` supports `above`, `below`, `left`, or `right`; `left/right` align the whole image+dialog item to that side of the video overlay.
 
 ### Topology Summary
 

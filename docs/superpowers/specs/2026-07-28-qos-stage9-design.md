@@ -181,8 +181,8 @@ flowchart TD
     "data:image/gif;base64,..."
   ],
   "imagePlacements": [
-    "above",
-    "below"
+    "left",
+    "right"
   ]
 }
 ```
@@ -199,7 +199,7 @@ flowchart TD
 - `dialogs/images/imagePlacements` payload 中，`imagePlacements` 必须是字符串数组。
 - `dialogs.length` 必须等于 `images.length`。
 - `imagePlacements.length` 必须等于 `dialogs.length`。
-- `imagePlacements[]` 允许值为 `above` 或 `below`。
+- `imagePlacements[]` 允许值为 `above`、`below`、`left` 或 `right`。
 - `images[]` 支持 `data:image/png;base64,...`、`data:image/jpeg;base64,...`、`data:image/gif;base64,...` 或 `http(s)` 图片 URL。
 - `metrics` 与 `dialogs/images/imagePlacements` 必须单独发送，不允许在同一个 payload 中混合。
 - 混合 payload 按非法请求处理，避免出现“同时刷新图表和对话”的歧义。
@@ -312,6 +312,8 @@ stateDiagram-v2
 - 图片上下位置由每条 item 的 `imagePlacement` 控制：
   - `above`：图片在文本上方。
   - `below`：图片在文本下方。
+  - `left`：图片和文本组成的对话项整体显示在视频框左侧。
+  - `right`：图片和文本组成的对话项整体显示在视频框右侧。
 - `imagePlacements[i]` 对应 `images[i]` 和 `dialogs[i]`。
 - 若实现需要兼容旧数据，缺失的单条配置可使用 `qosDialogDefaultImagePlacement`，默认值为 `above`；新 payload 应按每条携带 `imagePlacements`。
 - 图片加载失败时保留文本气泡，不让 overlay 消失或撑破布局。
@@ -354,7 +356,7 @@ window.__RUNTIME_CONFIG__ = {
 
 - Docker 运行时支持 `QOS_PUSH_CHANNEL_URL`，也兼容 `QOS_PUSH_CHANNEL` 作为别名；两者都配置时 `QOS_PUSH_CHANNEL_URL` 优先。
 - `qosPushChannelUrl` 只在页面需要显式订阅 SSE 事件通道时使用；如果运行环境可以直接注入 QoS 状态，可不配置。
-- 图片和文本的上下关系由 payload 中的 `imagePlacements[i]` 分别控制：`above` 表示 `images[i]` 显示在 `dialogs[i]` 上方，`below` 表示显示在下方。
+- 图片和文本的展示位置由 payload 中的 `imagePlacements[i]` 分别控制：`above/below` 表示 `images[i]` 相对 `dialogs[i]` 的上下关系，`left/right` 表示图片和文本组成的对话项整体显示在视频框左侧或右侧。
 - 未配置时：
   - 页面不主动请求 `/api/v1/qos`。
   - 页面使用 `sandboxApiUrl`/`sandboxPort` 推导 `/api/v1/qos/events` 事件流地址。
@@ -391,7 +393,7 @@ stateDiagram-v2
 - `metrics` payload 非法：返回 `400`，不更新图表，不影响当前对话图层。
 - `dialogs.length !== images.length`：返回 `400`，不更新对话图层，不影响当前图表。
 - `imagePlacements.length !== dialogs.length`：返回 `400`，不更新对话图层，不影响当前图表。
-- `imagePlacements[]` 包含非 `above`/`below` 值：返回 `400`，不更新对话图层，不影响当前图表。
+- `imagePlacements[]` 包含非 `above`/`below`/`left`/`right` 值：返回 `400`，不更新对话图层，不影响当前图表。
 - 图片来源不是允许的 data URI 或 `http(s)` URL：返回 `400`，不更新对话图层，不影响当前图表。
 - 单张图片加载失败：前端隐藏该图片，只显示对应 dialog。
 - `metrics` 中存在非法点：解析层可丢弃非法点；如果全部非法，则图表不显示。

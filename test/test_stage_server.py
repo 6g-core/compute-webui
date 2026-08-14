@@ -24,13 +24,13 @@ class WebUiApiStateQosCacheTest(unittest.TestCase):
     def test_dialog_images_are_cached_and_replayed_to_new_subscribers(self):
         state = WebUiApiState(initial_stage=1)
 
-        state.publish_qos(dialog_payload("用户问题"), "dialogImages")
+        state.publish_qos(dialog_payload("用户问题", placement="left"), "dialogImages")
 
         subscriber = state.subscribe_qos()
         replayed = subscriber.get_nowait()
 
         self.assertEqual(["用户问题"], replayed["dialogs"])
-        self.assertEqual(["below"], replayed["imagePlacements"])
+        self.assertEqual(["left"], replayed["imagePlacements"])
 
     def test_dialog_images_are_accumulated_before_publish(self):
         state = WebUiApiState(initial_stage=1)
@@ -125,6 +125,7 @@ class WebUiApiStateQosCacheTest(unittest.TestCase):
     def test_validate_reset_payload(self):
         self.assertEqual("reset", validate_qos_payload({"type": "reset"}))
         self.assertEqual("reset", validate_qos_payload({"reset": True}))
+        self.assertEqual("dialogImages", validate_qos_payload(dialog_payload("用户问题", placement="right")))
         self.assertEqual("reset", validate_qos_payload({
             "dialogs": [],
             "images": [],

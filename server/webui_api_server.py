@@ -185,8 +185,8 @@ def validate_qos_payload(payload):
                 raise ValueError(f"dialogs[{index}] must be a string")
             if not is_supported_qos_image_source(images[index]):
                 raise ValueError(f"images[{index}] must be a png/jpeg/gif data URI or http(s) URL")
-            if image_placements[index] not in ("above", "below"):
-                raise ValueError(f"imagePlacements[{index}] must be above or below")
+            if image_placements[index] not in ("above", "below", "left", "right"):
+                raise ValueError(f"imagePlacements[{index}] must be above, below, left, or right")
         return "dialogImages"
 
     if has_reset:

@@ -105,7 +105,7 @@ class WebUiApiServerTest(unittest.TestCase):
             {
                 "dialogs": ["QoS保障已启用"],
                 "images": ["data:image/png;base64,QUJDRA=="],
-                "imagePlacements": ["above"],
+                "imagePlacements": ["right"],
             },
         )
         self.assertEqual(200, status)
@@ -113,6 +113,7 @@ class WebUiApiServerTest(unittest.TestCase):
 
         event_payload = self.read_qos_event(event_response)
         self.assertEqual(["QoS保障已启用"], event_payload["dialogs"])
+        self.assertEqual(["right"], event_payload["imagePlacements"])
 
     def test_qos_empty_dialog_payload_resets_dialog_stream(self):
         server = self.start_server(enable_stage=False)
@@ -131,12 +132,14 @@ class WebUiApiServerTest(unittest.TestCase):
             {
                 "dialogs": ["QoS保障已启用"],
                 "images": ["data:image/png;base64,QUJDRA=="],
-                "imagePlacements": ["below"],
+                "imagePlacements": ["left"],
             },
         )
         self.assertEqual(200, status)
         self.assertEqual({"ok": True, "type": "dialogImages"}, body)
-        self.assertEqual(["QoS保障已启用"], self.read_qos_event(event_response)["dialogs"])
+        event_payload = self.read_qos_event(event_response)
+        self.assertEqual(["QoS保障已启用"], event_payload["dialogs"])
+        self.assertEqual(["left"], event_payload["imagePlacements"])
 
         status, body = self.request(
             server,

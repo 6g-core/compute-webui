@@ -1,4 +1,4 @@
-const VALID_IMAGE_PLACEMENTS = new Set(["above", "below"]);
+const VALID_IMAGE_PLACEMENTS = new Set(["above", "below", "left", "right"]);
 const SUPPORTED_DATA_IMAGE_PATTERN = /^data:image\/(?:png|jpeg|gif);base64,[A-Za-z0-9+/=]+$/i;
 
 const hasOwn = (payload, key) => Object.prototype.hasOwnProperty.call(payload, key);
@@ -90,7 +90,7 @@ export const buildQosDialogItems = (dialogs, images, imagePlacements) => {
     }
 
     if (!VALID_IMAGE_PLACEMENTS.has(imagePlacement)) {
-      throw new Error(`QoS imagePlacement item ${index} must be above or below`);
+      throw new Error(`QoS imagePlacement item ${index} must be above, below, left, or right`);
     }
 
     return {

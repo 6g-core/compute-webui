@@ -27,16 +27,18 @@ test("parseQosPushPayload accepts metrics-only payloads", () => {
 
 test("parseQosPushPayload accepts dialog/image payloads with per-item placement", () => {
   const parsed = parseQosPushPayload({
-    dialogs: ["QoS保障已启用", "GBR已抬升"],
+    dialogs: ["QoS保障已启用", "GBR已抬升", "用户请求", "模型返回"],
     images: [
       "data:image/png;base64,QUJDRA==",
       "https://example.com/qos.gif",
+      "data:image/jpeg;base64,QUJDRA==",
+      "data:image/gif;base64,QUJDRA==",
     ],
-    imagePlacements: ["above", "below"],
+    imagePlacements: ["above", "below", "left", "right"],
   });
 
   assert.equal(parsed.type, "dialogImages");
-  assert.deepEqual(parsed.dialogItems.map((item) => item.imagePlacement), ["above", "below"]);
+  assert.deepEqual(parsed.dialogItems.map((item) => item.imagePlacement), ["above", "below", "left", "right"]);
   assert.equal(parsed.dialogItems[0].dialog, "QoS保障已启用");
 });
 
@@ -83,6 +85,12 @@ test("parseQosPushPayload validates dialog/image array shape", () => {
     images: ["data:image/svg+xml;base64,QUJDRA=="],
     imagePlacements: ["above"],
   }), /png\/jpeg\/gif/);
+
+  assert.throws(() => parseQosPushPayload({
+    dialogs: ["QoS保障已启用"],
+    images: ["data:image/png;base64,QUJDRA=="],
+    imagePlacements: ["center"],
+  }), /above, below, left, or right/);
 });
 
 test("isSupportedQosImageSource allows png jpeg gif data URIs and http URLs only", () => {

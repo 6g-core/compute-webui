@@ -34,11 +34,18 @@ test("parseQosPushPayload accepts dialog/image payloads with per-item placement"
       "data:image/jpeg;base64,QUJDRA==",
       "data:image/gif;base64,QUJDRA==",
     ],
-    imagePlacements: ["above", "below", "left", "right"],
+    imagePlacements: ["above", "below", ["left", "below"], ["right", "above"]],
   });
 
   assert.equal(parsed.type, "dialogImages");
-  assert.deepEqual(parsed.dialogItems.map((item) => item.imagePlacement), ["above", "below", "left", "right"]);
+  assert.deepEqual(parsed.dialogItems.map((item) => item.imagePlacement), [
+    ["above"],
+    ["below"],
+    ["left", "below"],
+    ["right", "above"],
+  ]);
+  assert.deepEqual(parsed.dialogItems.map((item) => item.imageHorizontalPlacement), [null, null, "left", "right"]);
+  assert.deepEqual(parsed.dialogItems.map((item) => item.imageVerticalPlacement), ["above", "below", "below", "above"]);
   assert.equal(parsed.dialogItems[0].dialog, "QoS保障已启用");
 });
 
@@ -91,6 +98,12 @@ test("parseQosPushPayload validates dialog/image array shape", () => {
     images: ["data:image/png;base64,QUJDRA=="],
     imagePlacements: ["center"],
   }), /above, below, left, or right/);
+
+  assert.throws(() => parseQosPushPayload({
+    dialogs: ["QoS保障已启用"],
+    images: ["data:image/png;base64,QUJDRA=="],
+    imagePlacements: [["left", "right"]],
+  }), /only one left\/right/);
 });
 
 test("isSupportedQosImageSource allows png jpeg gif data URIs and http URLs only", () => {

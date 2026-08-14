@@ -1,4 +1,9 @@
-const VALID_IMAGE_PLACEMENTS = new Set(["above", "below", "left", "right"]);
+const HORIZONTAL_IMAGE_PLACEMENTS = new Set(["left", "right"]);
+const VERTICAL_IMAGE_PLACEMENTS = new Set(["above", "below"]);
+const VALID_IMAGE_PLACEMENTS = new Set([
+  ...HORIZONTAL_IMAGE_PLACEMENTS,
+  ...VERTICAL_IMAGE_PLACEMENTS,
+]);
 const SUPPORTED_DATA_IMAGE_PATTERN = /^data:image\/(?:png|jpeg|gif);base64,[A-Za-z0-9+/=]+$/i;
 
 const hasOwn = (payload, key) => Object.prototype.hasOwnProperty.call(payload, key);
@@ -68,6 +73,43 @@ export const parseQosMetricsPayload = (payload) => {
   });
 };
 
+export const normalizeQosImagePlacement = (placement, index) => {
+  const rawValues = Array.isArray(placement) ? placement : [placement];
+  if (rawValues.length < 1 || rawValues.length > 2) {
+    throw new Error(`QoS imagePlacement item ${index} must include one or two placement values`);
+  }
+
+  const normalizedValues = [];
+  let imageHorizontalPlacement = null;
+  let imageVerticalPlacement = null;
+
+  rawValues.forEach((rawValue) => {
+    const value = String(rawValue || "").trim().toLowerCase();
+    if (!VALID_IMAGE_PLACEMENTS.has(value)) {
+      throw new Error(`QoS imagePlacement item ${index} must use above, below, left, or right`);
+    }
+
+    if (HORIZONTAL_IMAGE_PLACEMENTS.has(value)) {
+      if (imageHorizontalPlacement) {
+        throw new Error(`QoS imagePlacement item ${index} can include only one left/right value`);
+      }
+      imageHorizontalPlacement = value;
+    } else if (VERTICAL_IMAGE_PLACEMENTS.has(value)) {
+      if (imageVerticalPlacement) {
+        throw new Error(`QoS imagePlacement item ${index} can include only one above/below value`);
+      }
+      imageVerticalPlacement = value;
+    }
+    normalizedValues.push(value);
+  });
+
+  return {
+    imagePlacement: normalizedValues,
+    imageHorizontalPlacement,
+    imageVerticalPlacement: imageVerticalPlacement || "above",
+  };
+};
+
 export const buildQosDialogItems = (dialogs, images, imagePlacements) => {
   if (!Array.isArray(dialogs) || !Array.isArray(images) || !Array.isArray(imagePlacements)) {
     throw new Error("QoS dialog payload must include dialogs, images, and imagePlacements arrays");
@@ -79,7 +121,7 @@ export const buildQosDialogItems = (dialogs, images, imagePlacements) => {
 
   return dialogs.map((dialog, index) => {
     const image = images[index];
-    const imagePlacement = imagePlacements[index];
+    const placement = normalizeQosImagePlacement(imagePlacements[index], index);
 
     if (typeof dialog !== "string") {
       throw new Error(`QoS dialog item ${index} must be a string`);
@@ -89,15 +131,11 @@ export const buildQosDialogItems = (dialogs, images, imagePlacements) => {
       throw new Error(`QoS image item ${index} must be a png/jpeg/gif data URI or http(s) URL`);
     }
 
-    if (!VALID_IMAGE_PLACEMENTS.has(imagePlacement)) {
-      throw new Error(`QoS imagePlacement item ${index} must be above, below, left, or right`);
-    }
-
     return {
-      id: `${index}-${dialog}-${image.slice(0, 32)}`,
+      id: `${index}-${dialog}-${image.slice(0, 32)}-${placement.imagePlacement.join("-")}`,
       dialog,
       image,
-      imagePlacement,
+      ...placement,
     };
   });
 };

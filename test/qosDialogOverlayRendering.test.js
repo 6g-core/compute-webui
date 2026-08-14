@@ -20,7 +20,7 @@ const extractQosDialogOverlaySource = () => {
 test("QoS dialog overlay aligns left and right placements explicitly", () => {
   const overlaySource = extractQosDialogOverlaySource();
 
-  assert.match(overlaySource, /placement === "left"/);
-  assert.match(overlaySource, /placement === "right"/);
-  assert.match(overlaySource, /placement !== "below"/);
+  assert.match(overlaySource, /horizontalPlacement === "left"/);
+  assert.match(overlaySource, /horizontalPlacement === "right"/);
+  assert.match(overlaySource, /verticalPlacement !== "below"/);
 });

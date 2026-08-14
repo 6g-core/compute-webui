@@ -137,6 +137,27 @@ def ensure_number(value, field_name):
     return numeric_value
 
 
+def validate_qos_image_placement(placement, field_name):
+    raw_values = placement if isinstance(placement, list) else [placement]
+    if not 1 <= len(raw_values) <= 2:
+        raise ValueError(f"{field_name} must include one or two placement values")
+
+    horizontal_placement = None
+    vertical_placement = None
+    for raw_value in raw_values:
+        value = str(raw_value or "").strip().lower()
+        if value not in ("above", "below", "left", "right"):
+            raise ValueError(f"{field_name} must use above, below, left, or right")
+        if value in ("left", "right"):
+            if horizontal_placement is not None:
+                raise ValueError(f"{field_name} can include only one left/right value")
+            horizontal_placement = value
+        else:
+            if vertical_placement is not None:
+                raise ValueError(f"{field_name} can include only one above/below value")
+            vertical_placement = value
+
+
 def validate_qos_payload(payload):
     if not isinstance(payload, dict):
         raise ValueError("payload must be an object")
@@ -185,8 +206,7 @@ def validate_qos_payload(payload):
                 raise ValueError(f"dialogs[{index}] must be a string")
             if not is_supported_qos_image_source(images[index]):
                 raise ValueError(f"images[{index}] must be a png/jpeg/gif data URI or http(s) URL")
-            if image_placements[index] not in ("above", "below", "left", "right"):
-                raise ValueError(f"imagePlacements[{index}] must be above, below, left, or right")
+            validate_qos_image_placement(image_placements[index], f"imagePlacements[{index}]")
         return "dialogImages"
 
     if has_reset:

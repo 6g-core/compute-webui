@@ -1081,11 +1081,12 @@ const QosDialogOverlay = ({ items = [] }) => {
   return (
     <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end gap-2 px-4 pb-14 pt-14">
       {visibleItems.map((item, index) => {
-        const placement = item.imagePlacement || "above";
-        const imageAbove = placement !== "below";
-        const alignClassName = placement === "left"
+        const horizontalPlacement = item.imageHorizontalPlacement;
+        const verticalPlacement = item.imageVerticalPlacement || "above";
+        const imageAbove = verticalPlacement !== "below";
+        const alignClassName = horizontalPlacement === "left"
           ? "self-start"
-          : placement === "right"
+          : horizontalPlacement === "right"
             ? "self-end"
             : index % 2 === 0 ? "self-end" : "self-start";
         const alignRight = alignClassName === "self-end";

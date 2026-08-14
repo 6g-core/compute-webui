@@ -23,4 +23,6 @@ test("QoS dialog overlay aligns left and right placements explicitly", () => {
   assert.match(overlaySource, /horizontalPlacement === "left"/);
   assert.match(overlaySource, /horizontalPlacement === "right"/);
   assert.match(overlaySource, /verticalPlacement !== "below"/);
+  assert.match(overlaySource, /w-1\/4/);
+  assert.match(overlaySource, /h-auto/);
 });

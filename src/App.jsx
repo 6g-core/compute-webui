@@ -1073,7 +1073,7 @@ const QosDialogOverlay = ({ items = [] }) => {
     <img
       src={item.image}
       alt=""
-      className="max-h-24 w-full rounded-md border border-cyan-200/25 object-cover shadow-[0_0_14px_rgba(34,211,238,0.22)]"
+      className="h-auto w-1/4 min-w-[25%] max-w-[25%] rounded-md border border-cyan-200/25 object-contain shadow-[0_0_14px_rgba(34,211,238,0.22)]"
       draggable="false"
     />
   );
@@ -1085,19 +1085,19 @@ const QosDialogOverlay = ({ items = [] }) => {
         const verticalPlacement = item.imageVerticalPlacement || "above";
         const imageAbove = verticalPlacement !== "below";
         const alignClassName = horizontalPlacement === "left"
-          ? "self-start"
+          ? "items-start"
           : horizontalPlacement === "right"
-            ? "self-end"
-            : index % 2 === 0 ? "self-end" : "self-start";
-        const alignRight = alignClassName === "self-end";
+            ? "items-end"
+            : index % 2 === 0 ? "items-end" : "items-start";
+        const alignRight = alignClassName === "items-end";
         const bubbleClassName = alignRight
           ? "border-cyan-200/60 bg-cyan-950/88 text-cyan-50"
           : "border-emerald-200/55 bg-emerald-950/84 text-emerald-50";
 
         return (
-          <div key={item.id} className={`flex max-w-[78%] flex-col gap-1.5 ${alignClassName}`}>
+          <div key={item.id} className={`flex w-full flex-col gap-1.5 ${alignClassName}`}>
             {imageAbove && renderImage(item)}
-            <div className={`rounded-lg border px-3 py-2 text-[12px] font-bold leading-snug shadow-[0_0_18px_rgba(15,23,42,0.42)] backdrop-blur-md ${bubbleClassName}`}>
+            <div className={`max-w-[78%] rounded-lg border px-3 py-2 text-[12px] font-bold leading-snug shadow-[0_0_18px_rgba(15,23,42,0.42)] backdrop-blur-md ${bubbleClassName}`}>
               {item.dialog}
             </div>
             {!imageAbove && renderImage(item)}

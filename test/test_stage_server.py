@@ -67,6 +67,40 @@ class WebUiApiStateQosCacheTest(unittest.TestCase):
         with self.assertRaises(queue.Empty):
             new_subscriber.get_nowait()
 
+    def test_empty_dialog_image_payload_clears_dialog_cache(self):
+        state = WebUiApiState(initial_stage=1)
+        state.publish_qos(dialog_payload("用户问题"), "dialogImages")
+        subscriber = state.subscribe_qos()
+        self.assertEqual(["用户问题"], subscriber.get_nowait()["dialogs"])
+
+        reset_payload = {
+            "dialogs": [],
+            "images": [],
+            "imagePlacements": [],
+        }
+        state.publish_qos(reset_payload, validate_qos_payload(reset_payload))
+
+        self.assertEqual([], subscriber.get_nowait()["dialogs"])
+        new_subscriber = state.subscribe_qos()
+        with self.assertRaises(queue.Empty):
+            new_subscriber.get_nowait()
+
+    def test_reset_drops_pending_dialog_snapshots_for_current_subscribers(self):
+        state = WebUiApiState(initial_stage=1)
+        subscriber = state.subscribe_qos()
+        state.publish_qos(dialog_payload("用户问题"), "dialogImages")
+
+        reset_payload = {
+            "dialogs": [],
+            "images": [],
+            "imagePlacements": [],
+        }
+        state.publish_qos(reset_payload, validate_qos_payload(reset_payload))
+
+        self.assertEqual([], subscriber.get_nowait()["dialogs"])
+        with self.assertRaises(queue.Empty):
+            subscriber.get_nowait()
+
     def test_metrics_are_not_replayed_to_new_subscribers(self):
         state = WebUiApiState(initial_stage=1)
         state.publish_qos(
@@ -91,12 +125,23 @@ class WebUiApiStateQosCacheTest(unittest.TestCase):
     def test_validate_reset_payload(self):
         self.assertEqual("reset", validate_qos_payload({"type": "reset"}))
         self.assertEqual("reset", validate_qos_payload({"reset": True}))
+        self.assertEqual("reset", validate_qos_payload({
+            "dialogs": [],
+            "images": [],
+            "imagePlacements": [],
+        }))
+        self.assertEqual("reset", validate_qos_payload({
+            "type": "reset",
+            "dialogs": [],
+            "images": [],
+            "imagePlacements": [],
+        }))
         with self.assertRaisesRegex(ValueError, "cannot mix reset"):
             validate_qos_payload({
                 "type": "reset",
-                "dialogs": [],
-                "images": [],
-                "imagePlacements": [],
+                "dialogs": ["用户问题"],
+                "images": ["data:image/png;base64,QUJDRA=="],
+                "imagePlacements": ["below"],
             })
 
 

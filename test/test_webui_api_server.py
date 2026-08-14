@@ -45,6 +45,13 @@ class WebUiApiServerTest(unittest.TestCase):
             return response.status, None
         return response.status, json.loads(response_body.decode("utf-8"))
 
+    def read_qos_event(self, event_response):
+        self.assertEqual(b"event: qos\n", event_response.fp.readline())
+        data_line = event_response.fp.readline().decode("utf-8")
+        self.assertTrue(data_line.startswith("data: "))
+        self.assertEqual(b"\n", event_response.fp.readline())
+        return json.loads(data_line.removeprefix("data: "))
+
     def test_qos_post_remains_available_when_stage_mock_is_disabled(self):
         server = self.start_server(enable_stage=False)
 
@@ -104,11 +111,46 @@ class WebUiApiServerTest(unittest.TestCase):
         self.assertEqual(200, status)
         self.assertEqual({"ok": True, "type": "dialogImages"}, body)
 
-        self.assertEqual(b"event: qos\n", event_response.fp.readline())
-        data_line = event_response.fp.readline().decode("utf-8")
-        self.assertTrue(data_line.startswith("data: "))
-        event_payload = json.loads(data_line.removeprefix("data: "))
+        event_payload = self.read_qos_event(event_response)
         self.assertEqual(["QoS保障已启用"], event_payload["dialogs"])
+
+    def test_qos_empty_dialog_payload_resets_dialog_stream(self):
+        server = self.start_server(enable_stage=False)
+        event_connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=2)
+        self.addCleanup(event_connection.close)
+        event_connection.request("GET", "/api/v1/qos/events")
+        event_response = event_connection.getresponse()
+        self.assertEqual(200, event_response.status)
+        self.assertEqual(b": connected\n", event_response.fp.readline())
+        self.assertEqual(b"\n", event_response.fp.readline())
+
+        status, body = self.request(
+            server,
+            "POST",
+            "/api/v1/qos",
+            {
+                "dialogs": ["QoS保障已启用"],
+                "images": ["data:image/png;base64,QUJDRA=="],
+                "imagePlacements": ["below"],
+            },
+        )
+        self.assertEqual(200, status)
+        self.assertEqual({"ok": True, "type": "dialogImages"}, body)
+        self.assertEqual(["QoS保障已启用"], self.read_qos_event(event_response)["dialogs"])
+
+        status, body = self.request(
+            server,
+            "POST",
+            "/api/v1/qos",
+            {
+                "dialogs": [],
+                "images": [],
+                "imagePlacements": [],
+            },
+        )
+        self.assertEqual(200, status)
+        self.assertEqual({"ok": True, "type": "reset"}, body)
+        self.assertEqual([], self.read_qos_event(event_response)["dialogs"])
 
     def test_docker_entrypoint_writes_qos_channel_runtime_config(self):
         entrypoint = (ROOT / "docker-entrypoint.sh").read_text(encoding="utf-8")

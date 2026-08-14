@@ -56,6 +56,14 @@ class WebUiApiState:
             except queue.Empty:
                 pass
 
+    @staticmethod
+    def _clear_qos_queue(subscriber):
+        while True:
+            try:
+                subscriber.get_nowait()
+            except queue.Empty:
+                break
+
     def _build_qos_dialog_cache_payload_locked(self):
         if not self._qos_dialog_cache["dialogs"]:
             return None
@@ -87,6 +95,8 @@ class WebUiApiState:
             subscribers = list(self._qos_subscribers)
 
         for subscriber in subscribers:
+            if payload_type == "reset":
+                self._clear_qos_queue(subscriber)
             self._enqueue_qos(subscriber, outgoing_payload)
 
 
@@ -135,10 +145,8 @@ def validate_qos_payload(payload):
     has_dialog_layer = any(key in payload for key in ("dialogs", "images", "imagePlacements"))
     has_reset = payload.get("reset") is True or str(payload.get("type") or "").strip().lower() == "reset"
 
-    if has_reset:
-        if has_metrics or has_dialog_layer:
-            raise ValueError("payload cannot mix reset with metrics or dialogs/images")
-        return "reset"
+    if has_reset and has_metrics:
+        raise ValueError("payload cannot mix reset with metrics or dialogs/images")
 
     if has_metrics and has_dialog_layer:
         raise ValueError("payload cannot mix metrics with dialogs/images")
@@ -166,6 +174,12 @@ def validate_qos_payload(payload):
         if len(dialogs) != len(images) or len(dialogs) != len(image_placements):
             raise ValueError("dialogs, images, and imagePlacements must have the same length")
 
+        if not dialogs:
+            return "reset"
+
+        if has_reset:
+            raise ValueError("payload cannot mix reset with metrics or dialogs/images")
+
         for index, dialog in enumerate(dialogs):
             if not isinstance(dialog, str):
                 raise ValueError(f"dialogs[{index}] must be a string")
@@ -174,6 +188,9 @@ def validate_qos_payload(payload):
             if image_placements[index] not in ("above", "below"):
                 raise ValueError(f"imagePlacements[{index}] must be above or below")
         return "dialogImages"
+
+    if has_reset:
+        return "reset"
 
     raise ValueError("payload must include metrics, dialogs/images, or reset")
 

@@ -61,7 +61,7 @@ Docker runtime config writes `qosPushChannelUrl` from `QOS_PUSH_CHANNEL_URL`, fa
 - `metrics` payloads must contain only a metrics array and update the OTT chart.
 - `dialogs/images/imagePlacements` payloads must contain equal-length arrays and update only the video dialog layer.
 - The frontend QoS receiving server caches accumulated `dialogs/images/imagePlacements` records and replays them to new SSE subscribers, so dialog pushes received before the page enters stage 9 are not lost.
-- A QoS reset payload, such as `{ "type": "reset" }`, clears the cached dialog/image records and notifies current subscribers with an empty dialog layer.
+- A QoS reset payload, such as `{ "type": "reset" }` or empty `dialogs/images/imagePlacements` arrays, clears the cached dialog/image records and notifies current subscribers with an empty dialog layer.
 - Mixed metrics and dialog/image payloads are rejected.
 - Images must be `http(s)` URLs or png/jpeg/gif base64 data URIs.
 - `imagePlacements[i]` controls whether `images[i]` renders above or below `dialogs[i]`.

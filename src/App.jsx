@@ -1,21 +1,45 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  AudioWaveform,
+  ImagePlus,
+  SendHorizontal,
+  Settings,
   ShieldAlert,
   ShieldCheck,
   CircleDot,
+  UserRound,
 } from 'lucide-react';
 import { STAGE10_COMPLETED_TASKS, getWorkflowBubbleFromRows, pinBubbleToSystemAgent } from './config/stageConfig.jsx';
 import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, formatVideoState, useBackendVideoStream, useDogVideoOfferGate } from './hooks/useBackendVideo';
 import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
 import { useArLastWhisper, useStagePolling } from './hooks/usePolling';
 import { useQosFeed } from './hooks/useQosFeed';
-import { LeftPanel, StepBar } from './components/DemoPanels.jsx';
+import { CoreNetworkValuePanel, LeftPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
 
 const LANGUAGE_STORAGE_KEY = "compute-webui-language";
 
 const UI_TRANSLATIONS = {
+  "典型业务&价值": "Typical Scenarios & Value",
+  "Token 体验保障": "Token Experience Assurance",
+  "分布式算力网络": "Distributed Computing Network",
+  "数字身份管理": "Digital Identity Management",
+  "安全互信": "Secure Mutual Trust",
+  "任务理解&技能路由": "Task Understanding & Skill Routing",
+  "匹配度 99%": "99% Match Rate",
+  "动态专网建立": "Dynamic Private Network Establishment",
+  "协作安全": "Secure Collaboration",
+  "任务级体验保障": "Task-level Experience Assurance",
+  "端网协同调度": "Device-network Collaborative Scheduling",
+  "E2E时延可控": "Controllable E2E Latency",
+  "端网协同分布式推理": "Device-network Distributed Inference",
+  "算力成本降低30%": "30% Lower Computing Cost",
+  "连接+算力协同调度": "Connectivity + Computing Coordination",
+  "任务成功率提升30%": "30% Higher Task Success Rate",
+  "关键步骤展示": "Key Steps",
+  "待完成": "Pending",
+  "意图入口": "Intent Entry",
   "意图解析处理摘要": "Intent Parsing Summary",
   "用户意图：": "User Intent:",
   "网络任务规划：": "Network Task Plan:",
@@ -125,6 +149,11 @@ const UI_TRANSLATIONS = {
   "收到视觉推理请求后启用随路QoS保障策略": "Enable in-path QoS assurance after receiving the visual reasoning request",
   "RAN、UPF与算力节点建立QoS保障路径": "RAN, UPF, and the compute node establish a QoS assurance path",
   "QoS指标和用户对话层进入实时刷新": "QoS metrics and the user dialog layer refresh in real time",
+  "实时问答": "Live Q&A",
+  "用户": "User",
+  "用户消息": "User Message",
+  "智能体回复": "Agent Reply",
+  "等待问答内容推送": "Waiting for Q&A content",
   "端侧状态：随路QoS保障": "Device Status:\nIn-Path QoS Assurance",
   "随路QoS保障": "In-Path QoS Assurance",
   "GBR动态保障": "Dynamic GBR Assurance",
@@ -164,12 +193,7 @@ const UI_TRANSLATIONS = {
   "任务链路完成调度": "Task link scheduling is complete",
   "调用CMF Tool创建算力会话": "Call CMF Tool to create a compute session",
   "调用CMF Tool分配算力资源": "Call CMF Tool to allocate compute resources",
-  "核心网：Agent GW跨域互联": "Core Network: Agent GW Cross-Domain Interconnect",
-  "核心网：分配算力资源": "Core Network: Compute Resource Allocation",
-  "核心网：数字身份申请": "Core Network: Digital Identity Application",
-  "核心网：生成式网络": "Core Network: Generative Networking",
-  "核心网：算力卸载": "Core Network: Compute Offload",
-  "核心网：随路QoS保障": "Core Network: In-Path QoS Assurance",
+  "Agent GW跨域互联": "Agent GW Cross-Domain Interconnect",
   "6G核心网作用": "6G Core Network Functions",
   "L3按需组网": "L3 On-Demand Networking",
   "ACN Agent:创建管理家庭域": "ACN Agent:\nCreate and manage home domain",
@@ -185,6 +209,7 @@ const UI_TRANSLATIONS = {
   "机器狗与超市智能体双向认证": "Robot dog and supermarket agent mutual authentication",
   "眼镜与超市智能体双向认证": "AR glasses and supermarket agent mutual authentication",
   "智能体通信网络": "Agent Communication Network",
+  "新一代核心网": "Next-Generation Core Network",
   "AR眼镜已接入": "AR Glasses Connected",
   "机器狗抵达商店并回传实时视野": "Robot dog reaches the store and streams live vision",
   "获取超市智能体数字身份": "Get supermarket agent digital identity",
@@ -1062,53 +1087,94 @@ const HandoffPanel = () => (
   </div>
 );
 
-const QosDialogOverlay = ({ items = [] }) => {
+const QosConversationPanel = ({ items = [] }) => {
   const visibleItems = items.slice(-3);
 
-  if (!visibleItems.length) {
-    return null;
-  }
-
   const renderImage = (item) => (
-    <img
-      src={item.image}
-      alt=""
-      className="h-auto w-1/4 min-w-[25%] max-w-[25%] rounded-md border border-cyan-200/25 object-contain shadow-[0_0_14px_rgba(34,211,238,0.22)]"
-      draggable="false"
-    />
+    <figure className="relative h-[82px] w-[118px] shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/95 shadow-[0_4px_12px_rgba(0,0,0,0.24)]">
+      <img
+        src={item.image}
+        alt=""
+        className="h-full w-full object-contain p-1"
+        draggable="false"
+      />
+      <span className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-900/75 text-white/80">
+        <ImagePlus className="h-2.5 w-2.5" />
+      </span>
+    </figure>
   );
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end gap-2 px-4 pb-14 pt-14">
-      {visibleItems.map((item, index) => {
-        const horizontalPlacement = item.imageHorizontalPlacement;
-        const verticalPlacement = item.imageVerticalPlacement || "above";
-        const imageAbove = verticalPlacement !== "below";
-        const alignClassName = horizontalPlacement === "left"
-          ? "items-start"
-          : horizontalPlacement === "right"
-            ? "items-end"
-            : index % 2 === 0 ? "items-end" : "items-start";
-        const alignRight = alignClassName === "items-end";
-        const bubbleClassName = alignRight
-          ? "border-cyan-200/60 bg-cyan-950/88 text-cyan-50"
-          : "border-emerald-200/55 bg-emerald-950/84 text-emerald-50";
+    <section
+      aria-label="QoS conversation"
+      className="relative flex min-h-0 max-h-[450px] flex-[1.32_1_0%] flex-col overflow-hidden rounded-xl border border-[#699aa5]/40 bg-[#10272d]/95 shadow-[inset_0_0_32px_rgba(82,148,160,0.08),0_12px_28px_rgba(0,0,0,0.24)]"
+    >
+      <div className="pointer-events-none absolute inset-0 opacity-35 bg-[radial-gradient(circle_at_12%_22%,rgba(94,194,207,0.16),transparent_34%),linear-gradient(135deg,transparent_48%,rgba(125,211,252,0.035)_49%,transparent_50%)] bg-[size:auto,18px_18px]" />
+      <header className="relative z-10 flex shrink-0 items-center justify-between border-b border-[#92c8d2]/35 bg-gradient-to-r from-[#337986]/95 via-[#1c4d57]/95 to-[#102c35]/95 px-4 py-3 shadow-[inset_0_1px_0_rgba(201,242,247,0.13),0_5px_18px_rgba(3,18,23,0.28)]">
+        <div>
+          <div className="text-[15px] font-bold tracking-[0.02em] text-slate-50">实时问答</div>
+          <div className="mt-0.5 text-[9px] font-medium tracking-[0.12em] text-[#a4c8cf]/65">AGENT COMMUNICATION LOG</div>
+        </div>
+        <AudioWaveform className="h-5 w-5 text-[#78c8d3]/80" />
+      </header>
 
-        return (
-          <div key={item.id} className={`flex w-full flex-col gap-1.5 ${alignClassName}`}>
-            {imageAbove && renderImage(item)}
-            <div className={`max-w-[78%] rounded-lg border px-3 py-2 text-[12px] font-bold leading-snug shadow-[0_0_18px_rgba(15,23,42,0.42)] backdrop-blur-md ${bubbleClassName}`}>
-              {item.dialog}
+      <div className="relative z-10 min-h-0 flex-1 overflow-hidden px-4 py-3">
+        <div className="flex min-h-full flex-col justify-center gap-3">
+        {visibleItems.length ? visibleItems.map((item, index) => {
+          const horizontalPlacement = item.imageHorizontalPlacement;
+          const isAgentReply = horizontalPlacement === "right"
+            || (!horizontalPlacement && index % 2 === 1);
+          const imageAbove = item.imageVerticalPlacement === "above";
+
+          return (
+            <div key={item.id} className={`flex w-full items-start gap-2 ${isAgentReply ? "justify-start" : "justify-end"}`}>
+              {isAgentReply && (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#7db5c0]/40 bg-[#1b4149] text-[#9ed5de]">
+                  <Settings className="h-4 w-4" />
+                </div>
+              )}
+              <div className={`flex w-[78%] max-w-[520px] flex-col ${isAgentReply ? "items-start" : "items-end"}`}>
+                <div className={`mb-1 flex items-center px-1 text-[10px] font-medium text-[#b6d0d5]/65 ${isAgentReply ? "flex-row" : "flex-row-reverse"}`}>
+                  <span>{isAgentReply ? "Agent" : "用户"}</span>
+                </div>
+                <div className={`flex w-full flex-col gap-2 ${isAgentReply ? "items-start" : "items-end"}`}>
+                  {imageAbove && renderImage(item)}
+                  <article className={`w-fit max-w-full rounded-[9px] border px-3 py-2 text-[13px] font-medium leading-[1.5] shadow-[0_5px_14px_rgba(0,0,0,0.18)] ${isAgentReply ? "rounded-bl-[3px] border-[#648f98]/45 bg-[#193941]/92 text-[#e7f1f3]" : "rounded-br-[3px] border-[#9ac6d0]/60 bg-[#4f8297]/95 text-white"}`}>
+                    <p className="text-left">{item.dialog}</p>
+                  </article>
+                  {!imageAbove && renderImage(item)}
+                </div>
+              </div>
+              {!isAgentReply && (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#b5d6dd]/60 bg-[#5f94a9] text-white">
+                  <UserRound className="h-4 w-4" />
+                </div>
+              )}
             </div>
-            {!imageAbove && renderImage(item)}
+          );
+        }) : (
+          <div className="flex min-h-[120px] flex-1 items-center justify-center rounded-lg border border-dashed border-[#7da7af]/25 bg-[#173138]/55 px-4 text-center text-sm font-normal text-[#a8c2c7]/55">
+            等待问答内容推送
           </div>
-        );
-      })}
-    </div>
+        )}
+        </div>
+      </div>
+      <footer className="relative z-10 flex shrink-0 items-center gap-2 border-t border-[#78aab4]/25 bg-[#142e34]/82 px-3 py-2">
+        <div className="flex min-w-0 flex-1 items-center rounded-full border border-[#81abb3]/35 bg-[#10262b]/80 px-3 py-2 text-[11px] text-[#a5c0c5]/55">
+          Agent AI
+        </div>
+        <span className="flex h-7 w-7 items-center justify-center rounded-full text-[#9dc2c9]/75">
+          <ImagePlus className="h-4 w-4" />
+        </span>
+        <span className="flex h-7 w-7 items-center justify-center rounded-full text-[#8fd3df]">
+          <SendHorizontal className="h-4 w-4" />
+        </span>
+      </footer>
+    </section>
   );
 };
 
-const DogVisionPanel = ({ label, state, videoRef, tall = false, tags, overlay = null }) => {
+const DogVisionPanel = ({ label, state, videoRef, tall = false, tags }) => {
   const live = state === "receiving" || state === "connected";
   const panelTags = tags || ["DOG-CAM", "MOQT", live ? "SYNCED" : formatVideoState(state)];
 
@@ -1127,7 +1193,6 @@ const DogVisionPanel = ({ label, state, videoRef, tall = false, tags, overlay = 
         <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.9)]" : "bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.9)]"}`} />
         {label}
       </div>
-      {overlay}
       <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2 text-[11px] font-mono text-cyan-100/90">
         {panelTags.map((item) => (
           <div key={item} className="rounded border border-cyan-400/25 bg-slate-950/62 px-2 py-1 text-center backdrop-blur-md">
@@ -1179,7 +1244,7 @@ const BackgroundVideoPanel = ({ visible }) => {
   );
 };
 
-const DogVisionStreams = ({ showEnhanced, preloadEnhanced, qosDialogItems = [] }) => {
+const DogVisionStreams = ({ showEnhanced, preloadEnhanced, showQosConversation = false, qosDialogItems = [] }) => {
   const { health, ready, state: gateState } = useDogVideoOfferGate(true);
   const [gateOpened, setGateOpened] = useState(false);
   const streamEpoch = health?.streamEpoch ?? null;
@@ -1194,7 +1259,7 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced, qosDialogItems = [] }
 
   const streamReady = gateOpened || ready;
   const raw = useBackendVideoStream({
-    enabled: true,
+    enabled: !showQosConversation,
     ready: streamReady,
     gateState,
     streamEpoch,
@@ -1202,7 +1267,7 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced, qosDialogItems = [] }
     clientId: "react-dog-raw",
     streamType: "raw",
     label: "Dog raw vision",
-    attachKey: showEnhanced,
+    attachKey: showEnhanced && !showQosConversation,
   });
   const enhanced = useBackendVideoStream({
     enabled: preloadEnhanced,
@@ -1234,6 +1299,20 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced, qosDialogItems = [] }
     );
   }
 
+  if (showQosConversation) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <DogVisionPanel
+          label="机器狗增强后的视野"
+          state={enhanced.state}
+          videoRef={enhanced.videoRef}
+          tall
+        />
+        <QosConversationPanel items={qosDialogItems} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <DogVisionPanel label="机器狗原始视野" state={raw.state} videoRef={raw.videoRef} tall />
@@ -1242,7 +1321,6 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced, qosDialogItems = [] }
         state={enhanced.state}
         videoRef={enhanced.videoRef}
         tall
-        overlay={<QosDialogOverlay items={qosDialogItems} />}
       />
     </div>
   );
@@ -1349,7 +1427,7 @@ export default function App() {
 
   useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-    document.title = language === "en" ? "Agent Communication Network" : "智能体通信网络";
+    document.title = language === "en" ? "Next-Generation Core Network" : "新一代核心网";
   }, [language]);
 
   const { stage, connectionState, error } = useStagePolling();
@@ -1585,6 +1663,42 @@ export default function App() {
           0% { stroke-dashoffset: 12; }
           100% { stroke-dashoffset: 0; }
         }
+        @keyframes cp-tool-call-flash {
+          0% {
+            border-color: rgba(253, 230, 138, 0.58);
+            background: rgba(252, 211, 77, 0.16);
+            box-shadow: 0 0 14px rgba(251, 191, 36, 0.22);
+            filter: brightness(1);
+            transform: scale(1);
+          }
+          22% {
+            border-color: rgba(255, 251, 235, 1);
+            background: rgba(251, 191, 36, 0.48);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.96), 0 0 30px rgba(251, 191, 36, 0.9), inset 0 0 16px rgba(255, 251, 235, 0.34);
+            filter: brightness(1.7) saturate(1.35);
+            transform: scale(1.045);
+          }
+          100% {
+            border-color: rgba(253, 230, 138, 0.74);
+            background: rgba(252, 211, 77, 0.2);
+            box-shadow: 0 0 18px rgba(251, 191, 36, 0.38);
+            filter: brightness(1.08);
+            transform: scale(1);
+          }
+        }
+        @keyframes cp-tool-panel-flash {
+          0% { filter: drop-shadow(0 0 0 rgba(251, 191, 36, 0)); }
+          24% { filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.68)); }
+          100% { filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.16)); }
+        }
+        .cp-tool-call-flash {
+          animation: cp-tool-call-flash 0.72s ease-out both;
+          position: relative;
+          z-index: 2;
+        }
+        .cp-tool-panel-flash {
+          animation: cp-tool-panel-flash 0.78s ease-out both;
+        }
       `}} />
 
       {/* 主屏幕容器 - 整体升级为全毛玻璃HUD悬浮舱 */}
@@ -1597,11 +1711,11 @@ export default function App() {
           <div className="w-24" aria-hidden="true" />
           <div className="text-center absolute left-1/2 top-1/2 w-[calc(100%-12rem)] -translate-x-1/2 -translate-y-1/2">
             <h1 className={`text-3xl md:text-5xl font-bold tracking-widest text-white glow-text ${language === "zh" ? "mb-2" : "mb-0"}`}>
-              {language === "en" ? "Agent Communication Network" : "智能体通信网络"}
+              {language === "en" ? "Next-Generation Core Network" : "新一代核心网"}
             </h1>
             {language === "zh" && (
               <p className="text-blue-200 font-medium text-sm md:text-base">
-                Agent Communication Network
+                Next-Generation Core Network
               </p>
             )}
           </div>
@@ -1609,7 +1723,7 @@ export default function App() {
         </header>
 
         {/* 核心内容区 */}
-        <div className="relative z-10 grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-[minmax(560px,34vw)_minmax(0,1fr)]">
+        <div className="relative z-10 grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-[minmax(380px,23vw)_minmax(0,1fr)_minmax(280px,20vw)]">
           
           <LeftPanel
             effectiveStageConfig={effectiveStageConfig}
@@ -1641,9 +1755,18 @@ export default function App() {
             />
           </div>
 
+          {/* 右列：关键步骤展示 */}
+          <StepBar
+            steps={effectiveStageConfig.steps}
+            orientation="vertical"
+            stage={stage}
+            stagePhaseKey={effectiveStageConfig.stagePhaseKey}
+            workflow={effectiveStageConfig.workflow}
+          />
+
         </div>
 
-        <StepBar steps={effectiveStageConfig.steps} />
+        <CoreNetworkValuePanel />
       </div>
       {/* 底部反光效果 */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-blue-900/10 to-transparent -z-10 pointer-events-none transform scale-y-[-1] opacity-50 blur-xl"></div>

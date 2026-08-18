@@ -956,7 +956,7 @@ const STAGE_CONFIG = {
   },
   4: {
     leftPanelTitle: "家庭域创建",
-    topologyTitle: "核心网：生成式网络",
+    topologyTitle: "生成式网络",
     activeFlowType: "domain",
     showRegisteredDevice: true,
     hideDeviceArrow: true,
@@ -1034,7 +1034,7 @@ STAGE_CONFIG[5] = {
 
 STAGE_CONFIG[6] = {
   ...STAGE_CONFIG[5],
-  topologyTitle: "核心网：Agent GW跨域互联",
+  topologyTitle: "Agent GW跨域互联",
   activeFlowType: "a2aGateway",
   coreFunctions: [
     "ID寻址路由",
@@ -1059,7 +1059,7 @@ STAGE_CONFIG[6] = {
 
 STAGE_CONFIG[7] = {
   ...STAGE_CONFIG[6],
-  topologyTitle: "核心网：分配算力资源",
+  topologyTitle: "分配算力资源",
   activeFlowType: "computeSandbox",
   coreFunctions: [
     "网络提供强大算力",
@@ -1097,7 +1097,7 @@ STAGE_CONFIG[7] = {
 STAGE_CONFIG[8] = {
   ...STAGE_CONFIG[7],
   leftPanelTitle: "机器狗视野增强",
-  topologyTitle: "核心网：算力卸载",
+  topologyTitle: "算力卸载",
   activeFlowType: "dogVision",
   showDogVision: false,
   showEnhancedDogVision: true,
@@ -1120,7 +1120,7 @@ STAGE_CONFIG[8] = {
 STAGE_CONFIG[9] = {
   ...STAGE_CONFIG[8],
   leftPanelTitle: "随路QoS保障",
-  topologyTitle: "核心网：随路QoS保障",
+  topologyTitle: "随路QoS保障",
   activeFlowType: null,
   showBackgroundVideo: false,
   showHandoff: false,
@@ -1162,7 +1162,7 @@ STAGE_CONFIG[9] = {
 STAGE_CONFIG[10] = {
   ...STAGE_CONFIG[9],
   leftPanelTitle: "物品交接",
-  topologyTitle: "核心网：算力卸载",
+  topologyTitle: "算力卸载",
   activeFlowType: "handoff",
   showBackgroundVideo: true,
   showHandoff: false,

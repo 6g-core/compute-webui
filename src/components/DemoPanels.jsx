@@ -41,6 +41,7 @@ export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", transl
                           <DogVisionStreams
                             showEnhanced={Boolean(effectiveStageConfig.showEnhancedDogVision)}
                             preloadEnhanced={Number(stage) >= 5}
+                            showQosConversation={Number(stage) === 9}
                             qosDialogItems={Number(stage) === 9 ? qosDialogItems : []}
                           />
                         ) : effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.homeDomainDevicesReady === false ? (
@@ -388,50 +389,277 @@ export const RightPanel = ({ effectiveStageConfig, latencySeries, stage, compone
   );
 };
 
-export const StepBar = ({ steps }) => (
-  <>
-    {/* 底部步骤条 - 升级为精致高对比度毛玻璃条 */}
-    <div className="stepbar-grid relative z-10 mt-3 grid grid-cols-2 gap-2 md:grid-cols-5">
-      {steps.map((step) => {
-        const StepIcon = step.icon;
-        const isDone = step.status === "success";
-        const isWorking = step.status === "working";
+const STEP_DETAIL_ITEMS = {
+  "01": ["颁发数字身份", "能力注册", "接入网络"],
+  "02": ["创建家庭域", "更新签约数据", "下发域接入凭证", "下发物理组网配置"],
+  "03": ["ID寻址路由", "身份可信认证", "Agent协议转换"],
+  "04": ["创建算力会话", "分配算力资源", "L3级通信保障"],
+  "05": ["机器狗感知输入", "网络算力节点识别标注", "标注结果回传AR眼镜", "随路QoS保障"],
+};
 
-        return (
-          <div
-            key={step.id}
-            className={`stepbar-card relative flex items-center gap-3 overflow-hidden rounded-lg border bg-slate-900/30 px-3 py-1.5 shadow-md backdrop-blur-md ${
-              isDone
-                ? "border-emerald-500/80 shadow-[0_0_18px_rgba(16,185,129,0.25)]"
-                : isWorking
-                  ? "border-amber-400/70 shadow-[0_0_18px_rgba(251,191,36,0.18)]"
-                  : "border-blue-500/30"
-            }`}
-          >
-            {(isDone || isWorking) && (
-              <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+const buildSequentialDetailStatuses = (length, activeIndex) => (
+  Array.from({ length }, (_, index) => (
+    index < activeIndex ? "success" : index === activeIndex ? "working" : "pending"
+  ))
+);
+
+const getStepDetailStatuses = ({ step, detailItems, stage, stagePhaseKey, workflow }) => {
+  if (step.status === "success") {
+    return detailItems.map(() => "success");
+  }
+
+  if (step.status !== "working") {
+    return detailItems.map(() => "pending");
+  }
+
+  const phaseKey = stagePhaseKey || "";
+
+  if (step.id === "01") {
+    const activeIndex = /stage2_4_arf/.test(phaseKey)
+      ? 1
+      : /stage2_(4_done|5_|6)/.test(phaseKey) ? 2 : 0;
+    return buildSequentialDetailStatuses(detailItems.length, activeIndex);
+  }
+
+  if (step.id === "02") {
+    const activeIndex = /stage4_4_udm/.test(phaseKey)
+      ? 1
+      : /stage4_4_idm/.test(phaseKey)
+        ? 2
+        : /stage4_(4_done|5_|6)/.test(phaseKey) || Number(stage) === 5 ? 3 : 0;
+    return buildSequentialDetailStatuses(detailItems.length, activeIndex);
+  }
+
+  if (step.id === "03" && workflow?.length === detailItems.length) {
+    return workflow.map((item) => item.status || "pending");
+  }
+
+  if (step.id === "04") {
+    const activeIndex = /stage7_4_cmf_resource/.test(phaseKey)
+      ? 1
+      : /stage7_(4_done|5_)/.test(phaseKey) ? 2 : 0;
+    return buildSequentialDetailStatuses(detailItems.length, activeIndex);
+  }
+
+  if (step.id === "05") {
+    if (Number(stage) >= 9) {
+      return ["success", "success", "success", "working"];
+    }
+
+    return ["success", "working", "pending", "pending"];
+  }
+
+  return buildSequentialDetailStatuses(detailItems.length, 0);
+};
+
+const DETAIL_STATUS_LABELS = {
+  success: "已完成",
+  working: "进行中",
+  pending: "待完成",
+};
+
+export const StepBar = ({ steps, orientation = "horizontal", stage, stagePhaseKey, workflow = [] }) => {
+  const isVertical = orientation === "vertical";
+  const workingStepIndex = steps.findIndex((step) => step.status === "working");
+  const latestCompletedStepIndex = steps.reduce((latestIndex, step, index) => (
+    step.status === "success" ? index : latestIndex
+  ), -1);
+  const expandedStepIndex = workingStepIndex >= 0 ? workingStepIndex : latestCompletedStepIndex;
+
+  return (
+    <aside
+      className={`stepbar-panel relative z-10 min-h-0 overflow-hidden border border-cyan-400/35 bg-slate-950/38 shadow-[inset_0_0_30px_rgba(14,116,144,0.08),0_0_20px_rgba(8,47,73,0.2)] backdrop-blur-md ${
+        isVertical ? "flex h-full flex-col rounded-xl p-3" : "mt-3 rounded-lg p-2"
+      }`}
+      aria-label="关键步骤展示"
+    >
+      {isVertical && (
+        <div className="mb-3 shrink-0 border-b border-cyan-400/25 pb-2.5">
+          <h2 className="text-center text-lg font-bold tracking-[0.08em] text-cyan-100 xl:text-xl">
+            关键步骤展示
+          </h2>
+          <div className="mx-auto mt-2 h-px w-4/5 bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
+        </div>
+      )}
+
+      <div className={`stepbar-grid min-h-0 ${
+        isVertical
+          ? "flex flex-1 flex-col gap-2 overflow-y-auto pr-0.5"
+          : "grid grid-cols-2 gap-2 md:grid-cols-5"
+      }`}>
+        {steps.map((step, stepIndex) => {
+          const StepIcon = step.icon;
+          const isDone = step.status === "success";
+          const isWorking = step.status === "working";
+          const detailItems = STEP_DETAIL_ITEMS[step.id] || [];
+          const compactSubtitle = step.subtitle.split(" / ")[0];
+          const isExpanded = isVertical && stepIndex === expandedStepIndex && detailItems.length > 0;
+          const detailStatuses = getStepDetailStatuses({
+            step,
+            detailItems,
+            stage,
+            stagePhaseKey,
+            workflow,
+          });
+
+          return (
+            <div
+              key={step.id}
+              aria-expanded={isExpanded}
+              style={isExpanded ? { height: `${104 + detailItems.length * 42}px` } : undefined}
+              className={`stepbar-card relative flex overflow-hidden rounded-lg border bg-slate-900/45 shadow-md transition-colors ${
+                isVertical
+                  ? `${isExpanded ? "shrink-0" : "h-[72px] shrink-0 justify-center"} flex-col items-stretch gap-1.5 px-3 py-2`
+                  : "items-center gap-3 px-3 py-1.5"
+              } ${
                 isDone
-                  ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]"
-                  : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]"
-              }`} />
-            )}
-            <span className={`stepbar-id shrink-0 font-mono font-bold text-2xl ${
-              isDone ? "text-emerald-400 opacity-90" : isWorking ? "text-amber-300 opacity-90" : "text-blue-300 opacity-60"
-            }`}>
-              {step.id}
-            </span>
-            <StepIcon className={`stepbar-icon w-7 h-7 shrink-0 ${
-              isDone ? "text-emerald-400" : isWorking ? "text-amber-300 animate-pulse" : "text-blue-300/80"
-            }`} />
-            <div className="stepbar-copy flex min-w-0 flex-col gap-0 leading-none">
-              <span className="stepbar-title text-blue-100 font-bold text-lg leading-[1.05]">{step.title}</span>
-              <span className={`stepbar-subtitle text-base font-semibold leading-[1.05] ${isDone ? "text-emerald-400" : isWorking ? "text-amber-300" : "text-blue-300/70"}`}>
-                {step.subtitle}
-              </span>
+                  ? "border-emerald-500/75 shadow-[0_0_18px_rgba(16,185,129,0.2)]"
+                  : isWorking
+                    ? "border-amber-400/70 shadow-[0_0_18px_rgba(251,191,36,0.18)]"
+                    : "border-blue-500/30"
+              }`}
+            >
+              {(isDone || isWorking) && (
+                <div className={`absolute bottom-0 left-0 top-0 w-1 ${
+                  isDone
+                    ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]"
+                    : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]"
+                }`} />
+              )}
+              <div className="flex min-w-0 items-center gap-3">
+                <span className={`stepbar-id shrink-0 font-mono text-2xl font-bold ${
+                  isDone ? "text-emerald-400 opacity-90" : isWorking ? "text-amber-300 opacity-90" : "text-blue-300 opacity-60"
+                }`}>
+                  {step.id}
+                </span>
+                <StepIcon className={`stepbar-icon shrink-0 ${isVertical ? "h-6 w-6" : "h-7 w-7"} ${
+                  isDone ? "text-emerald-400" : isWorking ? "animate-pulse text-amber-300" : "text-blue-300/80"
+                }`} />
+                <div className={`stepbar-copy flex min-w-0 leading-none ${
+                  isVertical ? "flex-1 flex-row items-center justify-between gap-2" : "flex-col gap-1"
+                }`}>
+                  <span className={`stepbar-title min-w-0 font-bold leading-tight text-blue-100 ${
+                    isVertical ? "whitespace-nowrap text-base xl:text-[17px]" : "text-lg"
+                  }`}>
+                    {step.title}
+                  </span>
+                  <span className={`stepbar-subtitle shrink-0 font-semibold leading-tight ${isVertical ? "text-[11px] xl:text-xs" : "text-base"} ${
+                    isDone ? "text-emerald-400" : isWorking ? "text-amber-300" : "text-blue-300/70"
+                  }`}>
+                    {isVertical ? compactSubtitle : step.subtitle}
+                  </span>
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div className={`ml-12 flex min-h-0 flex-1 flex-col border-t pt-2 ${
+                  isDone ? "border-emerald-300/20" : "border-amber-300/20"
+                }`}>
+                  <ol className="grid min-h-0 flex-1 content-center gap-1.5">
+                    {detailItems.map((detail, detailIndex) => {
+                      const detailStatus = detailStatuses[detailIndex] || "pending";
+
+                      return (
+                        <li
+                          key={detail}
+                          data-status={detailStatus}
+                          className={`flex min-w-0 items-center gap-2 rounded-md border px-2.5 py-2 text-sm font-semibold leading-[1.15] xl:text-base ${
+                            detailStatus === "success"
+                              ? "border-emerald-400/25 bg-emerald-400/[0.07] text-emerald-100"
+                              : detailStatus === "working"
+                                ? "border-amber-300/40 bg-amber-300/[0.08] text-amber-100 shadow-[inset_0_0_14px_rgba(251,191,36,0.04)]"
+                                : "border-slate-500/20 bg-slate-800/20 text-slate-400"
+                          }`}
+                        >
+                          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border font-mono text-[10px] ${
+                            detailStatus === "success"
+                              ? "border-emerald-400/55 bg-emerald-400/15 text-emerald-300"
+                              : detailStatus === "working"
+                                ? "animate-pulse border-amber-300/60 bg-amber-300/15 text-amber-200"
+                                : "border-slate-500/35 bg-slate-700/15 text-slate-500"
+                          }`}>
+                            {detailStatus === "success" ? "✓" : detailIndex + 1}
+                          </span>
+                          <span className="min-w-0 flex-1">{detail}</span>
+                          <span className={`shrink-0 text-[11px] font-bold xl:text-xs ${
+                            detailStatus === "success"
+                              ? "text-emerald-400"
+                              : detailStatus === "working"
+                                ? "text-amber-300"
+                                : "text-slate-500"
+                          }`}>
+                            {DETAIL_STATUS_LABELS[detailStatus]}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+              )}
             </div>
+          );
+        })}
+      </div>
+    </aside>
+  );
+};
+
+const CORE_NETWORK_VALUE_GROUPS = [
+  {
+    title: "智能体通信网络",
+    columns: 3,
+    items: [
+      { label: "数字身份管理", value: "安全互信" },
+      { label: "任务理解&技能路由", value: "匹配度 99%" },
+      { label: "动态专网建立", value: "协作安全" },
+    ],
+  },
+  {
+    title: "Token 体验保障",
+    columns: 3,
+    items: [
+      { label: "任务级体验保障" },
+      { label: "端网协同调度" },
+      { label: "E2E时延可控" },
+    ],
+  },
+  {
+    title: "分布式算力网络",
+    columns: 2,
+    items: [
+      { label: "端网协同分布式推理", value: "算力成本降低30%" },
+      { label: "连接+算力协同调度", value: "任务成功率提升30%" },
+    ],
+  },
+];
+
+export const CoreNetworkValuePanel = () => (
+  <section className="core-network-value-panel relative z-10 mt-3 h-[138px] shrink-0 overflow-hidden rounded-xl border border-cyan-400/30 bg-slate-950/48 px-4 py-3 shadow-[inset_0_0_38px_rgba(8,47,73,0.24),0_0_22px_rgba(6,182,212,0.08)] backdrop-blur-md">
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
+    <div className="grid h-full grid-cols-[minmax(0,1.35fr)_minmax(0,0.82fr)_minmax(0,1.08fr)] gap-4">
+      {CORE_NETWORK_VALUE_GROUPS.map((group, groupIndex) => (
+        <div
+          key={group.title}
+          className={`grid h-full min-w-0 grid-rows-[38px_1fr] ${groupIndex > 0 ? "border-l border-cyan-300/15 pl-4" : ""}`}
+        >
+          <h3 className="flex items-center justify-center text-center text-2xl font-extrabold leading-none tracking-wide text-amber-300 drop-shadow-[0_0_9px_rgba(251,191,36,0.26)] xl:text-[26px]">
+            {group.title}
+          </h3>
+          <div
+            className="grid self-center items-start gap-3"
+            style={{ gridTemplateColumns: `repeat(${group.columns}, minmax(0, 1fr))` }}
+          >
+            {group.items.map((item) => (
+              <div key={item.label} className="min-w-0 text-center text-amber-200">
+                <div className="text-sm font-normal leading-tight xl:text-base">{item.label}</div>
+                {item.value && (
+                  <div className="mt-1 text-sm font-normal leading-tight text-amber-300 xl:text-base">{item.value}</div>
+                )}
+              </div>
+            ))}
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
-  </>
+  </section>
 );

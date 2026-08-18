@@ -9,6 +9,13 @@ import {
   TASK_SUMMARY_CLASSNAME,
   TASK_SUMMARY_TEXT_CLASSNAME,
 } from '../utils/topologySummary';
+import {
+  shouldShowOttDomain,
+  shouldShowQosMetricsChart,
+  shouldShowTokenTunnel,
+  shouldShowTopologyConnection,
+  shouldShowTopologyNode,
+} from '../utils/topologyStageVisibility.js';
 import acnImage from '../ACN.png';
 import computingImage from '../Computing.png';
 import computingNodeImage from '../Computing_Node.png';
@@ -185,18 +192,18 @@ const TOPOLOGY_NODES = {
   UE: { name: "AR Glasses\n(Physical AI)", x: 7, y: 78, color: "#22f5ff", image: "/topology/glasses_transparent.png", size: "w-16 md:w-20 2xl:w-24", labelTextClassName: "text-[12px] sm:text-[13px]" },
   RobotDog: { name: "Robot Dog\n(Physical AI)", x: 7, y: 32, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-20 md:w-24 2xl:w-32", labelTextClassName: "text-[12px] sm:text-[13px]" },
   gNB: { name: "RAN", x: 22, y: 55, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-24 md:w-28 2xl:w-36" },
-  SRF: { name: "SRF", x: 36, y: 43, color: "#38bdf8", image: srfImage, size: "w-20 md:w-24 2xl:w-32", labelClassName: "relative -mt-7" },
-  SystemAgent: { name: "SystemAgent", x: 53.5, y: 40, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24 2xl:w-32", labelClassName: "relative -mt-7" },
+  SRF: { name: "SRF", x: 41.5, y: 51, color: "#38bdf8", image: srfImage, size: "w-20 md:w-24 2xl:w-32", labelClassName: "relative -mt-7" },
+  SystemAgent: { name: "SystemAgent", x: 56.5, y: 50, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24 2xl:w-32", labelClassName: "relative -mt-7" },
   UPF: { name: "UPF", x: 36, y: 82, color: "#34d399", image: upfImage, size: "w-20 md:w-24 2xl:w-32", labelClassName: "relative -mt-7" },
-  ConnectionAgent: { name: "Connection Agent", x: 69, y: 13, color: "#22d3ee", image: connectionImage, size: "w-16 md:w-20 2xl:w-28", labelClassName: "relative -mt-7" },
-  ACN: { name: "ACN Agent", x: 69, y: 32, color: "#f472b6", image: acnImage, size: "w-16 md:w-20 2xl:w-28", labelClassName: "relative -mt-7" },
+  ConnectionAgent: { name: "Connection Agent", x: 79, y: 27, color: "#22d3ee", image: connectionImage, size: "w-14 md:w-16 2xl:w-24", labelClassName: "relative -mt-7" },
+  ACN: { name: "ACN Agent", x: 79, y: 41, color: "#f472b6", image: acnImage, size: "w-14 md:w-16 2xl:w-24", labelClassName: "relative -mt-7" },
   Computing: {
     name: "Computing Agent",
-    x: 69,
-    y: 50,
+    x: 79,
+    y: 54,
     color: "#fbbf24",
     image: computingImage,
-    size: "w-16 md:w-20 2xl:w-28",
+    size: "w-14 md:w-16 2xl:w-24",
     labelClassName: "absolute top-[80%]",
     labelStyle: { whiteSpace: "nowrap", width: "max-content", minWidth: "max-content" },
   },
@@ -223,9 +230,22 @@ const TOPOLOGY_CONNECTIONS = [
   ["SystemAgent", "Computing"],
 ];
 
+const TOKEN_TUNNEL_CONNECTIONS = [
+  ["UE", "gNB"],
+  ["gNB", "UPF"],
+  ["UPF", "Gateway"],
+];
+
+const TOKEN_TUNNEL_CONNECTION_KEYS = new Set(
+  TOKEN_TUNNEL_CONNECTIONS.map(([from, to]) => `${from}->${to}`),
+);
+
+const RIGHT_SIDE_AGENT_BUBBLE_KEYS = new Set(["ConnectionAgent", "ACN", "Computing"]);
+
 const TOOL_PANEL_GROUPS = [
   {
     title: "Agentic Base",
+    columns: 3,
     items: [
       "AM Tool",
       "SM Tool",
@@ -237,6 +257,7 @@ const TOOL_PANEL_GROUPS = [
   },
   {
     title: "Beyond Connectivity",
+    columns: 1,
     items: [
       "CMF Tool",
       "CSPF Tool",
@@ -259,8 +280,14 @@ const TOPOLOGY_ZONES = [
   {
     key: "cp",
     label: "CP",
-    className: "left-[32%] top-[1%] h-[60%] w-[66%] border-orange-300/90 bg-orange-500/[0.08] shadow-[0_0_22px_rgba(251,146,60,0.28)]",
+    className: "left-[32%] top-[1%] h-[18%] w-[66%] border-orange-300/90 bg-orange-500/[0.08] shadow-[0_0_22px_rgba(251,146,60,0.28)]",
     labelClassName: "left-2 top-2 border-orange-200/80 text-orange-100 shadow-[0_0_18px_rgba(251,146,60,0.35)]",
+  },
+  {
+    key: "dap",
+    label: "DAP",
+    className: "left-[32%] top-[20%] h-[42%] w-[66%] border-violet-300/85 bg-violet-500/[0.07] shadow-[0_0_22px_rgba(167,139,250,0.22)]",
+    labelClassName: "left-2 top-2 border-violet-200/75 text-violet-100 shadow-[0_0_18px_rgba(167,139,250,0.28)]",
   },
   {
     key: "up",
@@ -276,73 +303,78 @@ const TOPOLOGY_ZONES = [
   },
 ];
 
-const UnifiedToolPanel = ({ toolStates }) => (
-  <div className="absolute left-[77.2%] top-[2%] z-[26] flex h-[57.5%] w-[20.2%] flex-col overflow-hidden rounded-xl border border-cyan-200/28 bg-slate-950/38 p-2 text-blue-50 shadow-[inset_0_0_22px_rgba(34,211,238,0.06),0_0_22px_rgba(15,23,42,0.32)] backdrop-blur-md">
-    {TOOL_PANEL_GROUPS.map((group, groupIndex) => (
-      <div
-        key={group.title}
-        className={`flex min-h-0 flex-col ${groupIndex > 0 ? "border-t border-cyan-200/16 pt-2" : ""}`}
-        style={{ flex: `${group.items.length} 1 0%` }}
-      >
-        <div className="px-1.5 pb-1.5">
-          <div className="max-w-full whitespace-nowrap px-0.5 text-[13px] font-bold leading-tight tracking-wide text-cyan-50">
-            {group.title}
+const UnifiedToolPanel = ({ toolStates }) => {
+  const hasWorkingTool = Object.values(toolStates).some((state) => state === "working");
+
+  return (
+    <div className={`absolute left-[37%] top-[2.5%] z-[26] flex h-[15%] w-[59%] items-stretch gap-3 text-blue-50 ${hasWorkingTool ? "cp-tool-panel-flash" : ""}`}>
+      {TOOL_PANEL_GROUPS.map((group, groupIndex) => (
+        <div
+          key={group.title}
+          className={`flex min-h-0 min-w-0 flex-col py-1 ${groupIndex > 0 ? "border-l border-orange-200/25 pl-3" : ""}`}
+          style={{ flex: `${group.columns} 1 0%` }}
+        >
+          <div className="shrink-0 px-1 pb-1">
+            <div className="max-w-full whitespace-nowrap text-[13px] font-bold leading-none tracking-wide text-cyan-50">
+              {group.title}
+            </div>
+          </div>
+          <div
+            className="grid min-h-0 flex-1 gap-1"
+            style={{
+              gridTemplateColumns: `repeat(${group.columns}, minmax(0, 1fr))`,
+              gridTemplateRows: "repeat(2, minmax(0, 1fr))",
+            }}
+          >
+            {group.items.map((item) => {
+              const name = typeof item === "string" ? item : item.name;
+              const inactive = typeof item === "object" && item.inactive;
+              const state = inactive ? "inactive" : toolStates[name] || "idle";
+              const ToolIcon = TOOL_ICON_BY_NAME[name] || BrainCircuit;
+              const stateClassName = state === "working"
+                ? "text-amber-200"
+                : state === "inactive"
+                  ? "text-blue-100/55"
+                  : "text-blue-100/90";
+              const dotClassName = state === "working"
+                ? "bg-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.85)]"
+                : state === "inactive"
+                  ? "bg-slate-500/70"
+                  : "bg-cyan-300/75 shadow-[0_0_8px_rgba(34,211,238,0.35)]";
+
+              return (
+                <div
+                  key={name}
+                  className={`group/tool flex min-h-0 min-w-0 flex-col items-center justify-center rounded-md border px-1 py-1 leading-none transition ${
+                    state === "working"
+                      ? "cp-tool-call-flash border-amber-100 bg-amber-300/20 shadow-[0_0_18px_rgba(251,191,36,0.38)]"
+                      : "border-cyan-200/16 bg-slate-950/22"
+                  }`}
+                >
+                  <span className="flex min-w-0 max-w-full items-center justify-center gap-1.5 whitespace-nowrap text-[14px] font-black leading-none text-blue-50/95">
+                    <ToolIcon className={`h-4 w-4 shrink-0 ${state === "working" ? "text-amber-200" : "text-cyan-200/80"}`} />
+                    <span>{name}</span>
+                  </span>
+                  <span className="mt-1 flex shrink-0 items-center justify-center gap-1.5">
+                    <span className={`h-1.5 w-1.5 rounded-full ${dotClassName}`} />
+                    <span className={`font-mono text-[10px] leading-none ${stateClassName}`}>
+                      {state === "working" ? "work" : state === "inactive" ? "Inactive" : state}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col justify-around gap-1.5 px-1.5 pb-2">
-          {group.items.map((item) => {
-            const name = typeof item === "string" ? item : item.name;
-            const inactive = typeof item === "object" && item.inactive;
-            const state = inactive ? "inactive" : toolStates[name] || "idle";
-            const ToolIcon = TOOL_ICON_BY_NAME[name] || BrainCircuit;
-            const shouldWrapName = name.length > 17;
-            const stateClassName = state === "working"
-              ? "text-amber-200"
-              : state === "inactive"
-                ? "text-blue-100/55"
-                : "text-blue-100/90";
-            const dotClassName = state === "working"
-              ? "bg-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.85)]"
-              : state === "inactive"
-                ? "bg-slate-500/70"
-                : "bg-cyan-300/75 shadow-[0_0_8px_rgba(34,211,238,0.35)]";
-
-            return (
-              <div
-                key={name}
-                className={`group/tool flex min-h-[32px] items-center justify-between gap-2 rounded-md px-0 py-0.5 text-[13px] leading-tight transition ${
-                  state === "working"
-                    ? "animate-pulse"
-                    : ""
-                }`}
-              >
-                <span className={`flex min-h-[30px] min-w-0 flex-1 items-center gap-1.5 rounded-md border px-2 py-1.5 shadow-[inset_0_0_10px_rgba(15,23,42,0.18)] transition ${shouldWrapName ? "whitespace-normal leading-[1.05]" : "overflow-visible whitespace-nowrap"} ${
-                  state === "working"
-                    ? "border-amber-200/58 bg-amber-300/16 font-bold text-amber-100 shadow-[0_0_16px_rgba(251,191,36,0.24)]"
-                    : "border-cyan-200/18 bg-slate-900/18 text-blue-50/95"
-                }`}>
-                  <ToolIcon className={`h-4 w-4 shrink-0 ${state === "working" ? "text-amber-200" : "text-cyan-200/80"}`} />
-                  <span className="min-w-0 truncate">{name}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-1.5">
-                  <span className={`h-1.5 w-1.5 rounded-full ${dotClassName}`} />
-                  <span className={`font-mono text-[10px] leading-tight ${stateClassName}`}>
-                    {state === "working" ? "work" : state === "inactive" ? "Inactive" : state}
-                  </span>
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    ))}
-  </div>
-);
+      ))}
+    </div>
+  );
+};
 
 const QosMetricsChart = ({ metrics = [] }) => {
   const chartWidth = 240;
   const chartHeight = 122;
-  const padding = { top: 16, right: 14, bottom: 24, left: 38 };
+  const padding = { top: 16, right: 16, bottom: 30, left: 48 };
   const plotWidth = chartWidth - padding.left - padding.right;
   const plotHeight = chartHeight - padding.top - padding.bottom;
   const latestPoint = metrics[metrics.length - 1];
@@ -372,17 +404,17 @@ const QosMetricsChart = ({ metrics = [] }) => {
     : "--:--";
 
   return (
-    <div className="pointer-events-none absolute left-[74%] top-[64.5%] z-[27] flex h-[27%] w-[22.5%] flex-col overflow-hidden rounded-lg border border-cyan-200/55 bg-slate-950/88 px-2.5 py-2 text-cyan-50 shadow-[0_0_22px_rgba(34,211,238,0.28)] backdrop-blur-md">
-      <div className="mb-1 flex shrink-0 items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="truncate text-[11px] font-black leading-tight text-cyan-50">QoS保障曲线</div>
-          <div className="font-mono text-[8px] leading-tight text-blue-100/70">sendrate / GBR</div>
-        </div>
-        <div className="shrink-0 text-right font-mono">
-          <div className="text-[12px] font-black leading-none text-emerald-200">
-            Q{latestPoint ? latestPoint.q_lvl : "--"}
+    <div className="pointer-events-none absolute left-[73%] top-[63%] z-[27] flex h-[36%] w-[25%] flex-col overflow-hidden rounded-lg border border-cyan-200/55 bg-slate-950/88 px-3 py-3 text-cyan-50 shadow-[0_0_22px_rgba(34,211,238,0.28)] backdrop-blur-md">
+      <div className="mb-1.5 flex shrink-0 flex-col gap-0.5">
+        <div className="truncate text-[19px] font-black leading-none text-cyan-50">QoS保障曲线</div>
+        <div className="flex items-end justify-between gap-2 font-mono text-[13px] leading-none">
+          <div className="text-blue-100/70">sendrate/GBR</div>
+          <div className="flex shrink-0 items-baseline gap-1">
+            <span className="text-[21px] font-black text-emerald-200">
+              Q{latestPoint ? latestPoint.q_lvl : "--"}
+            </span>
+            <span className="text-[14px] text-blue-100/60">q_lvl</span>
           </div>
-          <div className="text-[8px] leading-tight text-blue-100/60">q_lvl</div>
         </div>
       </div>
 
@@ -395,7 +427,7 @@ const QosMetricsChart = ({ metrics = [] }) => {
           return (
             <g key={ratio}>
               <line x1={padding.left} y1={y} x2={padding.left + plotWidth} y2={y} stroke="rgba(125,211,252,0.14)" strokeWidth="0.6" />
-              <text x={padding.left - 5} y={y + 3} textAnchor="end" className="fill-blue-100/70 text-[7px] font-mono">{label}</text>
+              <text x={padding.left - 5} y={y + 5} textAnchor="end" className="fill-blue-100/70 text-[12px] font-mono">{label}</text>
             </g>
           );
         })}
@@ -405,18 +437,18 @@ const QosMetricsChart = ({ metrics = [] }) => {
             <path d={sendratePath} fill="none" stroke="#22d3ee" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </>
         ) : (
-          <text x="50%" y="50%" textAnchor="middle" className="fill-blue-100/70 text-[9px] font-bold">
+          <text x="50%" y="50%" textAnchor="middle" className="fill-blue-100/70 text-[16px] font-bold">
             等待QoS推送
           </text>
         )}
-        <text x={padding.left} y={chartHeight - 6} className="fill-blue-100/65 text-[7px] font-mono">{startLabel}</text>
-        <text x={padding.left + plotWidth} y={chartHeight - 6} textAnchor="end" className="fill-blue-100/65 text-[7px] font-mono">{endLabel}</text>
-        <text x="5" y={padding.top + plotHeight / 2} transform={`rotate(-90 5 ${padding.top + plotHeight / 2})`} textAnchor="middle" className="fill-cyan-100/70 text-[7px] font-mono">kbps</text>
+        <text x={padding.left} y={chartHeight - 5} className="fill-blue-100/65 text-[12px] font-mono">{startLabel}</text>
+        <text x={padding.left + plotWidth} y={chartHeight - 5} textAnchor="end" className="fill-blue-100/65 text-[12px] font-mono">{endLabel}</text>
+        <text x="8" y={padding.top + plotHeight / 2} transform={`rotate(-90 8 ${padding.top + plotHeight / 2})`} textAnchor="middle" className="fill-cyan-100/70 text-[12px] font-mono">kbps</text>
       </svg>
 
-      <div className="mt-1 flex shrink-0 items-center justify-between gap-2 font-mono text-[8px] leading-none text-blue-100/75">
-        <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-cyan-300" />sendrate</span>
-        <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-300" />GBR</span>
+      <div className="mt-1.5 flex shrink-0 items-center justify-between gap-2 font-mono text-[14px] leading-none text-blue-100/75">
+        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-cyan-300" />sendrate</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-amber-300" />GBR</span>
       </div>
     </div>
   );
@@ -463,6 +495,19 @@ const CurrentTaskSummaryOverlay = ({
   );
 };
 
+const IntentEntryArrow = () => (
+  <div
+    className="pointer-events-none absolute left-[13.5%] top-[31%] z-[19] h-12 w-[18.5%]"
+    aria-label="意图入口"
+  >
+    <span className="absolute bottom-[calc(50%+10px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-amber-300/55 bg-slate-950/92 px-3.5 py-1.5 text-base font-black tracking-[0.1em] text-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.32)] backdrop-blur-md">
+      意图入口
+    </span>
+    <span className="absolute left-0 right-4 top-1/2 h-1 -translate-y-1/2 bg-gradient-to-r from-amber-400/45 via-amber-300 to-amber-200 shadow-[0_0_14px_rgba(251,191,36,0.82)]" />
+    <span className="absolute right-0 top-1/2 h-5 w-5 -translate-y-1/2 bg-amber-200 drop-shadow-[0_0_8px_rgba(251,191,36,0.95)] [clip-path:polygon(0_0,100%_50%,0_100%,28%_50%)]" />
+  </div>
+);
+
 export const NetworkTopology3D = ({
   stage,
   activeFlowType,
@@ -471,7 +516,7 @@ export const NetworkTopology3D = ({
   agentBubbles = [],
   arSpeechText = "",
   hideRobotDogSpeech = false,
-  title = "核心网：数字身份申请",
+  title = "数字身份申请",
   topologyLines = null,
   workflow = [],
   highlightedNodes = [],
@@ -480,22 +525,13 @@ export const NetworkTopology3D = ({
   language = "zh",
   qosMetrics = [],
 }) => {
-  const nodes = useMemo(() => (
-    language === "en"
-      ? {
-          ...TOPOLOGY_NODES,
-          SRF: {
-            ...TOPOLOGY_NODES.SRF,
-            y: TOPOLOGY_NODES.SRF.y + 3,
-          },
-          SystemAgent: {
-            ...TOPOLOGY_NODES.SystemAgent,
-            y: TOPOLOGY_NODES.SystemAgent.y + 8,
-          },
-        }
-      : TOPOLOGY_NODES
-  ), [language]);
-  const connections = TOPOLOGY_CONNECTIONS;
+  const nodes = TOPOLOGY_NODES;
+  const connections = useMemo(() => (
+    TOPOLOGY_CONNECTIONS.filter((connection) => shouldShowTopologyConnection(stage, connection))
+  ), [stage]);
+  const showOttDomain = shouldShowOttDomain(stage);
+  const showQosMetricsChart = shouldShowQosMetricsChart(stage);
+  const showTokenTunnel = shouldShowTokenTunnel(stage);
   const activeFlowConfig = topologyLines
     ? { color: "#22f5ff", lines: topologyLines }
     : getTopologyFlowConfig(stage, activeFlowType);
@@ -514,9 +550,9 @@ export const NetworkTopology3D = ({
 
     const offsetX = bubble.offsetX || 0;
     const offsetY = bubble.offsetY || 0;
-    const aboveImageBubbleNodes = new Set(["ConnectionAgent", "ACN", "Computing"]);
     const requestedPlacement = bubble.placement || "above";
-    const placement = aboveImageBubbleNodes.has(bubble.targetNode) ? "above" : requestedPlacement;
+    const isRightSideAgentBubble = RIGHT_SIDE_AGENT_BUBBLE_KEYS.has(bubble.targetNode);
+    const placement = isRightSideAgentBubble ? "right" : requestedPlacement;
     const basePosition = {
       left: `${target.x + offsetX}%`,
       top: `${target.y + offsetY}%`,
@@ -529,11 +565,11 @@ export const NetworkTopology3D = ({
       : placement === "right"
       ? {
           ...basePosition,
-          top: hasToolPanel && bubble.targetNode === "ConnectionAgent"
-            ? `${target.y - 9 + offsetY}%`
+          top: isRightSideAgentBubble
+            ? `${target.y + offsetY}%`
             : `${target.y - 5 + offsetY}%`,
-          transform: hasToolPanel && bubble.targetNode === "ConnectionAgent"
-            ? "translate(30%, 0)"
+          transform: isRightSideAgentBubble
+            ? "translate(54px, -50%)"
             : hasToolPanel
               ? "translate(30%, -50%)"
               : "translate(22%, -50%)",
@@ -566,7 +602,12 @@ export const NetworkTopology3D = ({
     };
 
     if (bubble.targetNode === "SystemAgent") {
-      mergedStyle.left = offsetPercentValue(mergedStyle.left, 5);
+      if (bubble.variant === "stage2SystemPlan") {
+        mergedStyle.left = "39%";
+        mergedStyle.top = "22%";
+      } else {
+        mergedStyle.left = offsetPercentValue(mergedStyle.left, 5);
+      }
     }
 
     if (shouldLowerSystemStatusBubble) {
@@ -578,7 +619,7 @@ export const NetworkTopology3D = ({
       && bubble.variant === "stage2SystemPlan"
       && bubble.title === "Apply for the Digital ID"
     ) {
-      mergedStyle.top = offsetPercentValue(mergedStyle.top, 3);
+      mergedStyle.top = "23%";
     }
 
     return {
@@ -702,6 +743,12 @@ export const NetworkTopology3D = ({
 
   const isActive = (key) => Boolean(activeLineConfigByKey[key]);
 
+  const activeConnectionPathKeys = new Set(activeConnections.map((connectionConfig) => (
+    typeof connectionConfig === "string"
+      ? connectionConfig
+      : connectionConfig.pathKey || connectionConfig.key
+  )));
+
   const renderActiveConnection = (connectionConfig) => {
     const key = typeof connectionConfig === "string" ? connectionConfig : connectionConfig.key;
     const pathKey = typeof connectionConfig === "string" ? connectionConfig : connectionConfig.pathKey || connectionConfig.key;
@@ -709,26 +756,21 @@ export const NetworkTopology3D = ({
     const path = buildPath(connection);
     const reverse = typeof connectionConfig === "object" && connectionConfig.reverse;
 
+    if (showTokenTunnel && TOKEN_TUNNEL_CONNECTION_KEYS.has(pathKey)) {
+      return null;
+    }
+
     return (
       <g key={`active-${key}`}>
         <path
           d={path}
           fill="none"
-          stroke="#67e8f9"
-          strokeWidth="1.25"
-          strokeLinecap="round"
-          opacity="0.82"
-          filter="url(#topology-active-line-glow)"
-          className="animate-pulse"
-        />
-        <path
-          d={path}
-          fill="none"
           stroke="#e0f2fe"
-          strokeWidth="0.9"
-          strokeDasharray="4 8"
+          strokeWidth="0.68"
+          strokeDasharray="1.8 4.6"
           strokeLinecap="round"
           opacity="0.95"
+          filter="url(#topology-active-line-glow)"
           className={reverse ? "[animation:topology-flow_1.05s_linear_infinite_reverse]" : "[animation:topology-flow_1.05s_linear_infinite]"}
         />
       </g>
@@ -752,7 +794,7 @@ export const NetworkTopology3D = ({
 
       <div className="relative w-full min-h-0 flex-1 overflow-hidden rounded-lg border border-blue-900/30 bg-slate-950/20">
         <div className="absolute inset-0 z-[1]">
-          {TOPOLOGY_ZONES.map((zone) => (
+          {TOPOLOGY_ZONES.filter((zone) => zone.key !== "ott" || showOttDomain).map((zone) => (
             <div
               key={zone.key}
               className={`pointer-events-none absolute rounded-lg border-2 border-dashed ${zone.className}`}
@@ -775,7 +817,15 @@ export const NetworkTopology3D = ({
           stage10BlinkActive={stage10BlinkActive}
         />
 
-        {stage === 9 && <QosMetricsChart metrics={qosMetrics} />}
+        <IntentEntryArrow />
+
+        {showQosMetricsChart && <QosMetricsChart metrics={qosMetrics} />}
+
+        {showTokenTunnel && (
+          <div className="pointer-events-none absolute left-[41%] top-[65%] z-[18] -translate-x-1/2 rounded-md border border-cyan-200/60 bg-slate-950/92 px-3 py-1.5 text-sm font-black tracking-[0.08em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.35)] backdrop-blur-md">
+            Token Tunnel
+          </div>
+        )}
 
         <svg className="absolute inset-0 z-10 h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
@@ -787,9 +837,42 @@ export const NetworkTopology3D = ({
               </feMerge>
             </filter>
           </defs>
+          {showTokenTunnel && TOKEN_TUNNEL_CONNECTIONS.map((connection) => {
+            const key = `${connection[0]}->${connection[1]}`;
+            const path = buildPath(connection);
+
+            return (
+              <g key={`token-tunnel-${key}`}>
+                <path
+                  d={path}
+                  fill="none"
+                  stroke="#22f5ff"
+                  strokeWidth="1.25"
+                  strokeLinecap="round"
+                  opacity="0.82"
+                  filter="url(#topology-line-glow)"
+                  className="animate-pulse"
+                />
+                <path
+                  d={path}
+                  fill="none"
+                  stroke="#e0f2fe"
+                  strokeWidth="0.68"
+                  strokeDasharray="1.8 4.6"
+                  strokeLinecap="round"
+                  opacity="0.98"
+                  filter="url(#topology-line-glow)"
+                  className="[animation:topology-flow_1.05s_linear_infinite_reverse]"
+                />
+              </g>
+            );
+          })}
           {connections.map((connection) => {
             const key = `${connection[0]}->${connection[1]}`;
-            const active = isActive(key) && (stage !== 10 || stage10BlinkActive);
+            const active = isActive(key)
+              && !activeConnectionPathKeys.has(key)
+              && !(showTokenTunnel && TOKEN_TUNNEL_CONNECTION_KEYS.has(key))
+              && (stage !== 10 || stage10BlinkActive);
             const color = activeFlowConfig.color || "#22f5ff";
             const path = buildPath(connection);
 
@@ -805,28 +888,17 @@ export const NetworkTopology3D = ({
                   opacity="0.42"
                 />
                 {active && (
-                  <>
-                    <path
-                      d={path}
-                      fill="none"
-                      stroke={color}
-                      strokeWidth="1.15"
-                      strokeLinecap="round"
-                      opacity="0.78"
-                      filter="url(#topology-line-glow)"
-                      className="animate-pulse"
-                    />
-                    <path
-                      d={path}
-                      fill="none"
-                      stroke={color}
-                      strokeWidth="0.9"
-                      strokeDasharray="4 8"
-                      strokeLinecap="round"
-                      opacity="0.95"
-                      className="[animation:topology-flow_1.3s_linear_infinite]"
-                    />
-                  </>
+                  <path
+                    d={path}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth="0.68"
+                    strokeDasharray="1.8 4.6"
+                    strokeLinecap="round"
+                    opacity="0.95"
+                    filter="url(#topology-line-glow)"
+                    className="[animation:topology-flow_1.3s_linear_infinite]"
+                  />
                 )}
               </g>
             );
@@ -878,7 +950,7 @@ export const NetworkTopology3D = ({
         <UnifiedToolPanel toolStates={toolStates} />
 
         <div className="absolute inset-0 z-20">
-          {Object.entries(nodes).map(([key, value]) => {
+          {Object.entries(nodes).filter(([key]) => shouldShowTopologyNode(stage, key)).map(([key, value]) => {
             const highlighted = highlightedNodeSet.has(key);
             return (
               <div

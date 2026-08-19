@@ -54,7 +54,7 @@ const buildCompletedStageIntentSummary = (summaryItems, phases) => (
 
 const STAGE10_HANDOFF_FLASH_MS = 5000;
 
-export const useEffectiveStageConfig = (stage) => {
+export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {}) => {
   const stageConfig = STAGE_CONFIG[stage] || STAGE_CONFIG[1];
   const [stage2Progress, setStage2Progress] = useState({
     activeTask: 0,
@@ -81,7 +81,7 @@ export const useEffectiveStageConfig = (stage) => {
   const [stage4PhaseIndex, setStage4PhaseIndex] = useState(0);
   const [stage4FinalFlashActive, setStage4FinalFlashActive] = useState(false);
   const [stage5PhaseIndex, setStage5PhaseIndex] = useState(0);
-  const [stage5FinalFlashActive, setStage5FinalFlashActive] = useState(false);
+  const [stage5AnimationComplete, setStage5AnimationComplete] = useState(false);
   const [stage7PhaseIndex, setStage7PhaseIndex] = useState(0);
   const [stage7FinalFlashActive, setStage7FinalFlashActive] = useState(false);
   const [stage9QosPhaseIndex, setStage9QosPhaseIndex] = useState(0);
@@ -216,12 +216,12 @@ export const useEffectiveStageConfig = (stage) => {
   useEffect(() => {
     if (stage !== 5) {
       setStage5PhaseIndex(0);
-      setStage5FinalFlashActive(false);
+      setStage5AnimationComplete(false);
       return;
     }
 
     setStage5PhaseIndex(0);
-    setStage5FinalFlashActive(false);
+    setStage5AnimationComplete(false);
   }, [stage]);
 
   useEffect(() => {
@@ -308,7 +308,7 @@ export const useEffectiveStageConfig = (stage) => {
   }, [stage, stage4PhaseIndex]);
 
   useEffect(() => {
-    if (stage !== 5 || stage5PhaseIndex >= STAGE5_PHASES.length - 1) {
+    if (stage !== 5 || !stage5VideoReady || stage5PhaseIndex >= STAGE5_PHASES.length - 1) {
       return undefined;
     }
 
@@ -317,17 +317,17 @@ export const useEffectiveStageConfig = (stage) => {
     }, STAGE5_PHASE_TIMING[stage5PhaseIndex] || 1300);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage5PhaseIndex]);
+  }, [stage, stage5PhaseIndex, stage5VideoReady]);
 
   useEffect(() => {
     if (stage !== 5 || stage5PhaseIndex !== STAGE5_PHASES.length - 1) {
-      setStage5FinalFlashActive(false);
+      setStage5AnimationComplete(false);
       return undefined;
     }
 
-    setStage5FinalFlashActive(true);
+    setStage5AnimationComplete(false);
     const timer = window.setTimeout(() => {
-      setStage5FinalFlashActive(false);
+      setStage5AnimationComplete(true);
     }, 1000);
 
     return () => window.clearTimeout(timer);
@@ -605,22 +605,33 @@ export const useEffectiveStageConfig = (stage) => {
     if (stage === 5) {
       const phase = STAGE5_PHASES[stage5PhaseIndex] || STAGE5_PHASES[0];
       const allDone = stage5PhaseIndex >= STAGE5_PHASES.length - 1;
-      const hideFinalFlash = phase.key === "stage5_6" && !stage5FinalFlashActive;
-      const l2GuaranteeDone = phase.key === "stage5_done" || phase.key === "stage5_6";
-      const showArSpeech = phase.key === "stage5_source" && !hideFinalFlash;
+      const hideFinalFlash = phase.key === "stage5_6" && stage5AnimationComplete;
+      const l2GuaranteeDone = Boolean(phase.qoeComplete);
+      const stage5Prewarming = !stage5VideoReady;
+      const showArSpeech = !stage5Prewarming && phase.key === "stage5_source" && !hideFinalFlash;
 
       return {
         ...stageConfig,
+        leftPanelTitle: stage5Prewarming ? STAGE_CONFIG[4].leftPanelTitle : stageConfig.leftPanelTitle,
+        showDogVision: stage5Prewarming ? false : stageConfig.showDogVision,
+        showEnhancedDogVision: stage5Prewarming ? false : stageConfig.showEnhancedDogVision,
+        showHomeDomainDevice: stage5Prewarming ? true : stageConfig.showHomeDomainDevice,
+        showRegisteredDevice: stage5Prewarming ? true : stageConfig.showRegisteredDevice,
+        hideDeviceArrow: stage5Prewarming ? true : stageConfig.hideDeviceArrow,
+        homeDomainDevicesReady: stage5Prewarming ? true : stageConfig.homeDomainDevicesReady,
         activeFlowType: null,
-        topologyLines: phase.topologyLines || [],
-        stagePhaseKey: phase.key,
-        highlightedNodes: hideFinalFlash ? [] : phase.highlightedNodes || [],
-        activeConnections: hideFinalFlash ? [] : phase.activeConnections || [],
-        systemAgentBubble: hideFinalFlash ? null : phase.systemAgentBubble || null,
-        agentBubbles: phase.agentBubbles || [],
+        topologyLines: stage5Prewarming ? [] : phase.topologyLines || [],
+        stagePhaseKey: stage5Prewarming ? "stage5_preheating" : phase.key,
+        highlightedNodes: stage5Prewarming || hideFinalFlash ? [] : phase.highlightedNodes || [],
+        activeConnections: stage5Prewarming || hideFinalFlash ? [] : phase.activeConnections || [],
+        systemAgentBubble: stage5Prewarming || hideFinalFlash ? null : phase.systemAgentBubble || null,
+        agentBubbles: stage5Prewarming ? [] : phase.agentBubbles || [],
         showArSpeech,
         hideArSpeech: !showArSpeech,
-        stageAnimationDone: allDone && !stage5FinalFlashActive,
+        stageAnimationDone: allDone && stage5AnimationComplete,
+        stage5Prewarming,
+        stage5QoeComplete: Boolean(phase.qoeComplete),
+        stage5SandboxComplete: Boolean(phase.sandboxComplete),
         intentSummary: buildCumulativeIntentSummary(),
         statusTitle: l2GuaranteeDone ? "端侧状态：L2级通信保障" : "端侧状态：L1级通信保障",
         statusRows: l2GuaranteeDone
@@ -758,7 +769,7 @@ export const useEffectiveStageConfig = (stage) => {
         highlightedNodes: phase.highlightedNodes || [],
         activeConnections: phase.activeConnections || [],
         systemAgentBubble: null,
-        agentBubbles: [],
+        agentBubbles: phase.agentBubbles || [],
         showArSpeech: false,
         hideArSpeech: true,
         hideRobotDogSpeech: true,

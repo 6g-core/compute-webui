@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BrainCircuit, CheckCircle2, CircleDot, Cpu, Hourglass, LoaderCircle, Radio } from 'lucide-react';
+import {
+  BrainCircuit,
+  CheckCircle2,
+  CircleDot,
+  Cpu,
+  Hourglass,
+  LoaderCircle,
+  Radio,
+} from 'lucide-react';
 import { getTopologyFlowConfig } from '../topologyFlowConfig';
 import { AGENT_TOOL_SETS, formatSystemAgentBubbleLabel, normalizeWorkflowLabel } from '../config/stageConfig.jsx';
 import {
@@ -20,6 +28,9 @@ import acnImage from '../ACN.png';
 import computingImage from '../Computing.png';
 import computingNodeImage from '../Computing_Node.png';
 import connectionImage from '../Connetction.png';
+import dcfImage from '../../DCF.png';
+import dsfImage from '../../DSF.png';
+import idmImage from '../../IDM.png';
 import marketImage from '../Market.png';
 import srfImage from '../SRF.png';
 import upfImage from '../upfnew.png';
@@ -34,17 +45,65 @@ const AgentSpeechBubble = ({ bubble }) => {
   const formatBubbleText = (text) => String(text);
   const isVoiceIntent = bubble.variant === "voiceIntent";
   const isStage2SystemPlan = bubble.variant === "stage2SystemPlan";
+  const isIntentValidationBubble = bubble.variant === "intentValidation";
+  const isSkillProgressBubble = ["qoeAssurance", "acnSkillProgress", "sandboxServices"].includes(bubble.variant);
+  const isSandboxServicesBubble = bubble.variant === "sandboxServices";
+  const isTaskProgressBubble = bubble.variant === "taskProgress";
+  const isBelowSystemPlan = isStage2SystemPlan && bubble.placement === "below";
   const hasBoostedPlanText = isStage2SystemPlan && bubble.planTextBoost;
   const tools = bubble.variant === "toolPanel" && !items && !isVoiceIntent ? AGENT_TOOL_SETS[bubble.targetNode] : null;
   const activeTools = new Set(Array.isArray(bubble.activeTools) ? bubble.activeTools : []);
   const hasToolPanel = Array.isArray(tools) && tools.length > 0;
   const isSystemAgentBubble = bubble.targetNode === "SystemAgent";
   const isSystemIntentBubble = isSystemAgentBubble && lines.some((line) => String(line).includes("收到意图"));
-  const isLargeAgentBubble = ["ConnectionAgent", "ACN", "Computing", "AgentGW", "OttAgentGW"].includes(bubble.targetNode) && !items && !hasToolPanel;
-  const isPrimaryAgentBubble = ["ConnectionAgent", "ACN", "Computing"].includes(bubble.targetNode) && !items && !hasToolPanel;
-  const baseTextSizeClass = isStage2SystemPlan ? (hasBoostedPlanText ? "text-[10px]" : "text-[9px]") : isPrimaryAgentBubble ? "text-[10px]" : isLargeAgentBubble ? "text-[9px]" : isSystemIntentBubble ? "text-[9px]" : isSystemAgentBubble ? "text-[8px]" : "text-[7px]";
-  const planHeadingTextClass = hasBoostedPlanText ? "text-[10px]" : "text-[9px]";
-  const planTitleTextClass = hasBoostedPlanText ? "text-[11px]" : "text-[10px]";
+  const isDapSharedBubble = Boolean(bubble.dapGroup);
+  const isLargeAgentBubble = ["ConnectionAgent", "ACN", "Computing", "DCF", "DSF", "IDM", "AgentGW", "OttAgentGW"].includes(bubble.targetNode) && !items && !hasToolPanel;
+  const isPrimaryAgentBubble = ["ConnectionAgent", "ACN", "Computing", "DCF", "DSF", "IDM"].includes(bubble.targetNode) && !items && !hasToolPanel;
+  const sandboxToolItems = isSandboxServicesBubble ? items.filter((item) => !item.acceptance) : [];
+  const sandboxFocusedItem = isSandboxServicesBubble && bubble.sandboxFocusIndex >= 0
+    && bubble.sandboxFocusIndex < sandboxToolItems.length
+    ? sandboxToolItems[bubble.sandboxFocusIndex]
+    : null;
+  const sandboxFocusedLines = sandboxFocusedItem
+    ? (() => {
+        const label = normalizeWorkflowLabel(sandboxFocusedItem.label);
+        const prefix = label.startsWith("调用") ? "调用" : label.startsWith("Call ") ? "Call" : "";
+        const toolName = label.replace(/^(调用|Call)\s*/, "");
+        const parts = toolName.split("_").filter(Boolean);
+        const wrappedToolLines = parts.reduce((wrappedLines, part, index) => {
+          const token = index < parts.length - 1 ? `${part}_` : part;
+          const previousLine = wrappedLines[wrappedLines.length - 1];
+
+          if (previousLine && `${previousLine}${token}`.length <= 22) {
+            wrappedLines[wrappedLines.length - 1] = `${previousLine}${token}`;
+          } else {
+            wrappedLines.push(token);
+          }
+
+          return wrappedLines;
+        }, []);
+
+        return [
+          ...(prefix ? [prefix] : []),
+          ...wrappedToolLines,
+        ];
+      })()
+    : [];
+  const baseTextSizeClass = isDapSharedBubble
+    ? bubble.compactText ? "text-[10px]" : "text-[11px]"
+    : isStage2SystemPlan
+      ? (hasBoostedPlanText ? "text-[10px]" : "text-[9px]")
+      : isPrimaryAgentBubble
+        ? "text-[10px]"
+        : isLargeAgentBubble
+          ? "text-[10px]"
+          : isSystemIntentBubble
+            ? "text-[9px]"
+            : isSystemAgentBubble
+              ? "text-[8px]"
+              : "text-[7px]";
+  const planHeadingTextClass = isBelowSystemPlan ? (isDapSharedBubble ? "text-[9px]" : "text-[8px]") : hasBoostedPlanText ? "text-[10px]" : "text-[9px]";
+  const planTitleTextClass = isBelowSystemPlan ? (isDapSharedBubble ? "text-[10px]" : "text-[9px]") : hasBoostedPlanText ? "text-[11px]" : "text-[10px]";
   const positionClassName = bubble.style ? (bubble.className || "") : (bubble.className || "left-[83%] top-[36%]");
   const arrowClassName = bubble.arrow === "down-right"
     ? "absolute bottom-[-5px] right-6 h-2 w-2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
@@ -54,6 +113,22 @@ const AgentSpeechBubble = ({ bubble }) => {
     ? "absolute bottom-[-5px] left-1 h-2 w-2 -translate-x-1/2 rotate-[20deg] border-b border-l border-cyan-400/45 bg-slate-950/86"
     : bubble.arrow === "down-left"
     ? "absolute bottom-[-5px] left-[72%] h-2 w-2 -translate-x-1/2 rotate-[28deg] border-b border-r border-cyan-400/45 bg-slate-950/86"
+    : bubble.arrow === "up"
+    ? "absolute left-1/2 top-[-5px] h-2 w-2 -translate-x-1/2 rotate-45 border-l border-t border-cyan-400/45 bg-slate-950/86"
+    : bubble.arrow === "up-planning"
+    ? "absolute left-[12%] top-[-5px] h-2 w-2 -translate-x-1/2 rotate-45 border-l border-t border-cyan-400/45 bg-slate-950/86"
+    : bubble.arrow === "up-connection"
+    ? "absolute left-1/2 top-[-5px] h-2 w-2 -translate-x-1/2 rotate-45 border-l border-t border-cyan-400/45 bg-slate-950/86"
+    : bubble.arrow === "up-acf"
+    ? "absolute left-[89%] top-[-5px] h-2 w-2 -translate-x-1/2 rotate-45 border-l border-t border-cyan-400/45 bg-slate-950/86"
+    : bubble.arrow === "up-dcf"
+    ? "absolute left-[14%] top-[-5px] h-2 w-2 -translate-x-1/2 rotate-45 border-l border-t border-cyan-400/45 bg-slate-950/86"
+    : bubble.arrow === "up-dsf"
+    ? "absolute left-1/2 top-[-5px] h-2 w-2 -translate-x-1/2 rotate-45 border-l border-t border-cyan-400/45 bg-slate-950/86"
+    : bubble.arrow === "up-idm"
+    ? "absolute left-[88%] top-[-5px] h-2 w-2 -translate-x-1/2 rotate-45 border-l border-t border-cyan-400/45 bg-slate-950/86"
+    : bubble.arrow === "up-computing"
+    ? "absolute left-[72%] top-[-5px] h-2 w-2 -translate-x-1/2 rotate-45 border-l border-t border-cyan-400/45 bg-slate-950/86"
     : bubble.arrow === "down"
       ? "absolute bottom-[-5px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-cyan-400/45 bg-slate-950/86"
       : bubble.arrow === "right"
@@ -64,7 +139,9 @@ const AgentSpeechBubble = ({ bubble }) => {
     : isVoiceIntent
       ? "border-cyan-200/85 bg-cyan-950/96 text-cyan-50 shadow-[0_0_26px_rgba(34,211,238,0.48),inset_0_0_16px_rgba(34,211,238,0.16)] ring-1 ring-cyan-300/45"
       : "border-cyan-400/45 bg-slate-950/86 text-blue-50 shadow-[0_0_18px_rgba(34,211,238,0.18)]";
-  const bubbleScale = bubble.scale || (isStage2SystemPlan ? 1.6 : isVoiceIntent ? 1.22 : bubble.focusScale ? 1.18 : 1);
+  const bubbleScale = isDapSharedBubble
+    ? 1
+    : bubble.scale || (isStage2SystemPlan ? 1.6 : isVoiceIntent ? 1.22 : bubble.focusScale ? 1.18 : 1);
   const planWidthClass = bubble.planWidthClass || "w-[165px]";
   const shouldScaleBubble = bubbleScale !== 1;
   const bubbleStyle = shouldScaleBubble
@@ -74,34 +151,152 @@ const AgentSpeechBubble = ({ bubble }) => {
         transformOrigin: bubble.transformOrigin || (isStage2SystemPlan ? "78% 100%" : "50% 100%"),
       }
     : bubble.style;
+  const bubbleLayoutClassName = isDapSharedBubble
+    ? isStage2SystemPlan || isIntentValidationBubble || isSkillProgressBubble || isTaskProgressBubble
+      ? "w-full flex-col items-stretch rounded-xl"
+      : "min-h-9 w-full items-center justify-center gap-2 rounded-xl"
+    : isStage2SystemPlan
+      ? `${planWidthClass} flex-col items-stretch rounded-lg`
+      : items
+        ? "w-[175px] flex-col items-stretch gap-1 rounded-lg"
+        : hasToolPanel
+          ? "w-[150px] flex-col items-stretch rounded-md border-dashed"
+          : isLargeAgentBubble
+            ? "max-w-[205px] items-center gap-2 rounded-full"
+            : "max-w-[175px] items-center gap-1.5 rounded-full";
+  const bubblePaddingClassName = hasToolPanel
+    ? "px-0 py-0"
+    : isDapSharedBubble
+      ? isStage2SystemPlan
+        ? "px-3 py-1.5"
+        : isSandboxServicesBubble
+          ? "px-2.5 py-1.5"
+          : bubble.compactItems
+            ? "px-2.5 py-1"
+            : "px-3 py-2"
+      : isLargeAgentBubble
+        ? "px-3 py-2"
+        : "px-2.5 py-1.5";
 
   return (
     <div
-      className={`absolute z-30 flex transition-transform duration-500 ease-out ${isStage2SystemPlan ? `${planWidthClass} flex-col items-stretch rounded-lg` : items ? "w-[175px] flex-col items-stretch gap-1 rounded-lg" : hasToolPanel ? "w-[150px] flex-col items-stretch rounded-md border-dashed" : isLargeAgentBubble ? "max-w-[205px] items-center gap-2 rounded-full" : "max-w-[175px] items-center gap-1.5 rounded-full"} border ${hasToolPanel ? "px-0 py-0" : isLargeAgentBubble ? "px-3 py-2" : "px-2.5 py-1.5"} ${baseTextSizeClass} font-bold backdrop-blur-md ${shouldScaleBubble ? "ring-1 ring-cyan-200/45 shadow-[0_0_26px_rgba(34,211,238,0.28)]" : ""} ${bubbleClassName} ${positionClassName}`}
+      className={`absolute z-30 flex transition-transform duration-500 ease-out ${bubbleLayoutClassName} border ${bubblePaddingClassName} ${baseTextSizeClass} font-bold backdrop-blur-md ${shouldScaleBubble ? "ring-1 ring-cyan-200/45 shadow-[0_0_26px_rgba(34,211,238,0.28)]" : ""} ${bubbleClassName} ${positionClassName}`}
       style={bubbleStyle}
     >
-      {isStage2SystemPlan ? (
+      {isIntentValidationBubble ? (
+        <div className="flex min-w-0 flex-col gap-1">
+          {lines.map((line, index) => (
+            <div key={line} className="flex min-w-0 items-center gap-1.5 text-[11px] font-black leading-tight text-cyan-50">
+              <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${index === 0 ? "text-emerald-300" : "text-cyan-200"}`} />
+              <span className="min-w-0 whitespace-nowrap">{formatBubbleText(line)}</span>
+            </div>
+          ))}
+        </div>
+      ) : isSandboxServicesBubble ? (
         <>
-          <div className="leading-tight">
-            <span className={`block ${planHeadingTextClass} font-bold tracking-wide text-cyan-200/80`}>用户意图：</span>
-            <span className={`block ${planTitleTextClass} font-black text-cyan-50`}>{bubble.title}</span>
+          <div className="min-w-0 text-[12px] font-black leading-[1.05] text-cyan-50">
+            {bubble.title}
           </div>
-          <div className="my-1.5 border-t border-dashed border-cyan-300/55" />
-          <div className={`mb-1 ${planHeadingTextClass} font-bold leading-tight text-cyan-200/85`}>
-            网络任务规划：
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {(bubble.tasks || []).map((task) => (
-              <div key={task.label} className="flex min-w-0 items-center gap-1.5 leading-tight">
-                {task.status === "success" ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
-                ) : task.status === "working" ? (
-                  <LoaderCircle className="h-3.5 w-3.5 shrink-0 animate-spin text-cyan-100" />
+          <div className="my-0.5 shrink-0 border-t border-dashed border-cyan-300/45" />
+          <div className="grid grid-cols-6 place-items-center" aria-label="Sandbox Tool progress">
+            {sandboxToolItems.map((item) => (
+              <span key={item.label} title={normalizeWorkflowLabel(item.label)}>
+                {item.status === "success" ? (
+                  <CheckCircle2 className="h-2.5 w-2.5 text-emerald-300" />
+                ) : item.status === "working" ? (
+                  <LoaderCircle className="h-2.5 w-2.5 animate-spin text-cyan-100" />
                 ) : (
-                  <Hourglass className="h-3.5 w-3.5 shrink-0 text-slate-400/75" />
+                  <CircleDot className="h-2.5 w-2.5 text-slate-400/75" />
                 )}
-                <span className={`min-w-0 flex-1 whitespace-normal break-words ${task.status === "pending" ? "text-blue-100/65" : ""}`}>
-                  {String(task.label).split("\n").map((line) => (
+              </span>
+            ))}
+          </div>
+          <div className="mt-1 min-w-0 text-[13px] font-bold leading-[1.1] tracking-[-0.01em] text-blue-50">
+            {bubble.sandboxFocusIndex < 0 ? (
+              <span className="whitespace-normal break-words">准备按序调用 6 项 Tool</span>
+            ) : bubble.sandboxFocusIndex >= sandboxToolItems.length ? (
+              <span className="whitespace-normal break-words">
+                {normalizeWorkflowLabel(items.find((item) => item.acceptance)?.label || "编排结果验收通过")}
+              </span>
+            ) : (
+              sandboxFocusedLines.map((line) => (
+                <span key={line} className="block whitespace-nowrap">{line}</span>
+              ))
+            )}
+          </div>
+        </>
+      ) : (isSkillProgressBubble || isTaskProgressBubble) ? (
+        <>
+          {isSkillProgressBubble && (
+            <>
+              <div className={`min-w-0 shrink-0 font-black text-cyan-50 ${bubble.compactItems ? "text-[11px] leading-none" : "text-[12px] leading-tight"}`}>
+                {bubble.title}
+              </div>
+              <div className={`${bubble.compactItems ? "my-0.5" : "my-1"} shrink-0 border-t border-dashed border-cyan-300/45`} />
+            </>
+          )}
+          <div>
+            <div className={`flex flex-col ${bubble.compactItems ? "gap-0" : "gap-1"}`}>
+              {items.map((item) => (
+                <div
+                  key={item.label}
+                  className={`flex min-w-0 items-center ${item.fitOneLine ? "gap-1 text-[9px] leading-none tracking-[-0.035em]" : item.marquee ? "gap-1 text-[9px] leading-none" : bubble.denseItems ? "gap-1 text-[10px] leading-[0.9]" : `gap-1.5 text-[12px] ${bubble.compactItems ? "leading-[0.85]" : "leading-tight"}`} ${item.acceptance ? "mt-0.5 border-t border-dashed border-emerald-300/30 pt-1 text-emerald-100" : ""}`}
+                >
+                  {item.status === "success" ? (
+                    <CheckCircle2 className={`${item.fitOneLine || bubble.denseItems ? "h-2.5 w-2.5" : bubble.compactItems ? "h-3 w-3" : "h-3.5 w-3.5"} shrink-0 text-emerald-300`} />
+                  ) : item.status === "working" ? (
+                    <LoaderCircle className={`${item.fitOneLine || bubble.denseItems ? "h-2.5 w-2.5" : bubble.compactItems ? "h-3 w-3" : "h-3.5 w-3.5"} shrink-0 animate-spin text-cyan-100`} />
+                  ) : (
+                    <CircleDot className={`${item.fitOneLine || bubble.denseItems ? "h-2.5 w-2.5" : bubble.compactItems ? "h-3 w-3" : "h-3.5 w-3.5"} shrink-0 text-slate-400/75`} />
+                  )}
+                  <span className={`min-w-0 flex-1 ${item.fitOneLine ? "overflow-hidden whitespace-nowrap" : "whitespace-normal break-words"} ${item.status === "pending" ? "text-blue-100/60" : ""}`}>
+                    {normalizeWorkflowLabel(item.label)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : isStage2SystemPlan ? (
+        <>
+          {isBelowSystemPlan ? (
+            <div className={`${isDapSharedBubble ? "leading-tight" : "text-[8px] leading-tight"} font-black text-cyan-50`}>
+              <span className={`${isDapSharedBubble ? "block text-[11px] tracking-wide" : ""} text-cyan-200/75`}>
+                用户意图{isDapSharedBubble ? "" : " · "}
+              </span>
+              <span className={isDapSharedBubble ? "mt-0.5 block text-[14px] leading-tight" : ""}>
+                {bubble.title}
+              </span>
+            </div>
+          ) : (
+            <div className="leading-tight">
+              <span className={`block ${planHeadingTextClass} font-bold tracking-wide text-cyan-200/80`}>用户意图：</span>
+              <span className={`block ${planTitleTextClass} font-black text-cyan-50`}>{bubble.title}</span>
+            </div>
+          )}
+          <div className={`${isBelowSystemPlan ? "my-0.5" : "my-1.5"} border-t border-dashed border-cyan-300/55`} />
+          {!isBelowSystemPlan && (
+            <div className={`mb-1 ${planHeadingTextClass} font-bold leading-tight text-cyan-200/85`}>
+              网络任务规划：
+            </div>
+          )}
+          <div className={isBelowSystemPlan && isDapSharedBubble
+            ? "flex flex-col gap-0.5"
+            : `flex flex-col ${isBelowSystemPlan ? "gap-0.5" : "gap-1.5"}`}>
+            {(bubble.tasks || []).map((task) => (
+              <div
+                key={task.label}
+                className={`flex min-w-0 items-center gap-1.5 leading-tight ${isBelowSystemPlan && isDapSharedBubble ? "rounded px-1 py-0.5 odd:bg-cyan-300/[0.035]" : ""}`}
+              >
+                {task.status === "success" ? (
+                  <CheckCircle2 className={`${isBelowSystemPlan ? (isDapSharedBubble ? "h-3.5 w-3.5" : "h-2.5 w-2.5") : "h-3.5 w-3.5"} shrink-0 text-emerald-300`} />
+                ) : task.status === "working" ? (
+                  <LoaderCircle className={`${isBelowSystemPlan ? (isDapSharedBubble ? "h-3.5 w-3.5" : "h-2.5 w-2.5") : "h-3.5 w-3.5"} shrink-0 animate-spin text-cyan-100`} />
+                ) : (
+                  <Hourglass className={`${isBelowSystemPlan ? (isDapSharedBubble ? "h-3.5 w-3.5" : "h-2.5 w-2.5") : "h-3.5 w-3.5"} shrink-0 text-slate-400/75`} />
+                )}
+                <span className={`min-w-0 flex-1 whitespace-normal break-words ${isBelowSystemPlan ? (isDapSharedBubble ? "text-[13px] leading-[1.15]" : "text-[7px] leading-tight") : ""} ${task.status === "pending" ? "text-blue-100/65" : ""}`}>
+                  {(isBelowSystemPlan ? [String(task.label).replace(/\n+/g, " ")] : String(task.label).split("\n")).map((line) => (
                     <span key={line} className="block">{line}</span>
                   ))}
                 </span>
@@ -165,7 +360,9 @@ const AgentSpeechBubble = ({ bubble }) => {
           )}
           <span className={`flex min-w-0 flex-col leading-tight ${isVoiceIntent ? "whitespace-normal break-words" : "whitespace-normal break-words"}`}>
             {lines.map((line) => (
-              <span key={line}>{formatBubbleText(line)}</span>
+              <span key={line} className={isSystemIntentBubble || bubble.nowrap ? "whitespace-nowrap" : ""}>
+                {formatBubbleText(line)}
+              </span>
             ))}
           </span>
         </>
@@ -191,21 +388,22 @@ const offsetPercentValue = (value, delta) => {
 const TOPOLOGY_NODES = {
   UE: { name: "AR Glasses\n(Physical AI)", x: 7, y: 78, color: "#22f5ff", image: "/topology/glasses_transparent.png", size: "w-16 md:w-20 2xl:w-24", labelTextClassName: "text-[12px] sm:text-[13px]" },
   RobotDog: { name: "Robot Dog\n(Physical AI)", x: 7, y: 32, color: "#22e6b8", image: "/topology/robotdog_transparent.png", size: "w-20 md:w-24 2xl:w-32", labelTextClassName: "text-[12px] sm:text-[13px]" },
-  gNB: { name: "RAN", x: 22, y: 55, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-24 md:w-28 2xl:w-36" },
-  SRF: { name: "SRF", x: 41.5, y: 51, color: "#38bdf8", image: srfImage, size: "w-20 md:w-24 2xl:w-32", labelClassName: "relative -mt-7" },
-  SystemAgent: { name: "SystemAgent", x: 56.5, y: 50, color: "#c084fc", image: "/topology/systemagent_transparent.png", size: "w-20 md:w-24 2xl:w-32", labelClassName: "relative -mt-7" },
+  gNB: { name: "RAN", x: 20, y: 55, color: "#60a5fa", image: "/topology/ran_transparent.png", size: "w-24 md:w-28 2xl:w-36" },
+  SRF: { name: "SRF", x: 29.5, y: 49, color: "#38bdf8", image: srfImage, size: "w-16 md:w-20 2xl:w-24", labelClassName: "relative -mt-6" },
+  SystemAgent: { name: "Planning\nAgent", x: 42, y: 39, color: "#c084fc", image: "/topology/systemagent_transparent.png", compact: true },
   UPF: { name: "UPF", x: 36, y: 82, color: "#34d399", image: upfImage, size: "w-20 md:w-24 2xl:w-32", labelClassName: "relative -mt-7" },
-  ConnectionAgent: { name: "Connection Agent", x: 79, y: 27, color: "#22d3ee", image: connectionImage, size: "w-14 md:w-16 2xl:w-24", labelClassName: "relative -mt-7" },
-  ACN: { name: "ACN Agent", x: 79, y: 41, color: "#f472b6", image: acnImage, size: "w-14 md:w-16 2xl:w-24", labelClassName: "relative -mt-7" },
+  ConnectionAgent: { name: "Connection\nAgent", x: 51.3, y: 39, color: "#22d3ee", image: connectionImage, compact: true },
+  ACN: { name: "ACF", x: 60.6, y: 39, color: "#f472b6", image: acnImage, compact: true },
+  DCF: { name: "DCF", x: 68, y: 39, color: "#38bdf8", image: dcfImage, compact: true },
+  DSF: { name: "DSF", x: 75.2, y: 39, color: "#34d399", image: dsfImage, compact: true },
+  IDM: { name: "IDM", x: 82.4, y: 39, color: "#a78bfa", image: idmImage, compact: true },
   Computing: {
-    name: "Computing Agent",
-    x: 79,
-    y: 54,
+    name: "CCF",
+    x: 91.5,
+    y: 39,
     color: "#fbbf24",
     image: computingImage,
-    size: "w-14 md:w-16 2xl:w-24",
-    labelClassName: "absolute top-[80%]",
-    labelStyle: { whiteSpace: "nowrap", width: "max-content", minWidth: "max-content" },
+    compact: true,
   },
   AgentGW: { name: "Agent GW", x: 62.5, y: 91, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20 2xl:w-28", labelClassName: "relative -mt-7" },
   OttAgentGW: { name: "Agent GW", x: 78.5, y: 82, color: "#38bdf8", image: "/topology/gw.png", size: "w-16 md:w-20 2xl:w-28", labelClassName: "relative -mt-7" },
@@ -214,6 +412,70 @@ const TOPOLOGY_NODES = {
 };
 
 const TOPOLOGY_CONNECTOR_POINTS = {};
+
+const DAP_BUS = { startX: 38.5, endX: 96.5, y: 22.5 };
+const DAP_BUBBLE_GROUPS = {
+  intelligent: { left: "39.2%", top: "46.5%", width: "24.1%" },
+  data: { left: "65.2%", top: "46.5%", width: "19.6%" },
+  computing: { left: "78.5%", top: "46.5%", width: "18%" },
+};
+const DAP_BUBBLE_GROUP_BY_NODE = {
+  SystemAgent: "intelligent",
+  ConnectionAgent: "intelligent",
+  ACN: "intelligent",
+  DCF: "data",
+  DSF: "data",
+  IDM: "data",
+  Computing: "computing",
+};
+const DAP_BUBBLE_ARROW_BY_NODE = {
+  SystemAgent: "up-planning",
+  ConnectionAgent: "up-connection",
+  ACN: "up-acf",
+  DCF: "up-dcf",
+  DSF: "up-dsf",
+  IDM: "up-idm",
+  Computing: "up-computing",
+};
+const DAP_NF_KEYS = new Set(Object.keys(DAP_BUBBLE_GROUP_BY_NODE));
+const DAP_BUS_BRANCHES = {
+  SRF: { tapX: 38.5, anchorOffsetY: -6 },
+  SystemAgent: { tapX: 42, anchorOffsetY: -6 },
+  ConnectionAgent: { tapX: 51.3, anchorOffsetY: -6 },
+  ACN: { tapX: 60.6, anchorOffsetY: -6 },
+  DCF: { tapX: 68, anchorOffsetY: -6 },
+  DSF: { tapX: 75.2, anchorOffsetY: -6 },
+  IDM: { tapX: 82.4, anchorOffsetY: -6 },
+  Computing: { tapX: 91.5, anchorOffsetY: -6 },
+};
+const DAP_BUS_CONNECTIONS = Object.keys(DAP_BUS_BRANCHES);
+
+const getDapBusPoint = (x) => {
+  const clampedX = Math.min(DAP_BUS.endX, Math.max(DAP_BUS.startX, x));
+
+  return {
+    x: clampedX,
+    y: DAP_BUS.y,
+  };
+};
+
+const getDapBusBranchAnchor = (nodeKey) => {
+  const node = TOPOLOGY_NODES[nodeKey];
+  const branch = DAP_BUS_BRANCHES[nodeKey];
+
+  return {
+    x: node.x,
+    y: node.y + branch.anchorOffsetY,
+  };
+};
+
+const buildDapBusBranchPath = (nodeKey) => {
+  const anchor = getDapBusBranchAnchor(nodeKey);
+  const branch = DAP_BUS_BRANCHES[nodeKey];
+  const tap = getDapBusPoint(branch.tapX);
+
+  return `M ${anchor.x} ${anchor.y} L ${tap.x} ${tap.y}`;
+};
 
 const TOPOLOGY_CONNECTIONS = [
   ["UE", "gNB"],
@@ -227,6 +489,10 @@ const TOPOLOGY_CONNECTIONS = [
   ["OttAgentGW", "MarketAgent"],
   ["SystemAgent", "ConnectionAgent"],
   ["SystemAgent", "ACN"],
+  ["SystemAgent", "IDM"],
+  ["ACN", "DCF"],
+  ["DCF", "DSF"],
+  ["ACN", "IDM"],
   ["SystemAgent", "Computing"],
 ];
 
@@ -240,65 +506,39 @@ const TOKEN_TUNNEL_CONNECTION_KEYS = new Set(
   TOKEN_TUNNEL_CONNECTIONS.map(([from, to]) => `${from}->${to}`),
 );
 
-const RIGHT_SIDE_AGENT_BUBBLE_KEYS = new Set(["ConnectionAgent", "ACN", "Computing"]);
-
-const TOOL_PANEL_GROUPS = [
-  {
-    title: "Agentic Base",
-    columns: 3,
-    items: [
-      "AM Tool",
-      "SM Tool",
-      "Policy Tool",
-      "UDM Tool",
-      "IDM Tool",
-      "ARF Tool",
-    ],
-  },
-  {
-    title: "Beyond Connectivity",
-    columns: 1,
-    items: [
-      "CMF Tool",
-      "CSPF Tool",
-    ],
-  },
-];
+const CP_TOOL_ITEMS = ["AM Tool", "SM Tool", "Policy Tool", "UDM Tool"];
+const CP_TOOL_ITEM_SET = new Set(CP_TOOL_ITEMS);
 
 const TOOL_ICON_BY_NAME = {
   "AM Tool": Cpu,
   "SM Tool": Cpu,
   "Policy Tool": Cpu,
   "UDM Tool": Cpu,
-  "IDM Tool": Cpu,
-  "ARF Tool": Cpu,
-  "CMF Tool": BrainCircuit,
-  "CSPF Tool": BrainCircuit,
 };
 
 const TOPOLOGY_ZONES = [
   {
     key: "cp",
     label: "CP",
-    className: "left-[32%] top-[1%] h-[18%] w-[66%] border-orange-300/90 bg-orange-500/[0.08] shadow-[0_0_22px_rgba(251,146,60,0.28)]",
+    className: "left-[37%] top-[1%] h-[11.5%] w-[61%] border-orange-300/90 bg-orange-500/[0.08] shadow-[0_0_22px_rgba(251,146,60,0.28)]",
     labelClassName: "left-2 top-2 border-orange-200/80 text-orange-100 shadow-[0_0_18px_rgba(251,146,60,0.35)]",
   },
   {
     key: "dap",
     label: "DAP",
-    className: "left-[32%] top-[20%] h-[42%] w-[66%] border-violet-300/85 bg-violet-500/[0.07] shadow-[0_0_22px_rgba(167,139,250,0.22)]",
+    className: "left-[37%] top-[14.5%] h-[51.5%] w-[61%] border-violet-300/85 bg-violet-500/[0.07] shadow-[0_0_22px_rgba(167,139,250,0.22)]",
     labelClassName: "left-2 top-2 border-violet-200/75 text-violet-100 shadow-[0_0_18px_rgba(167,139,250,0.28)]",
   },
   {
     key: "up",
     label: "UP",
-    className: "left-[32%] top-[63%] h-[36%] w-[39%] border-emerald-300/90 bg-emerald-500/[0.08] shadow-[0_0_22px_rgba(16,185,129,0.25)]",
+    className: "left-[32%] top-[67%] h-[32%] w-[39%] border-emerald-300/90 bg-emerald-500/[0.08] shadow-[0_0_22px_rgba(16,185,129,0.25)]",
     labelClassName: "bottom-2 left-2 border-emerald-200/80 text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.32)]",
   },
   {
     key: "ott",
     label: "OTT",
-    className: "left-[73%] top-[63%] h-[36%] w-[25%] border-sky-300/85 bg-sky-500/[0.08] shadow-[0_0_18px_rgba(56,189,248,0.18)]",
+    className: "left-[73%] top-[67%] h-[32%] w-[25%] border-sky-300/85 bg-sky-500/[0.08] shadow-[0_0_18px_rgba(56,189,248,0.18)]",
     labelClassName: "bottom-2 right-2 border-sky-200/70 text-sky-100 shadow-[0_0_14px_rgba(56,189,248,0.22)]",
   },
 ];
@@ -307,66 +547,40 @@ const UnifiedToolPanel = ({ toolStates }) => {
   const hasWorkingTool = Object.values(toolStates).some((state) => state === "working");
 
   return (
-    <div className={`absolute left-[37%] top-[2.5%] z-[26] flex h-[15%] w-[59%] items-stretch gap-3 text-blue-50 ${hasWorkingTool ? "cp-tool-panel-flash" : ""}`}>
-      {TOOL_PANEL_GROUPS.map((group, groupIndex) => (
-        <div
-          key={group.title}
-          className={`flex min-h-0 min-w-0 flex-col py-1 ${groupIndex > 0 ? "border-l border-orange-200/25 pl-3" : ""}`}
-          style={{ flex: `${group.columns} 1 0%` }}
-        >
-          <div className="shrink-0 px-1 pb-1">
-            <div className="max-w-full whitespace-nowrap text-[13px] font-bold leading-none tracking-wide text-cyan-50">
-              {group.title}
-            </div>
-          </div>
-          <div
-            className="grid min-h-0 flex-1 gap-1"
-            style={{
-              gridTemplateColumns: `repeat(${group.columns}, minmax(0, 1fr))`,
-              gridTemplateRows: "repeat(2, minmax(0, 1fr))",
-            }}
-          >
-            {group.items.map((item) => {
-              const name = typeof item === "string" ? item : item.name;
-              const inactive = typeof item === "object" && item.inactive;
-              const state = inactive ? "inactive" : toolStates[name] || "idle";
-              const ToolIcon = TOOL_ICON_BY_NAME[name] || BrainCircuit;
-              const stateClassName = state === "working"
-                ? "text-amber-200"
-                : state === "inactive"
-                  ? "text-blue-100/55"
-                  : "text-blue-100/90";
-              const dotClassName = state === "working"
-                ? "bg-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.85)]"
-                : state === "inactive"
-                  ? "bg-slate-500/70"
-                  : "bg-cyan-300/75 shadow-[0_0_8px_rgba(34,211,238,0.35)]";
+    <div className={`absolute left-[42%] top-[2.3%] z-[26] grid h-[7.6%] w-[55%] grid-cols-4 gap-3 text-blue-50 ${hasWorkingTool ? "cp-tool-panel-flash" : ""}`}>
+      {CP_TOOL_ITEMS.map((name) => {
+        const state = toolStates[name] || "idle";
+        const ToolIcon = TOOL_ICON_BY_NAME[name] || BrainCircuit;
+        const stateClassName = state === "working" ? "text-amber-200" : "text-blue-100/90";
+        const dotClassName = state === "working"
+          ? "bg-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.85)]"
+          : "bg-cyan-300/75 shadow-[0_0_8px_rgba(34,211,238,0.35)]";
 
-              return (
-                <div
-                  key={name}
-                  className={`group/tool flex min-h-0 min-w-0 flex-col items-center justify-center rounded-md border px-1 py-1 leading-none transition ${
-                    state === "working"
-                      ? "cp-tool-call-flash border-amber-100 bg-amber-300/20 shadow-[0_0_18px_rgba(251,191,36,0.38)]"
-                      : "border-cyan-200/16 bg-slate-950/22"
-                  }`}
-                >
-                  <span className="flex min-w-0 max-w-full items-center justify-center gap-1.5 whitespace-nowrap text-[14px] font-black leading-none text-blue-50/95">
-                    <ToolIcon className={`h-4 w-4 shrink-0 ${state === "working" ? "text-amber-200" : "text-cyan-200/80"}`} />
-                    <span>{name}</span>
-                  </span>
-                  <span className="mt-1 flex shrink-0 items-center justify-center gap-1.5">
-                    <span className={`h-1.5 w-1.5 rounded-full ${dotClassName}`} />
-                    <span className={`font-mono text-[10px] leading-none ${stateClassName}`}>
-                      {state === "working" ? "work" : state === "inactive" ? "Inactive" : state}
-                    </span>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+        return (
+        <div
+          key={name}
+          className={`group/tool relative min-h-0 min-w-0 rounded-md border px-2 leading-none transition ${
+            state === "working"
+              ? "cp-tool-call-flash border-amber-100 bg-amber-300/20 shadow-[0_0_18px_rgba(251,191,36,0.38)]"
+              : "border-orange-100/24 bg-slate-950/32 shadow-[inset_0_0_14px_rgba(251,146,60,0.05)]"
+          }`}
+        >
+          <span className={`absolute bottom-1.5 right-1.5 rounded border bg-slate-950/88 px-2 py-0.5 font-mono text-[10px] font-black uppercase leading-none tracking-[0.08em] shadow-[0_0_7px_rgba(34,211,238,0.16)] ${state === "working" ? "border-amber-100/90 text-amber-100" : "border-cyan-200/50 text-cyan-100/90"}`}>
+            Tool
+          </span>
+          <span className="absolute left-1/2 top-[43%] flex min-w-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-2 whitespace-nowrap text-[14px] font-black leading-none text-blue-50/95">
+            <ToolIcon className={`h-4 w-4 shrink-0 ${state === "working" ? "text-amber-200" : "text-cyan-200/80"}`} />
+            <span>{name.replace(/\s+Tool$/, "")}</span>
+          </span>
+          <span className="absolute bottom-1.5 left-2 flex shrink-0 items-center justify-center gap-1.5">
+            <span className={`h-1.5 w-1.5 rounded-full ${dotClassName}`} />
+            <span className={`font-mono text-[10px] leading-none ${stateClassName}`}>
+              {state === "working" ? "work" : state}
+            </span>
+          </span>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
@@ -404,7 +618,7 @@ const QosMetricsChart = ({ metrics = [] }) => {
     : "--:--";
 
   return (
-    <div className="pointer-events-none absolute left-[73%] top-[63%] z-[27] flex h-[36%] w-[25%] flex-col overflow-hidden rounded-lg border border-cyan-200/55 bg-slate-950/88 px-3 py-3 text-cyan-50 shadow-[0_0_22px_rgba(34,211,238,0.28)] backdrop-blur-md">
+    <div className="pointer-events-none absolute left-[73%] top-[67%] z-[27] flex h-[32%] w-[25%] flex-col overflow-hidden rounded-lg border border-cyan-200/55 bg-slate-950/88 px-3 py-3 text-cyan-50 shadow-[0_0_22px_rgba(34,211,238,0.28)] backdrop-blur-md">
       <div className="mb-1.5 flex shrink-0 flex-col gap-0.5">
         <div className="truncate text-[19px] font-black leading-none text-cyan-50">QoS保障曲线</div>
         <div className="flex items-end justify-between gap-2 font-mono text-[13px] leading-none">
@@ -497,7 +711,7 @@ const CurrentTaskSummaryOverlay = ({
 
 const IntentEntryArrow = () => (
   <div
-    className="pointer-events-none absolute left-[13.5%] top-[31%] z-[19] h-12 w-[18.5%]"
+    className="pointer-events-none absolute left-[13.5%] top-[31%] z-[19] h-12 w-[23.5%]"
     aria-label="意图入口"
   >
     <span className="absolute bottom-[calc(50%+10px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-amber-300/55 bg-slate-950/92 px-3.5 py-1.5 text-base font-black tracking-[0.1em] text-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.32)] backdrop-blur-md">
@@ -511,7 +725,6 @@ const IntentEntryArrow = () => (
 export const NetworkTopology3D = ({
   stage,
   activeFlowType,
-  coreFunctions = [],
   agentBubble,
   agentBubbles = [],
   arSpeechText = "",
@@ -548,42 +761,54 @@ export const NetworkTopology3D = ({
       return bubble;
     }
 
-    const offsetX = bubble.offsetX || 0;
-    const offsetY = bubble.offsetY || 0;
+    const isDapAgentBubble = DAP_NF_KEYS.has(bubble.targetNode);
+    const dapGroup = isDapAgentBubble ? DAP_BUBBLE_GROUP_BY_NODE[bubble.targetNode] : null;
+    const dapBubbleGroup = dapGroup ? DAP_BUBBLE_GROUPS[dapGroup] : null;
+    const offsetX = isDapAgentBubble ? 0 : (bubble.offsetX || 0);
+    const offsetY = isDapAgentBubble ? 0 : (bubble.offsetY || 0);
     const requestedPlacement = bubble.placement || "above";
-    const isRightSideAgentBubble = RIGHT_SIDE_AGENT_BUBBLE_KEYS.has(bubble.targetNode);
-    const placement = isRightSideAgentBubble ? "right" : requestedPlacement;
+    const placement = isDapAgentBubble ? "below" : requestedPlacement;
     const basePosition = {
       left: `${target.x + offsetX}%`,
       top: `${target.y + offsetY}%`,
     };
     const hasToolPanel = Boolean(AGENT_TOOL_SETS[bubble.targetNode]);
-    const placementStyle = placement === "cpPlanBox"
+    const placementStyle = isDapAgentBubble
+      ? {
+          left: dapBubbleGroup.left,
+          top: bubble.dapTop || dapBubbleGroup.top,
+          width: dapBubbleGroup.width,
+          maxWidth: "none",
+          transform: "",
+        }
+      : placement === "cpPlanBox"
       ? { left: "35%", top: "6.5%", transform: "" }
       : placement === "cpSystemBubble"
       ? { left: "40.5%", top: "18%", transform: "" }
       : placement === "right"
       ? {
           ...basePosition,
-          top: isRightSideAgentBubble
-            ? `${target.y + offsetY}%`
-            : `${target.y - 5 + offsetY}%`,
-          transform: isRightSideAgentBubble
-            ? "translate(54px, -50%)"
-            : hasToolPanel
-              ? "translate(30%, -50%)"
-              : "translate(22%, -50%)",
+          top: `${target.y - 5 + offsetY}%`,
+          transform: hasToolPanel
+            ? "translate(30%, -50%)"
+            : "translate(22%, -50%)",
         }
       : placement === "left"
         ? { ...basePosition, transform: "translate(-108%, -50%)" }
+      : placement === "below"
+        ? { ...basePosition, top: `${target.y + 7 + offsetY}%`, transform: "translate(-50%, 0)" }
       : placement === "upperLeft"
         ? { left: `${target.x + 4 + offsetX}%`, top: `${target.y - 15 + offsetY}%`, transform: "translate(-100%, -100%)" }
         : { ...basePosition, top: `${target.y - 6 + offsetY}%`, transform: "translate(-50%, -100%)" };
 
-    const defaultArrow = placement === "right"
+    const defaultArrow = isDapAgentBubble
+      ? DAP_BUBBLE_ARROW_BY_NODE[bubble.targetNode]
+      : placement === "right"
       ? undefined
       : placement === "left"
         ? "right"
+      : placement === "below"
+        ? "up"
       : placement === "cpPlanBox" || placement === "cpSystemBubble"
         ? "cp-plan-arrow"
       : bubble.targetNode === "RobotDog"
@@ -601,29 +826,22 @@ export const NetworkTopology3D = ({
       ...(bubble.style || {}),
     };
 
-    if (bubble.targetNode === "SystemAgent") {
-      if (bubble.variant === "stage2SystemPlan") {
-        mergedStyle.left = "39%";
-        mergedStyle.top = "22%";
-      } else {
-        mergedStyle.left = offsetPercentValue(mergedStyle.left, 5);
-      }
+    if (isDapAgentBubble) {
+      mergedStyle.left = placementStyle.left;
+      mergedStyle.top = placementStyle.top;
+      mergedStyle.transform = placementStyle.transform;
+      mergedStyle.width = placementStyle.width;
+      mergedStyle.maxWidth = placementStyle.maxWidth;
     }
 
     if (shouldLowerSystemStatusBubble) {
       mergedStyle.top = offsetPercentValue(mergedStyle.top, 5);
     }
 
-    if (
-      language === "en"
-      && bubble.variant === "stage2SystemPlan"
-      && bubble.title === "Apply for the Digital ID"
-    ) {
-      mergedStyle.top = "23%";
-    }
-
     return {
       ...bubble,
+      dapGroup,
+      placement,
       arrow: bubble.arrow || defaultArrow,
       style: mergedStyle,
     };
@@ -646,30 +864,39 @@ export const NetworkTopology3D = ({
         className: "left-[11.5%] top-[18%] w-[12em]",
       }
     : null;
-  const activeToolBubbleByTarget = Object.fromEntries(
-    agentBubbles
-      .filter((bubble) => bubble?.targetNode && AGENT_TOOL_SETS[bubble.targetNode])
-      .map((bubble) => [bubble.targetNode, bubble])
-  );
-  const toolStates = Object.values(activeToolBubbleByTarget).reduce((states, bubble) => {
+  const toolStates = agentBubbles.reduce((states, bubble) => {
     const status = bubble.status === "working" ? "working" : "idle";
     (bubble.activeTools || []).forEach((tool) => {
-      states[tool] = status;
+      if (CP_TOOL_ITEM_SET.has(tool)) {
+        states[tool] = status;
+      }
     });
     return states;
   }, {});
-  const isToolStateBubble = (bubble) => (
+  const isCpToolStateBubble = (bubble) => (
     bubble?.targetNode
-    && AGENT_TOOL_SETS[bubble.targetNode]
+    && !["qoeAssurance", "acnSkillProgress", "sandboxServices", "taskProgress"].includes(bubble.variant)
     && Array.isArray(bubble.activeTools)
-    && bubble.activeTools.length > 0
+    && bubble.activeTools.some((tool) => CP_TOOL_ITEM_SET.has(tool))
   );
   const nonToolAgentBubbles = agentBubbles.filter((bubble) => (
-    !isToolStateBubble(bubble)
+    !isCpToolStateBubble(bubble)
   ));
-  const positionedAgentBubbles = [agentBubble, ...nonToolAgentBubbles]
-    .filter(Boolean)
-    .map((bubble) => resolveAgentBubblePosition(bubble));
+  const visibleAgentBubbles = [agentBubble, ...nonToolAgentBubbles].filter(Boolean);
+  const activeDapBubbleByGroup = visibleAgentBubbles.reduce((groups, bubble) => {
+    const group = DAP_BUBBLE_GROUP_BY_NODE[bubble.targetNode];
+
+    if (group) {
+      groups[group] = bubble;
+    }
+
+    return groups;
+  }, {});
+  const positionedAgentBubbles = visibleAgentBubbles.filter((bubble) => {
+    const group = DAP_BUBBLE_GROUP_BY_NODE[bubble.targetNode];
+
+    return !group || activeDapBubbleByGroup[group] === bubble;
+  }).map((bubble) => resolveAgentBubblePosition(bubble));
   const [latencySampleTick, setLatencySampleTick] = useState(0);
 
   useEffect(() => {
@@ -710,29 +937,95 @@ export const NetworkTopology3D = ({
         },
       ])
     )
-  ), [stage, activeFlowType, latencySampleTick]);
+  ), [stage, activeFlowType, topologyLines, latencySampleTick]);
 
   const getPathGeometry = ([from, to]) => {
     const a = nodes[from] || TOPOLOGY_CONNECTOR_POINTS[from];
     const b = nodes[to] || TOPOLOGY_CONNECTOR_POINTS[to];
     const isArToRan = from === "UE" && to === "gNB";
-    const start = from === "RobotDog" && to === "gNB"
+    const isRobotDogToRan = from === "RobotDog" && to === "gNB";
+    const start = isRobotDogToRan
       ? { x: a.x + 6, y: a.y - 2 }
       : isArToRan
         ? { x: a.x + 3.7, y: a.y - 6.9 }
         : { x: a.x, y: a.y };
     const end = isArToRan ? { x: b.x - 2.4, y: b.y + 2.9 } : { x: b.x, y: b.y };
     const cx = (start.x + end.x) / 2;
-    const cy = isArToRan ? start.y - 8 : Math.min(start.y, end.y) - 10;
+    const cy = isArToRan
+      ? start.y - 8
+      : isRobotDogToRan
+        ? ((start.y + end.y) / 2) - 2.5
+        : Math.min(start.y, end.y) - 10;
     return { start, control: { x: cx, y: cy }, end };
   };
 
+  const getBusPathPoints = ([from, to]) => {
+    const start = nodes[from] || TOPOLOGY_CONNECTOR_POINTS[from];
+    const end = nodes[to] || TOPOLOGY_CONNECTOR_POINTS[to];
+    const startsInDap = DAP_NF_KEYS.has(from);
+    const endsInDap = DAP_NF_KEYS.has(to);
+
+    if (!start || !end || (!startsInDap && !endsInDap)) {
+      return null;
+    }
+
+    const startTapX = DAP_BUS_BRANCHES[from]?.tapX ?? start.x;
+    const endTapX = DAP_BUS_BRANCHES[to]?.tapX ?? end.x;
+    const startAnchor = DAP_BUS_BRANCHES[from]
+      ? getDapBusBranchAnchor(from)
+      : { x: start.x, y: start.y };
+    const endAnchor = DAP_BUS_BRANCHES[to]
+      ? getDapBusBranchAnchor(to)
+      : { x: end.x, y: end.y };
+
+    return [
+      startAnchor,
+      getDapBusPoint(startTapX),
+      getDapBusPoint(endTapX),
+      endAnchor,
+    ];
+  };
+
   const buildPath = (connection) => {
+    const busPoints = getBusPathPoints(connection);
+
+    if (busPoints) {
+      return busPoints
+        .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+        .join(" ");
+    }
+
     const { start, control, end } = getPathGeometry(connection);
     return `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`;
   };
 
   const getPathPoint = (connection, t = 0.5) => {
+    const busPoints = getBusPathPoints(connection);
+
+    if (busPoints) {
+      const segments = busPoints.slice(1).map((point, index) => {
+        const previous = busPoints[index];
+        return {
+          start: previous,
+          end: point,
+          length: Math.hypot(point.x - previous.x, point.y - previous.y),
+        };
+      });
+      const totalLength = segments.reduce((sum, segment) => sum + segment.length, 0);
+      let remaining = totalLength * t;
+
+      for (const segment of segments) {
+        if (remaining <= segment.length || segment === segments.at(-1)) {
+          const ratio = segment.length ? Math.min(1, remaining / segment.length) : 0;
+          return {
+            x: segment.start.x + ((segment.end.x - segment.start.x) * ratio),
+            y: segment.start.y + ((segment.end.y - segment.start.y) * ratio),
+          };
+        }
+        remaining -= segment.length;
+      }
+    }
+
     const { start, control, end } = getPathGeometry(connection);
     const inverse = 1 - t;
     return {
@@ -778,7 +1071,11 @@ export const NetworkTopology3D = ({
   };
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-blue-500/35 bg-slate-900/25 p-4 shadow-[0_0_22px_rgba(0,0,0,0.35)] backdrop-blur-md">
+    <div
+      className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-blue-500/35 bg-slate-900/25 p-4 shadow-[0_0_22px_rgba(0,0,0,0.35)] backdrop-blur-md"
+      data-stage={stage}
+      data-stage-phase={stagePhaseKey || ""}
+    >
       <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-blue-400" />
       <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-blue-400" />
       <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-blue-400" />
@@ -822,7 +1119,7 @@ export const NetworkTopology3D = ({
         {showQosMetricsChart && <QosMetricsChart metrics={qosMetrics} />}
 
         {showTokenTunnel && (
-          <div className="pointer-events-none absolute left-[41%] top-[65%] z-[18] -translate-x-1/2 rounded-md border border-cyan-200/60 bg-slate-950/92 px-3 py-1.5 text-sm font-black tracking-[0.08em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.35)] backdrop-blur-md">
+          <div className="pointer-events-none absolute left-[40%] top-[68%] z-[18] -translate-x-1/2 rounded-md border border-cyan-200/55 bg-slate-950/92 px-2.5 py-1 text-xs font-black tracking-[0.06em] text-cyan-100 shadow-[0_0_14px_rgba(34,211,238,0.28)] backdrop-blur-md">
             Token Tunnel
           </div>
         )}
@@ -837,6 +1134,30 @@ export const NetworkTopology3D = ({
               </feMerge>
             </filter>
           </defs>
+          <g aria-label="DAP Bus">
+            <path
+              d={`M ${DAP_BUS.startX} ${DAP_BUS.y} L ${DAP_BUS.endX} ${DAP_BUS.y}`}
+              fill="none"
+              stroke="#cbd5e1"
+              strokeWidth="0.35"
+              strokeDasharray="1.2 1.1"
+              strokeLinecap="round"
+              opacity="0.42"
+            />
+            {DAP_BUS_CONNECTIONS.map((nodeKey) => (
+              <g key={`dap-bus-${nodeKey}`}>
+                <path
+                  d={buildDapBusBranchPath(nodeKey)}
+                  fill="none"
+                  stroke="#cbd5e1"
+                  strokeWidth="0.35"
+                  strokeDasharray="1.2 1.1"
+                  strokeLinecap="round"
+                  opacity="0.42"
+                />
+              </g>
+            ))}
+          </g>
           {showTokenTunnel && TOKEN_TUNNEL_CONNECTIONS.map((connection) => {
             const key = `${connection[0]}->${connection[1]}`;
             const path = buildPath(connection);
@@ -876,17 +1197,23 @@ export const NetworkTopology3D = ({
             const color = activeFlowConfig.color || "#22f5ff";
             const path = buildPath(connection);
 
+            const isDapBusConnection = Boolean(
+              DAP_BUS_BRANCHES[connection[0]] && DAP_BUS_BRANCHES[connection[1]],
+            );
+
             return (
               <g key={key}>
-                <path
-                  d={path}
-                  fill="none"
-                  stroke="#cbd5e1"
-                  strokeWidth="0.35"
-                  strokeDasharray="1.2 1.1"
-                  strokeLinecap="round"
-                  opacity="0.42"
-                />
+                {!isDapBusConnection && (
+                  <path
+                    d={path}
+                    fill="none"
+                    stroke="#cbd5e1"
+                    strokeWidth="0.35"
+                    strokeDasharray="1.2 1.1"
+                    strokeLinecap="round"
+                    opacity="0.42"
+                  />
+                )}
                 {active && (
                   <path
                     d={path}
@@ -952,6 +1279,33 @@ export const NetworkTopology3D = ({
         <div className="absolute inset-0 z-20">
           {Object.entries(nodes).filter(([key]) => shouldShowTopologyNode(stage, key)).map(([key, value]) => {
             const highlighted = highlightedNodeSet.has(key);
+
+            if (value.compact) {
+              return (
+                <div
+                  key={key}
+                  className={`absolute z-20 -translate-x-1/2 -translate-y-1/2 select-none transition-all duration-300 ${highlighted ? "scale-110" : ""}`}
+                  style={{ left: `${value.x}%`, top: `${value.y}%` }}
+                >
+                  <div className="relative flex w-[96px] flex-col items-center px-1 py-1">
+                    <div
+                      className={`absolute inset-x-2 top-1 h-12 rounded-full blur-xl ${highlighted ? "opacity-70" : "opacity-35"}`}
+                      style={{ backgroundColor: value.color }}
+                    />
+                    <img
+                      src={value.image}
+                      alt={value.name}
+                      className={`relative z-10 h-[72px] w-[88px] object-contain ${highlighted ? "drop-shadow-[0_0_14px_rgba(165,243,252,0.9)]" : "drop-shadow-[0_8px_9px_rgba(0,0,0,0.62)]"}`}
+                      draggable="false"
+                    />
+                    <div className="relative z-10 -mt-2 whitespace-pre-line text-center text-[14px] font-black leading-[1.05] text-blue-50 [text-shadow:0_1px_4px_rgba(2,6,23,1),0_0_8px_rgba(2,6,23,0.9)]">
+                      {value.name}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <div
                 key={key}
@@ -988,27 +1342,6 @@ export const NetworkTopology3D = ({
         ))}
         <AgentSpeechBubble bubble={robotDogSpeechBubble} />
         <AgentSpeechBubble bubble={arSpeechBubble} />
-        </div>
-      </div>
-
-      <div className="mt-1.5 border-t border-blue-500/25 pt-1.5">
-        <div className="core-functions-heading flex items-center justify-between gap-3 mb-1">
-          <h3 className="shrink-0 text-base font-bold text-blue-100 tracking-wide">核心网作用</h3>
-          <span className="shrink-0 text-[10px] text-cyan-300 font-mono">Core Network Functions</span>
-        </div>
-        <div
-          className="grid gap-2"
-          style={{ gridTemplateColumns: `repeat(${Math.max(coreFunctions.length, 1)}, minmax(0, 1fr))` }}
-        >
-          {coreFunctions.map((item) => (
-            <div
-              key={item}
-              className="flex items-center gap-2.5 rounded border border-blue-500/25 bg-slate-900/20 px-3 py-2 text-sm text-blue-100/90 backdrop-blur-sm"
-            >
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-cyan-300" />
-              <span className="core-function-item-label font-medium">{item}</span>
-            </div>
-          ))}
         </div>
       </div>
 

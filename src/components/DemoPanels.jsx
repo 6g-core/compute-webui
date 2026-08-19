@@ -1,6 +1,6 @@
 import { ChevronRight, Network, ShieldAlert, ShieldCheck, User } from 'lucide-react';
 
-export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", translateText = (text) => text, components, qosDialogItems = [] }) => {
+export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", translateText = (text) => text, components, qosDialogItems = [], onStage5VideoFrame }) => {
   const {
     ARGlasses,
     ArRegistrationPanel,
@@ -27,7 +27,26 @@ export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", transl
                           : effectiveStageConfig.leftPanelTitle}
                       </h2>
 
-                      <div className="flex min-h-0 flex-1 flex-col gap-3">
+                      <div className="relative flex min-h-0 flex-1 flex-col gap-3">
+                        {Number(stage) === 5 && (
+                          <div
+                            data-stage5-video-prewarm={effectiveStageConfig.stage5Prewarming ? "warming" : "ready"}
+                            aria-hidden={effectiveStageConfig.stage5Prewarming ? "true" : undefined}
+                            className={effectiveStageConfig.stage5Prewarming
+                              ? "pointer-events-none absolute inset-0 flex opacity-0"
+                              : "contents"}
+                          >
+                            <DogVisionStreams
+                              showEnhanced
+                              preloadEnhanced
+                              sampleRaw
+                              stage5QoeComplete={Boolean(effectiveStageConfig.stage5QoeComplete)}
+                              stage5SandboxComplete={Boolean(effectiveStageConfig.stage5SandboxComplete)}
+                              stageAnimationDone={Boolean(effectiveStageConfig.stageAnimationDone)}
+                              onFirstFrame={onStage5VideoFrame}
+                            />
+                          </div>
+                        )}
                         {Number(stage) >= 7 && (
                           <BackgroundVideoPanel visible={Boolean(effectiveStageConfig.showBackgroundVideo)} />
                         )}
@@ -37,10 +56,17 @@ export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", transl
                           null
                         ) : effectiveStageConfig.showHandoff ? (
                           <HandoffPanel />
+                        ) : Number(stage) === 5 && !effectiveStageConfig.stage5Prewarming ? (
+                          null
                         ) : effectiveStageConfig.showDogVision || effectiveStageConfig.showEnhancedDogVision ? (
                           <DogVisionStreams
                             showEnhanced={Boolean(effectiveStageConfig.showEnhancedDogVision)}
                             preloadEnhanced={Number(stage) >= 5}
+                            sampleRaw={Number(stage) === 5}
+                            stage5QoeComplete={Boolean(effectiveStageConfig.stage5QoeComplete)}
+                            stage5SandboxComplete={Boolean(effectiveStageConfig.stage5SandboxComplete)}
+                            stageAnimationDone={Boolean(effectiveStageConfig.stageAnimationDone)}
+                            onFirstFrame={Number(stage) === 5 ? onStage5VideoFrame : undefined}
                             showQosConversation={Number(stage) === 9}
                             qosDialogItems={Number(stage) === 9 ? qosDialogItems : []}
                           />
@@ -422,9 +448,9 @@ const getStepDetailStatuses = ({ step, detailItems, stage, stagePhaseKey, workfl
   }
 
   if (step.id === "02") {
-    const activeIndex = /stage4_4_udm/.test(phaseKey)
+    const activeIndex = /stage4_4_subscription/.test(phaseKey)
       ? 1
-      : /stage4_4_idm/.test(phaseKey)
+      : /stage4_4_(subnet_context|issue_token|validate_token)/.test(phaseKey)
         ? 2
         : /stage4_(4_done|5_|6)/.test(phaseKey) || Number(stage) === 5 ? 3 : 0;
     return buildSequentialDetailStatuses(detailItems.length, activeIndex);
@@ -435,7 +461,7 @@ const getStepDetailStatuses = ({ step, detailItems, stage, stagePhaseKey, workfl
   }
 
   if (step.id === "04") {
-    const activeIndex = /stage7_4_cmf_resource/.test(phaseKey)
+    const activeIndex = /stage7_4_sandbox_(resources|template|validate|service)/.test(phaseKey)
       ? 1
       : /stage7_(4_done|5_)/.test(phaseKey) ? 2 : 0;
     return buildSequentialDetailStatuses(detailItems.length, activeIndex);

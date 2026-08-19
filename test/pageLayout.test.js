@@ -38,6 +38,13 @@ test("page and topology headings use the revised core-network copy", () => {
   assert.doesNotMatch(`${appSource}\n${stageConfigSource}\n${topologySource}`, /核心网：(数字身份申请|生成式网络|Agent GW跨域互联|分配算力资源|算力卸载|随路QoS保障)/);
 });
 
+test("confirmed intent bubbles keep their two lines in English mode", () => {
+  assert.match(appSource, /"收到意图:": "Intent received: "/);
+  assert.match(appSource, /"意图校验通过": "Intent validation passed"/);
+  assert.match(appSource, /"编排结果验收通过": "Orchestration result validation passed"/);
+  assert.match(appSource, /"使用Sandbox Services Skill": "Use Sandbox Services Skill"/);
+});
+
 test("bottom value panel contains the core-network values from the reference", () => {
   [
     "智能体通信网络",

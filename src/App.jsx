@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AudioWaveform,
   ImagePlus,
@@ -7,10 +7,11 @@ import {
   ShieldAlert,
   ShieldCheck,
   CircleDot,
+  LoaderCircle,
   UserRound,
 } from 'lucide-react';
 import { STAGE10_COMPLETED_TASKS, getWorkflowBubbleFromRows, pinBubbleToSystemAgent } from './config/stageConfig.jsx';
-import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, formatVideoState, useBackendVideoStream, useDogVideoOfferGate } from './hooks/useBackendVideo';
+import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, useBackendVideoStream, useDogVideoOfferGate } from './hooks/useBackendVideo';
 import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
 import { useArLastWhisper, useStagePolling } from './hooks/usePolling';
 import { useQosFeed } from './hooks/useQosFeed';
@@ -43,6 +44,60 @@ const UI_TRANSLATIONS = {
   "意图解析处理摘要": "Intent Parsing Summary",
   "用户意图：": "User Intent:",
   "网络任务规划：": "Network Task Plan:",
+  "Planning Agent将意图拆解为三个子任务": "Planning Agent decomposes the intent into three subtasks",
+  "Planning Agent将意图拆解为两个子任务": "Planning Agent decomposes the intent into two subtasks",
+  "Planning Agent将意图拆解为一个子任务": "Planning Agent decomposes the intent into one subtask",
+  "Planning Agent收到意图：Apply for the Digital ID": "Planning Agent receives intent: Apply for the Digital ID",
+  "Planning Agent收到意图：Create Home Domain": "Planning Agent receives intent: Create Home Domain",
+  "Planning Agent收到意图：Share Video": "Planning Agent receives intent: Share Video",
+  "Planning Agent收到意图：Compute offloading for object recognition": "Planning Agent receives intent: Compute offloading for object recognition",
+  "Planning Agent将身份签发任务交给IDM": "Planning Agent assigns identity issuance to IDM",
+  "Planning Agent将能力注册任务交给ACF": "Planning Agent assigns capability registration to ACF",
+  "Planning Agent将网络接入任务交给Connection Agent": "Planning Agent assigns network access to Connection Agent",
+  "Planning Agent将家庭域凭证任务交给ACF": "Planning Agent assigns home-domain credentials to ACF",
+  "Planning Agent将物理组网配置任务交给Connection Agent": "Planning Agent assigns physical network configuration to Connection Agent",
+  "Planning Agent将L1级通信保障任务交给Connection Agent": "Planning Agent assigns L1 communication assurance to Connection Agent",
+  "Planning Agent将L2级通信保障任务交给Connection Agent": "Planning Agent assigns L2 communication assurance to Connection Agent",
+  "Planning Agent将清晰视频沙箱任务交给CCF": "Planning Agent assigns the clear-video sandbox task to CCF",
+  "Planning Agent将算力资源编排任务交给CCF": "Planning Agent assigns compute resource orchestration to CCF",
+  "Planning Agent将L3级通信保障任务交给Connection Agent": "Planning Agent assigns L3 communication assurance to Connection Agent",
+  "IDM收到任务：签发数字身份": "IDM receives task: issue digital identity",
+  "IDM签发数字身份": "IDM issues digital identity",
+  "ACF收到任务：创建家庭域凭证": "ACF receives task: create home-domain credentials",
+  "ACF融合ARF能力并发布能力卡片": "ACF integrates ARF capability and publishes a capability card",
+  "ACF协调DCF调用UDM Tool控制签约数据更新": "ACF coordinates DCF to control subscription updates through UDM Tool",
+  "DSF存储更新后的签约数据": "DSF stores the updated subscription data",
+  "ACF协调IDM签发域接入凭证": "ACF coordinates IDM to issue domain access credentials",
+  "CCF收到任务：创建算力会话": "CCF receives task: create compute session",
+  "CCF收到任务：分配算力资源": "CCF receives task: allocate compute resources",
+  "CCF创建算力会话": "CCF creates a compute session",
+  "CCF分配算力资源": "CCF allocates compute resources",
+  "CCF收到任务：拉起沙箱用于清晰视频": "CCF receives task: start a sandbox for clear video",
+  "CCF使用Sandbox Services Skill": "CCF uses Sandbox Services Skill",
+  "CCF调用Select_Sandbox_Images_tool": "CCF calls Select_Sandbox_Images_tool",
+  "CCF调用Select_Computing_Site_tool": "CCF calls Select_Computing_Site_tool",
+  "CCF调用Select_Computing_Resources_tool": "CCF calls Select_Computing_Resources_tool",
+  "CCF调用Generate_Sandbox_Template_tool": "CCF calls Generate_Sandbox_Template_tool",
+  "CCF调用Validate_Sandbox_Template_tool": "CCF calls Validate_Sandbox_Template_tool",
+  "CCF调用Create_or_Update_Sandbox_Service_tool": "CCF calls Create_or_Update_Sandbox_Service_tool",
+  "拉起沙箱用于清晰视频": "Start a sandbox for clear video",
+  "融合ARF能力": "Integrate ARF capability",
+  "控制签约数据更新": "Control subscription data update",
+  "签发域接入凭证": "Issue domain access credentials",
+  "ACF可信认证": "ACF trust authentication",
+  "IDM身份校验": "IDM identity verification",
+  "能力注册完成": "Capability registration complete",
+  "Planning Agent确认身份签发和能力注册完成": "Planning Agent confirms identity issuance and capability registration",
+  "Planning Agent确认完成接入网络任务": "Planning Agent confirms network access is complete",
+  "Planning Agent确认完成家庭域凭证任务": "Planning Agent confirms home-domain credentials are complete",
+  "Planning Agent确认完成物理组网配置任务": "Planning Agent confirms physical network configuration is complete",
+  "Planning Agent确认完成L1级通信保障任务": "Planning Agent confirms L1 communication assurance is complete",
+  "Planning Agent确认完成L2级通信保障任务": "Planning Agent confirms L2 communication assurance is complete",
+  "Planning Agent确认完成L3级通信保障任务": "Planning Agent confirms L3 communication assurance is complete",
+  "Planning Agent确认完成创建算力会话任务": "Planning Agent confirms compute session creation is complete",
+  "Planning Agent确认完成分配算力资源任务": "Planning Agent confirms compute resource allocation is complete",
+  "Planning Agent确认完成清晰视频沙箱任务": "Planning Agent confirms the clear-video sandbox task is complete",
+  "Planning Agent任务完成": "Planning Agent task complete",
   "SystemAgent将意图拆解为三个子任务": "System Agent decomposes the intent into three subtasks",
   "SystemAgent将意图拆解为两个子任务": "System Agent decomposes the intent into two subtasks",
   "SystemAgent将意图拆解为一个子任务": "System Agent decomposes the intent into one subtask",
@@ -73,7 +128,6 @@ const UI_TRANSLATIONS = {
   "ACN Agent调用IDM Tool下发域接入凭证": "ACN Agent calls IDM Tool to deliver domain access credentials",
   "Connection Agent调用AM Tool注册": "Connection Agent calls AM Tool to register",
   "Connection Agent调用SM Tool创建会话": "Connection Agent calls SM Tool to create a session",
-  "Connection Agent调用SM Tool下发物理组网配置": "Connection Agent calls SM Tool to deliver physical network configuration",
   "Connection Agent调用Policy Tool下发保障策略": "Connection Agent calls Policy Tool to deliver assurance policy",
   "Connection Agent调用Policy Tool下发AI推理通信保障策略": "Connection Agent calls Policy Tool to deliver AI inference communication assurance policy",
   "Computing Agent调用CMF Tool创建算力会话": "Computing Agent calls CMF Tool to create a compute session",
@@ -89,6 +143,25 @@ const UI_TRANSLATIONS = {
   "System Agent确认完成分配算力资源任务": "System Agent confirms compute resource allocation is complete",
   "System Agent任务完成": "System Agent task complete",
   "收到意图：": "Intent received:",
+  "收到意图:": "Intent received: ",
+  "意图校验通过": "Intent validation passed",
+  "使用QoE_assurance Skill": "Use QoE_assurance Skill",
+  "调用QoE_Analytic_tool": "Call QoE_Analytic_tool",
+  "调用QoS_Policy_Decision_tool": "Call QoS_Policy_Decision_tool",
+  "使用ACN Skill": "Use ACN Skill",
+  "调用Subscription_tool": "Call Subscription_tool",
+  "调用Create_Or_Update_Subnet_Context_tool": "Call Create_Or_Update_Subnet_Context_tool",
+  "调用Issue_Access_Token_tool": "Call Issue_Access_Token_tool",
+  "调用Validate_Access_Token_tool": "Call Validate_Access_Token_tool",
+  "调用Create_Subnet_PDUSession_tool": "Call Create_Subnet_PDUSession_tool",
+  "使用Sandbox Services Skill": "Use Sandbox Services Skill",
+  "调用Select_Sandbox_Images_tool": "Call Select_Sandbox_Images_tool",
+  "调用Select_Computing_Site_tool": "Call Select_Computing_Site_tool",
+  "调用Select_Computing_Resources_tool": "Call Select_Computing_Resources_tool",
+  "调用Generate_Sandbox_Template_tool": "Call Generate_Sandbox_Template_tool",
+  "调用Validate_Sandbox_Template_tool": "Call Validate_Sandbox_Template_tool",
+  "调用Create_or_Update_Sandbox_Service_tool": "Call Create_or_Update_Sandbox_Service_tool",
+  "编排结果验收通过": "Orchestration result validation passed",
   "收到任务：": "Task received:",
   "完成任务：": "Task complete:",
   "调用IDM Tool：": "Call IDM Tool:",
@@ -108,6 +181,7 @@ const UI_TRANSLATIONS = {
   "拆解": "Decompose",
   "匹配": "Match",
   "确认": "Confirm",
+  "执行": "Execute",
   "摘要": "Summary",
   "完成": "Complete",
   "Stage8 实时时延图表": "Stage 8 Real-Time Latency Chart",
@@ -202,6 +276,12 @@ const UI_TRANSLATIONS = {
   "Computing Agent:创建算力会话": "Computing Agent:\nCreate compute session",
   "ACN Agent:签发数字身份": "ACN Agent:\nIssue digital identity",
   "IDM Tool颁发数字身份": "IDM Tool issues digital identity",
+  "IDM颁发数字身份": "IDM issues digital identity",
+  "ACF能力注册": "ACF capability registration",
+  "ACF:创建管理家庭域": "ACF:\nCreate and manage home domain",
+  "CCF:创建算力会话": "CCF:\nCreate compute session",
+  "IDM:签发数字身份": "IDM:\nIssue digital identity",
+  "ACF:能力注册": "ACF:\nRegister capability",
   "AR眼镜、机器狗与超市智能体双向认证": "AR glasses, robot dog, and supermarket agent mutual authentication",
   "机器狗和AR眼镜分别与超市智能体双向认证": "Robot dog and AR glasses each mutually authenticate with the supermarket agent",
   "AR Glasses (6G终端)": "AR Glasses (6G Terminal)",
@@ -263,6 +343,9 @@ const UI_TRANSLATIONS = {
   "机器狗视野增强": "Enhanced Robot Dog Vision",
   "机器狗原始视野": "Raw Robot Dog Vision",
   "机器狗增强后的视野": "Enhanced Robot Dog Vision",
+  "机器狗原始视频": "Original Robot Dog Video",
+  "AR眼镜视野": "AR Glasses View",
+  "增强后AR眼镜视角": "Enhanced AR Glasses Live View",
   "机械臂视频流": "Robotic Arm Video Stream",
   "物品交接": "Item Handover",
   "家庭域创建": "Home Domain Creation",
@@ -1174,31 +1257,184 @@ const QosConversationPanel = ({ items = [] }) => {
   );
 };
 
-const DogVisionPanel = ({ label, state, videoRef, tall = false, tags }) => {
+const DOG_RAW_SAMPLE_MIN_MS = 420;
+const DOG_RAW_SAMPLE_MAX_MS = 1500;
+const DOG_RAW_STALL_MIN_MS = 1900;
+const DOG_RAW_STALL_MAX_MS = 3400;
+
+const DogVisionPanel = ({
+  label,
+  state,
+  videoRef,
+  tall = false,
+  sampled = false,
+  stallEnabled = true,
+  noiseEnabled = true,
+  onFirstFrame,
+}) => {
   const live = state === "receiving" || state === "connected";
-  const panelTags = tags || ["DOG-CAM", "MOQT", live ? "SYNCED" : formatVideoState(state)];
+  const canvasRef = useRef(null);
+  const firstFrameReportedRef = useRef(false);
+  const [sampleStalled, setSampleStalled] = useState(false);
+  const frameSampled = sampled && stallEnabled;
+
+  const reportFirstFrame = () => {
+    const video = videoRef.current;
+
+    if (
+      firstFrameReportedRef.current
+      || !onFirstFrame
+      || !video
+      || video.readyState < 2
+      || video.videoWidth <= 0
+      || video.videoHeight <= 0
+    ) {
+      return;
+    }
+
+    firstFrameReportedRef.current = true;
+    onFirstFrame();
+  };
+
+  useEffect(() => {
+    if (!frameSampled) {
+      setSampleStalled(false);
+      return undefined;
+    }
+
+    let disposed = false;
+    let captureTimer = null;
+    let sampleCount = 0;
+
+    const randomDelay = (min, max) => Math.round(min + Math.random() * (max - min));
+
+    const captureFrame = () => {
+      let capturedFrame = false;
+
+      try {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+
+        if (video && canvas && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+          const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+          const width = Math.max(1, Math.round(canvas.clientWidth * pixelRatio));
+          const height = Math.max(1, Math.round(canvas.clientHeight * pixelRatio));
+
+          if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+          }
+
+          const context = canvas.getContext("2d", { willReadFrequently: true });
+          if (context) {
+            const videoAspect = video.videoWidth / video.videoHeight;
+            const canvasAspect = width / height;
+            const sourceWidth = canvasAspect > videoAspect ? video.videoWidth : video.videoHeight * canvasAspect;
+            const sourceHeight = canvasAspect > videoAspect ? video.videoWidth / canvasAspect : video.videoHeight;
+            const sourceX = (video.videoWidth - sourceWidth) / 2;
+            const sourceY = (video.videoHeight - sourceHeight) / 2;
+
+            context.filter = noiseEnabled
+              ? "contrast(1.12) saturate(0.74) brightness(0.88) blur(0.7px)"
+              : "none";
+            context.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height);
+            context.filter = "none";
+
+            if (noiseEnabled) {
+              const frame = context.getImageData(0, 0, width, height);
+              const pixels = frame.data;
+              for (let index = 0; index < pixels.length; index += 4) {
+                const grain = (Math.random() - 0.5) * 34;
+                pixels[index] = Math.max(0, Math.min(255, pixels[index] + grain));
+                pixels[index + 1] = Math.max(0, Math.min(255, pixels[index + 1] + grain * 0.92));
+                pixels[index + 2] = Math.max(0, Math.min(255, pixels[index + 2] + grain * 1.08));
+              }
+              context.putImageData(frame, 0, 0);
+            }
+            capturedFrame = true;
+            reportFirstFrame();
+          }
+        }
+      } catch (error) {
+        console.debug("Sampled robot-dog frame was not ready", error);
+      }
+
+      if (!disposed) {
+        if (!capturedFrame) {
+          setSampleStalled(false);
+          captureTimer = window.setTimeout(captureFrame, 250);
+          return;
+        }
+
+        sampleCount += 1;
+        const shouldStall = sampleCount % 5 === 0 || Math.random() < 0.08;
+        const nextDelay = shouldStall
+          ? randomDelay(DOG_RAW_STALL_MIN_MS, DOG_RAW_STALL_MAX_MS)
+          : randomDelay(DOG_RAW_SAMPLE_MIN_MS, DOG_RAW_SAMPLE_MAX_MS);
+        setSampleStalled(shouldStall);
+        captureTimer = window.setTimeout(() => {
+          setSampleStalled(false);
+          captureFrame();
+        }, nextDelay);
+      }
+    };
+
+    captureFrame();
+
+    return () => {
+      disposed = true;
+      setSampleStalled(false);
+      if (captureTimer !== null) {
+        window.clearTimeout(captureTimer);
+      }
+    };
+  }, [frameSampled, noiseEnabled, state, videoRef]);
+
+  const visionMode = frameSampled
+    ? "sampled-noisy"
+    : sampled && noiseEnabled
+      ? "live-noisy"
+      : "live-clear";
 
   return (
-    <div className={`relative overflow-hidden rounded-xl border border-emerald-400/35 bg-slate-950/45 shadow-[inset_0_0_24px_rgba(16,185,129,0.12),0_0_18px_rgba(34,211,238,0.14)] ${tall ? "min-h-0 flex-1" : "min-h-[360px] flex-1"}`}>
+    <div
+      className={`relative overflow-hidden rounded-xl border border-emerald-400/35 bg-slate-950/45 shadow-[inset_0_0_24px_rgba(16,185,129,0.12),0_0_18px_rgba(34,211,238,0.14)] ${tall ? "min-h-0 flex-1" : "min-h-[360px] flex-1"}`}
+      data-vision-mode={visionMode}
+      data-stall-enabled={sampled ? String(stallEnabled) : undefined}
+      data-noise-enabled={sampled ? String(noiseEnabled) : undefined}
+      data-sample-interval={frameSampled ? `${DOG_RAW_SAMPLE_MIN_MS}-${DOG_RAW_SAMPLE_MAX_MS}` : undefined}
+      data-sample-stalled={sampled ? String(sampleStalled) : undefined}
+    >
       <video
         ref={videoRef}
-        className="absolute inset-0 h-full w-full object-cover"
+        className={frameSampled
+          ? "pointer-events-none absolute h-px w-px opacity-0"
+          : `absolute inset-0 h-full w-full object-cover ${sampled && noiseEnabled ? "scale-[1.015] blur-[1.2px] contrast-[0.92] saturate-[0.82]" : ""}`}
         autoPlay
         muted
         playsInline
+        aria-hidden={frameSampled ? "true" : undefined}
+        onLoadedData={reportFirstFrame}
+        onPlaying={reportFirstFrame}
       />
+      {frameSampled && (
+        <>
+          <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-label="Sampled noisy raw robot dog video" />
+          {sampleStalled && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-slate-950/38 backdrop-blur-[1px]" aria-label="视频加载中">
+              <LoaderCircle className="h-9 w-9 animate-spin text-cyan-100 drop-shadow-[0_0_10px_rgba(34,211,238,0.9)]" />
+            </div>
+          )}
+        </>
+      )}
+      {sampled && noiseEnabled && (
+        <div className="sampled-video-noise pointer-events-none absolute inset-0 opacity-25 mix-blend-screen" />
+      )}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.06)_1px,transparent_1px)] bg-[size:22px_22px] mix-blend-screen" />
       <div className="absolute inset-0 border border-cyan-300/20" />
-      <div className="absolute left-3 top-3 flex items-center gap-2 rounded border border-emerald-400/45 bg-slate-950/70 px-3 py-1.5 text-xs font-bold tracking-wider text-emerald-200 backdrop-blur-md">
+      <div className="absolute left-3 top-3 z-20 flex items-center gap-2 rounded border border-emerald-400/45 bg-slate-950/80 px-3 py-1.5 text-xs font-bold tracking-wider text-emerald-200 backdrop-blur-md">
         <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.9)]" : "bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.9)]"}`} />
         {label}
-      </div>
-      <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2 text-[11px] font-mono text-cyan-100/90">
-        {panelTags.map((item) => (
-          <div key={item} className="rounded border border-cyan-400/25 bg-slate-950/62 px-2 py-1 text-center backdrop-blur-md">
-            {item}
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -1216,8 +1452,6 @@ const BackgroundVideoPanel = ({ visible }) => {
     label: "Stage10 background video",
     attachKey: visible,
   });
-  const backgroundLive = background.hasStream && (background.state === "receiving" || background.state === "connected");
-
   if (!visible) {
     return (
       <video
@@ -1238,13 +1472,22 @@ const BackgroundVideoPanel = ({ visible }) => {
         state={background.state}
         videoRef={background.videoRef}
         tall
-        tags={["ARM-CAM", "MOQT", backgroundLive ? "SYNCED" : formatVideoState(background.state)]}
       />
     </div>
   );
 };
 
-const DogVisionStreams = ({ showEnhanced, preloadEnhanced, showQosConversation = false, qosDialogItems = [] }) => {
+const DogVisionStreams = ({
+  showEnhanced,
+  preloadEnhanced,
+  sampleRaw = false,
+  stage5QoeComplete = false,
+  stage5SandboxComplete = false,
+  stageAnimationDone = false,
+  onFirstFrame,
+  showQosConversation = false,
+  qosDialogItems = [],
+}) => {
   const { health, ready, state: gateState } = useDogVideoOfferGate(true);
   const [gateOpened, setGateOpened] = useState(false);
   const streamEpoch = health?.streamEpoch ?? null;
@@ -1270,7 +1513,7 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced, showQosConversation =
     attachKey: showEnhanced && !showQosConversation,
   });
   const enhanced = useBackendVideoStream({
-    enabled: preloadEnhanced,
+    enabled: preloadEnhanced && !sampleRaw,
     ready: streamReady,
     gateState,
     streamEpoch,
@@ -1278,7 +1521,7 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced, showQosConversation =
     clientId: "react-dog-enhanced",
     streamType: "enhanced",
     label: "Dog enhanced vision",
-    attachKey: showEnhanced,
+    attachKey: `${showEnhanced}:${showQosConversation}:${sampleRaw}`,
   });
 
   if (!showEnhanced) {
@@ -1313,9 +1556,34 @@ const DogVisionStreams = ({ showEnhanced, preloadEnhanced, showQosConversation =
     );
   }
 
+  if (sampleRaw) {
+    return (
+      <div
+        className="flex min-h-0 flex-1 flex-col"
+        data-stage5-video-phase={stage5SandboxComplete ? "smooth-clear" : stage5QoeComplete ? "smooth-noisy" : "stalled-noisy"}
+      >
+        <DogVisionPanel
+          label={stageAnimationDone ? "AR眼镜视野" : "机器狗原始视频"}
+          state={raw.state}
+          videoRef={raw.videoRef}
+          tall
+          sampled
+          stallEnabled={!stage5QoeComplete}
+          noiseEnabled={!stage5SandboxComplete}
+          onFirstFrame={onFirstFrame}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <DogVisionPanel label="机器狗原始视野" state={raw.state} videoRef={raw.videoRef} tall />
+      <DogVisionPanel
+        label="机器狗原始视野"
+        state={raw.state}
+        videoRef={raw.videoRef}
+        tall
+      />
       <DogVisionPanel
         label="机器狗增强后的视野"
         state={enhanced.state}
@@ -1432,10 +1700,20 @@ export default function App() {
 
   const { stage, connectionState, error } = useStagePolling();
   const arLastWhisper = useArLastWhisper();
-  const effectiveStageConfig = useEffectiveStageConfig(stage);
+  const [stage5VideoReady, setStage5VideoReady] = useState(false);
+  const handleStage5VideoFrame = useCallback(() => {
+    if (stage === 5) {
+      setStage5VideoReady(true);
+    }
+  }, [stage]);
+  const effectiveStageConfig = useEffectiveStageConfig(stage, { stage5VideoReady });
   const qosFeed = useQosFeed(stage === 9);
   const postAnimationWhisperBaselineRef = useRef({ stage, whisper: arLastWhisper });
   const [postAnimationArSpeechText, setPostAnimationArSpeechText] = useState("");
+
+  useEffect(() => {
+    setStage5VideoReady(false);
+  }, [stage]);
 
   useEffect(() => {
     postAnimationWhisperBaselineRef.current = { stage, whisper: arLastWhisper };
@@ -1521,12 +1799,16 @@ export default function App() {
       )}
       {/* 动画样式定义 */}
       <style dangerouslySetInnerHTML={{__html: `
-        @keyframes scan {
-          0% { transform: translateY(-100%); }
-          100% { transform: translateY(200%); }
+        @keyframes sampled-noise-shift {
+          0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.22; }
+          25% { transform: translate3d(-1%, 1%, 0); opacity: 0.3; }
+          50% { transform: translate3d(1%, -1%, 0); opacity: 0.2; }
+          75% { transform: translate3d(0.5%, 0.5%, 0); opacity: 0.28; }
         }
-        .scan-line {
-          animation: scan 3s linear infinite;
+        .sampled-video-noise {
+          background-image: repeating-radial-gradient(circle at 35% 45%, rgba(186, 230, 253, 0.38) 0 0.7px, transparent 0.9px 3px);
+          background-size: 7px 7px;
+          animation: sampled-noise-shift 180ms steps(2, end) infinite;
         }
         @keyframes hologram-glow {
           0%, 100% { filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.4)) brightness(1); }
@@ -1732,6 +2014,7 @@ export default function App() {
             translateText={translateTextNodeValue}
             components={panelComponents}
             qosDialogItems={qosFeed.dialogItems}
+            onStage5VideoFrame={handleStage5VideoFrame}
           />
 
           {/* 中间列：6G核心网 3D 拓扑与平面网元、上方弧线数据流 */}
@@ -1739,7 +2022,6 @@ export default function App() {
             <NetworkTopology3D
               stage={stage}
               activeFlowType={effectiveStageConfig.activeFlowType}
-              coreFunctions={effectiveStageConfig.coreFunctions}
               agentBubble={topologyAgentBubble}
               agentBubbles={childAgentBubbles}
               arSpeechText={arSpeechText}

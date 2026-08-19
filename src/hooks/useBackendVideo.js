@@ -127,6 +127,10 @@ const connectBackendVideoPeer = async (pc, offerUrl, clientId, streamType) => {
     throw new Error("WebRTC answer missing sdp_answer");
   }
 
+  if (pc.signalingState === "closed") {
+    return;
+  }
+
   await pc.setRemoteDescription(payload.sdp_answer);
 };
 

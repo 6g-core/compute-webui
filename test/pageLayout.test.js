@@ -10,6 +10,10 @@ const panelSource = readFileSync(
   new URL("../src/components/DemoPanels.jsx", import.meta.url),
   "utf8",
 );
+const cssSource = readFileSync(
+  new URL("../src/index.css", import.meta.url),
+  "utf8",
+);
 const stageConfigSource = readFileSync(
   new URL("../src/config/stageConfig.jsx", import.meta.url),
   "utf8",
@@ -52,9 +56,10 @@ test("bottom value panel contains the core-network values from the reference", (
     "任务理解&技能路由",
     "动态专网建立",
     "Token 体验保障",
-    "任务级体验保障",
     "端网协同调度",
-    "E2E时延可控",
+    "任务级快速（毫秒级）体验保障",
+    "动态随路QoS",
+    "基站用户容量提升3倍",
     "分布式算力网络",
     "端网协同分布式推理",
     "算力成本降低30%",
@@ -62,9 +67,23 @@ test("bottom value panel contains the core-network values from the reference", (
     "任务成功率提升30%",
   ].forEach((text) => assert.ok(panelSource.includes(text), `missing value copy: ${text}`));
   assert.doesNotMatch(panelSource, /典型业务&价值/);
-  assert.match(panelSource, /grid-cols-\[minmax\(0,1\.35fr\)_minmax\(0,0\.82fr\)_minmax\(0,1\.08fr\)\]/);
-  assert.match(panelSource, /text-2xl font-extrabold[^"]*xl:text-\[26px\]/);
-  assert.match(panelSource, /text-sm font-normal leading-tight xl:text-base/);
+  assert.match(panelSource, /grid-cols-\[minmax\(0,1\.25fr\)_minmax\(0,1fr\)_minmax\(0,1\.08fr\)\]/);
+  assert.match(panelSource, /aria-label="核心网价值能力"/);
+  assert.doesNotMatch(panelSource, /AGENT FABRIC|TOKEN SLA|COMPUTE MESH/);
+  assert.match(panelSource, /title: "Token 体验保障",\s+columns: 2,/);
+  assert.doesNotMatch(panelSource, /效果：任务级快速|效果：基站用户容量/);
+  assert.match(panelSource, /Bahnschrift_SemiCondensed/);
+  assert.match(panelSource, /text-\[23px\] font-medium[^"]*text-\[#c7ebff\][^"]*xl:text-\[26px\]/);
+  assert.match(panelSource, /text-\[13px\][^"]*font-medium[^"]*xl:text-\[15px\]/);
+  assert.match(panelSource, /text-\[12px\] font-semibold[^"]*xl:text-sm/);
+  assert.doesNotMatch(panelSource, /core-value-scan/);
+  assert.doesNotMatch(appSource, /core-value-title-shimmer/);
+  assert.doesNotMatch(panelSource, /cyber-hud-(?:card|corner)/);
+  assert.doesNotMatch(cssSource, /\.cyber-hud-(?:card|corner)/);
+  assert.doesNotMatch(panelSource, /⟨|⟩|>\/\/<|>\/\//);
+  assert.doesNotMatch(panelSource, />\/\/<\/span>/);
+  assert.doesNotMatch(cssSource, /@keyframes cyber-(?:pulse-glow|sheen-sweep)/);
+  assert.match(cssSource, /\.cyber-tech-title \{[^}]*animation: none;[^}]*filter: none;[^}]*text-shadow:/s);
 });
 
 test("right step panel uses the concise title and explains every major stage", () => {

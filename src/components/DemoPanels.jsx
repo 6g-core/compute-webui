@@ -642,11 +642,10 @@ const CORE_NETWORK_VALUE_GROUPS = [
   },
   {
     title: "Token 体验保障",
-    columns: 3,
+    columns: 2,
     items: [
-      { label: "任务级体验保障" },
-      { label: "端网协同调度" },
-      { label: "E2E时延可控" },
+      { label: "端网协同调度", value: "任务级快速（毫秒级）体验保障" },
+      { label: "动态随路QoS", value: "基站用户容量提升3倍" },
     ],
   },
   {
@@ -660,32 +659,53 @@ const CORE_NETWORK_VALUE_GROUPS = [
 ];
 
 export const CoreNetworkValuePanel = () => (
-  <section className="core-network-value-panel relative z-10 mt-3 h-[138px] shrink-0 overflow-hidden rounded-xl border border-cyan-400/30 bg-slate-950/48 px-4 py-3 shadow-[inset_0_0_38px_rgba(8,47,73,0.24),0_0_22px_rgba(6,182,212,0.08)] backdrop-blur-md">
-    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
-    <div className="grid h-full grid-cols-[minmax(0,1.35fr)_minmax(0,0.82fr)_minmax(0,1.08fr)] gap-4">
-      {CORE_NETWORK_VALUE_GROUPS.map((group, groupIndex) => (
-        <div
-          key={group.title}
-          className={`grid h-full min-w-0 grid-rows-[38px_1fr] ${groupIndex > 0 ? "border-l border-cyan-300/15 pl-4" : ""}`}
-        >
-          <h3 className="flex items-center justify-center text-center text-2xl font-extrabold leading-none tracking-wide text-amber-300 drop-shadow-[0_0_9px_rgba(251,191,36,0.26)] xl:text-[26px]">
-            {group.title}
-          </h3>
-          <div
-            className="grid self-center items-start gap-3"
-            style={{ gridTemplateColumns: `repeat(${group.columns}, minmax(0, 1fr))` }}
+  <section
+    aria-label="核心网价值能力"
+    className="core-network-value-panel relative z-10 mt-3 h-[138px] shrink-0 overflow-hidden rounded-xl bg-[linear-gradient(180deg,rgba(4,14,25,0.82),rgba(2,8,17,0.94))] px-4 py-2 shadow-[inset_0_1px_0_rgba(125,211,252,0.1),inset_0_-1px_0_rgba(30,64,175,0.16)] backdrop-blur-md"
+  >
+    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_15%_-35%,rgba(14,165,233,0.16),transparent_35%),radial-gradient(ellipse_at_52%_145%,rgba(59,130,246,0.1),transparent_38%),radial-gradient(ellipse_at_88%_-30%,rgba(34,211,238,0.12),transparent_32%)]" />
+    <div className="pointer-events-none absolute -left-24 top-1/2 h-28 w-[42%] -translate-y-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-sky-400/[0.025] to-transparent blur-2xl" />
+    <div className="pointer-events-none absolute -right-24 top-1/2 h-28 w-[42%] -translate-y-1/2 skew-x-12 bg-gradient-to-l from-transparent via-cyan-300/[0.025] to-transparent blur-2xl" />
+
+    <div className="relative grid h-full grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_minmax(0,1.08fr)] gap-4">
+      {CORE_NETWORK_VALUE_GROUPS.map((group) => {
+        const isTokenExperience = group.title === "Token 体验保障";
+
+        return (
+          <article
+            key={group.title}
+            className="relative grid h-full min-h-0 min-w-0 grid-rows-[48px_minmax(0,1fr)] overflow-hidden px-3 py-1"
           >
-            {group.items.map((item) => (
-              <div key={item.label} className="min-w-0 text-center text-amber-200">
-                <div className="text-sm font-normal leading-tight xl:text-base">{item.label}</div>
-                {item.value && (
-                  <div className="mt-1 text-sm font-normal leading-tight text-amber-300 xl:text-base">{item.value}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+            <header className="relative flex min-w-0 items-center justify-center">
+              <h3 className="cyber-tech-title whitespace-nowrap py-0.5 font-['Bahnschrift_SemiCondensed','Microsoft_YaHei',sans-serif] text-[23px] font-medium leading-[1.25] tracking-[0.1em] text-[#c7ebff] xl:text-[26px]">
+                {group.title}
+              </h3>
+            </header>
+
+            <div
+              className={`grid min-h-0 items-center ${isTokenExperience ? "gap-2 pb-1" : "gap-2 pb-1.5"}`}
+              style={{ gridTemplateColumns: `repeat(${group.columns}, minmax(0, 1fr))` }}
+            >
+              {group.items.map((item) => (
+                <div
+                  key={item.label}
+                  className="relative flex min-w-0 flex-col items-center justify-center px-1 text-center"
+                >
+                  <div className="flex shrink-0 items-center justify-center font-['Bahnschrift','Microsoft_YaHei',sans-serif] text-[13px] font-medium leading-tight tracking-[0.06em] text-slate-100 xl:text-[15px]">
+                    <span className="drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">{item.label}</span>
+                  </div>
+                  {item.value && (
+                    <div className={`cyber-metric-badge mt-1 inline-flex items-center rounded py-0.5 font-['Bahnschrift','Microsoft_YaHei',sans-serif] text-[12px] font-semibold leading-tight tracking-[0.08em] text-cyan-200 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)] xl:text-sm ${isTokenExperience ? "whitespace-nowrap px-1.5" : "px-2"}`}>
+                      <span className="mr-1 h-1 w-1 rounded-full bg-cyan-300 shadow-[0_0_4px_#67e8f9]" />
+                      <span>{item.value}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </article>
+        );
+      })}
     </div>
   </section>
 );

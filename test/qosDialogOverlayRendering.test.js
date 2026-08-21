@@ -39,6 +39,7 @@ test("QoS conversation panel follows the supplied communication-log reference", 
   assert.match(panelSource, /max-h-\[450px\] flex-\[1\.32_1_0%\]/);
   assert.match(panelSource, /min-h-0 flex-1 overflow-hidden px-4 py-3/);
   assert.doesNotMatch(panelSource, /overflow-y-auto/);
+  assert.match(panelSource, /orderQosDialogItems\(items, 3\)/);
   assert.match(panelSource, /horizontalPlacement === "right"/);
   assert.match(panelSource, /imageVerticalPlacement === "above"/);
   assert.match(panelSource, /\{imageAbove && renderImage\(item\)\}[\s\S]*<article[\s\S]*item\.dialog[\s\S]*<\/article>[\s\S]*\{!imageAbove && renderImage\(item\)\}/);

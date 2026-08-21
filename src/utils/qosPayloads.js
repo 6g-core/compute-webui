@@ -144,6 +144,27 @@ export const parseQosDialogImagePayload = (payload) => (
   buildQosDialogItems(payload?.dialogs, payload?.images, payload?.imagePlacements)
 );
 
+const QOS_DIALOG_PLACEMENT_ORDER = {
+  right: 0,
+  left: 1,
+};
+
+export const orderQosDialogItems = (items, limit = 3) => {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .slice(-limit)
+    .map((item, originalIndex) => ({ item, originalIndex }))
+    .sort((first, second) => {
+      const firstOrder = QOS_DIALOG_PLACEMENT_ORDER[first.item?.imageHorizontalPlacement] ?? 2;
+      const secondOrder = QOS_DIALOG_PLACEMENT_ORDER[second.item?.imageHorizontalPlacement] ?? 2;
+      return firstOrder - secondOrder || first.originalIndex - second.originalIndex;
+    })
+    .map(({ item }) => item);
+};
+
 export const parseQosPushPayload = (payload) => {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("QoS push payload must be a JSON object");

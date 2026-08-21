@@ -17,6 +17,7 @@ import { useArLastWhisper, useStagePolling } from './hooks/usePolling';
 import { useQosFeed } from './hooks/useQosFeed';
 import { CoreNetworkValuePanel, LeftPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
+import { orderQosDialogItems } from './utils/qosPayloads.js';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
 
 const LANGUAGE_STORAGE_KEY = "compute-webui-language";
@@ -1171,7 +1172,7 @@ const HandoffPanel = () => (
 );
 
 const QosConversationPanel = ({ items = [] }) => {
-  const visibleItems = items.slice(-3);
+  const visibleItems = orderQosDialogItems(items, 3);
 
   const renderImage = (item) => (
     <figure className="relative h-[82px] w-[118px] shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/95 shadow-[0_4px_12px_rgba(0,0,0,0.24)]">

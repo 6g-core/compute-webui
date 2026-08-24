@@ -290,7 +290,7 @@ const UI_TRANSLATIONS = {
   "机器狗与超市智能体双向认证": "Robot dog and supermarket agent mutual authentication",
   "眼镜与超市智能体双向认证": "AR glasses and supermarket agent mutual authentication",
   "智能体通信网络": "Agent Communication Network",
-  "新一代核心网": "Next-Generation Core Network",
+  "下一代核心网": "Next-Generation Core Network",
   "AR眼镜已接入": "AR Glasses Connected",
   "机器狗抵达商店并回传实时视野": "Robot dog reaches the store and streams live vision",
   "获取超市智能体数字身份": "Get supermarket agent digital identity",
@@ -1696,7 +1696,7 @@ export default function App() {
 
   useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-    document.title = language === "en" ? "Next-Generation Core Network" : "新一代核心网";
+    document.title = language === "en" ? "Next-Generation Core Network" : "下一代核心网";
   }, [language]);
 
   const { stage, connectionState, error } = useStagePolling();
@@ -1994,7 +1994,7 @@ export default function App() {
           <div className="w-24" aria-hidden="true" />
           <div className="text-center absolute left-1/2 top-1/2 w-[calc(100%-12rem)] -translate-x-1/2 -translate-y-1/2">
             <h1 className={`text-3xl md:text-5xl font-bold tracking-widest text-white glow-text ${language === "zh" ? "mb-2" : "mb-0"}`}>
-              {language === "en" ? "Next-Generation Core Network" : "新一代核心网"}
+              {language === "en" ? "Next-Generation Core Network" : "下一代核心网"}
             </h1>
             {language === "zh" && (
               <p className="text-blue-200 font-medium text-sm md:text-base">

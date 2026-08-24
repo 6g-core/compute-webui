@@ -36,8 +36,8 @@ test("main content keeps the demo, topology, and steps in three columns", () => 
 });
 
 test("page and topology headings use the revised core-network copy", () => {
-  assert.match(appSource, /新一代核心网/);
-  assert.doesNotMatch(appSource, /新一代新一代核心网/);
+  assert.match(appSource, /下一代核心网/);
+  assert.doesNotMatch(appSource, /新一代下一代核心网/);
   assert.match(topologySource, /title = "数字身份申请"/);
   assert.doesNotMatch(`${appSource}\n${stageConfigSource}\n${topologySource}`, /核心网：(数字身份申请|生成式网络|Agent GW跨域互联|分配算力资源|算力卸载|随路QoS保障)/);
 });

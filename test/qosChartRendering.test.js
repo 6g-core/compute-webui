@@ -6,34 +6,21 @@ const source = readFileSync(
   new URL("../src/components/NetworkTopology3D.jsx", import.meta.url),
   "utf8",
 );
+const appSource = readFileSync(
+  new URL("../src/App.jsx", import.meta.url),
+  "utf8",
+);
 
-const extractQosChartSource = () => {
-  const start = source.indexOf("const QosMetricsChart =");
-  const end = source.indexOf("const CurrentTaskSummaryOverlay", start);
-
-  assert.notEqual(start, -1);
-  assert.notEqual(end, -1);
-
-  return source.slice(start, end);
-};
-
-test("QoS chart renders line paths without per-sample SVG circle markers", () => {
-  const qosChartSource = extractQosChartSource();
-
-  assert.match(qosChartSource, /buildLinePath\("sendrateY"\)/);
-  assert.match(qosChartSource, /buildLinePath\("gbrY"\)/);
-  assert.doesNotMatch(qosChartSource, /<circle\s+cx=\{point\.x\}/);
+test("Stage 9 restores the QoS metrics chart in the marked lower-right region", () => {
+  assert.match(source, /const QosMetricsChart = \(\{ metrics = \[\] \}\) =>/);
+  assert.match(source, /QoS保障曲线/);
+  assert.match(source, /left-\[76%\] top-\[55%\][\s\S]*h-\[31%\] w-\[19%\]/);
+  assert.match(source, /data-qos-metrics-count=\{metrics\.length\}/);
+  assert.match(source, /sendrate_kbps[\s\S]*gbr_kbps[\s\S]*q_lvl/);
+  assert.match(source, /numericStage === 9 && <QosMetricsChart metrics=\{qosMetrics\} \/>/);
+  assert.match(appSource, /qosMetrics=\{qosFeed\.metrics\}/);
 });
 
-test("QoS chart fills the OTT zone and uses balanced compact typography", () => {
-  const qosChartSource = extractQosChartSource();
-
-  assert.match(qosChartSource, /left-\[73%\] top-\[67%\]/);
-  assert.match(qosChartSource, /h-\[32%\] w-\[25%\]/);
-  assert.match(qosChartSource, /text-\[19px\].*QoS保障曲线/);
-  assert.match(qosChartSource, /text-\[21px\].*Q\{latestPoint/s);
-  assert.match(qosChartSource, /text-\[16px\].*等待QoS推送/s);
-  assert.match(qosChartSource, /text-\[14px\]/);
-  assert.match(qosChartSource, /text-\[13px\]/);
-  assert.match(qosChartSource, /text-\[12px\]/);
+test("Token Tunnel label moves above the restored Stage 9 chart", () => {
+  assert.match(source, /token-tunnel-label[^"]*left-\[88\.5%\] top-\[50\.5%\]/);
 });

@@ -6,177 +6,286 @@ const source = readFileSync(
   new URL("../src/components/NetworkTopology3D.jsx", import.meta.url),
   "utf8",
 );
+const cssSource = readFileSync(
+  new URL("../src/index.css", import.meta.url),
+  "utf8",
+);
 
-test("topology uses stacked CP, DAP, and UP layers", () => {
-  assert.match(source, /key: "cp",[\s\S]*label: "CP",[\s\S]*left-\[37%\] top-\[1%\] h-\[11\.5%\] w-\[61%\]/);
-  assert.match(source, /key: "dap",[\s\S]*label: "DAP",[\s\S]*left-\[37%\] top-\[14\.5%\] h-\[51\.5%\]/);
-  assert.match(source, /key: "up",[\s\S]*label: "UP",[\s\S]*top-\[67%\] h-\[32%\]/);
+test("topology uses a vertical CP, DAP, UP, RAN, and endpoint stack", () => {
+  const cpIndex = source.indexOf('code="CP"');
+  const dapIndex = source.indexOf('code="DAP"');
+  const upIndex = source.indexOf('code="UP"');
+  const ranIndex = source.indexOf('<RANNode');
+  const endpointIndex = source.lastIndexOf('<EndpointNode');
+
+  assert.ok(cpIndex >= 0);
+  assert.ok(cpIndex < dapIndex);
+  assert.ok(dapIndex < upIndex);
+  assert.ok(upIndex < ranIndex);
+  assert.ok(ranIndex < endpointIndex);
+  assert.match(source, /data-topology-layout="vertical-planes"/);
+  assert.match(source, /code="CP"[\s\S]*top-\[5%\][\s\S]*code="DAP"[\s\S]*top-\[17\.5%\][\s\S]*code="UP"[\s\S]*top-\[39\.5%\]/);
+  assert.match(source, /top-\[56\.5%\][\s\S]*data-network-node="RAN"/);
+  assert.match(source, /key: 'front', x: 50, y: 89/);
 });
 
-test("SRF sits outside DAP and all NFs share one unpartitioned DAP plane", () => {
-  assert.match(source, /gNB: \{[^\n]*x: 20, y: 55/);
-  assert.match(source, /SRF: \{[^\n]*x: 29\.5, y: 49/);
-  assert.match(source, /ACN: \{ name: "ACF"/);
-  assert.match(source, /SystemAgent: \{ name: "Planning\\nAgent", x: 42, y: 39/);
-  assert.match(source, /ConnectionAgent: \{ name: "Connection\\nAgent", x: 51\.3, y: 39/);
-  assert.match(source, /ACN: \{ name: "ACF", x: 60\.6, y: 39/);
-  assert.match(source, /DCF: \{ name: "DCF", x: 68, y: 39/);
-  assert.match(source, /DSF: \{ name: "DSF", x: 75\.2, y: 39/);
-  assert.match(source, /IDM: \{ name: "IDM", x: 82\.4, y: 39/);
-  assert.match(source, /name: "CCF",[\s\S]*x: 91\.5,[\s\S]*y: 39/);
-  assert.doesNotMatch(source, /Data Control|Data Storage|Identity Management|Computing Control/);
-  assert.doesNotMatch(source, /DAP_SUBZONES|data-topology-subzone/);
-  assert.doesNotMatch(source, /Intelligent NFs|Data NFs|Computing NFs/);
+test("the endpoint row contains the five requested participants", () => {
+  assert.match(source, /key: 'RobotDog', label: '机器狗'/);
+  assert.match(source, /key: 'UE', label: 'AR 眼镜'/);
+  assert.match(source, /key: 'MarketAgent', label: '超市智能体'/);
+  assert.match(source, /key: 'MechanicalArm', label: '机械臂'/);
+  assert.match(source, /key: 'AIPC', label: 'AI PC', eyebrow: 'AI TERMINAL'/);
+  assert.match(source, /robotDogVisual: RobotDogVisual/);
+  assert.match(source, /<RobotDogVisual className="h-\[72px\] w-\[112px\]" status="neutral"/);
+  assert.match(source, /const GlassesGlyph =/);
+  assert.match(source, /import acnImage from '\.\.\/ACN\.png'/);
+  assert.match(source, /const MarketAgentImage =/);
+  assert.match(source, /src=\{acnImage\}/);
+  assert.match(source, /import computingImage from '\.\.\/Computing\.png'/);
+  assert.match(source, /const AIPCImage =/);
+  assert.match(source, /src=\{computingImage\}/);
+  assert.match(source, /const MechanicalArmGlyph =/);
+  assert.match(source, /const BaseStationGlyph =/);
+  assert.match(source, /const MetallicDefs =/);
+  assert.doesNotMatch(source, /robotdog_transparent\.png|glasses_transparent\.png|ran_transparent\.png|Market\.png/);
 });
 
-test("DAP NFs all attach to the DAP bus and active paths are bus-routed", () => {
-  assert.match(source, /const DAP_BUS = \{ startX: 38\.5, endX: 96\.5, y: 22\.5 \}/);
-  assert.match(source, /DAP_BUS_BRANCHES = \{[\s\S]*SRF: \{ tapX: 38\.5[\s\S]*SystemAgent: \{ tapX: 42[\s\S]*Computing: \{ tapX: 91\.5/);
-  assert.match(source, /DAP_BUS_CONNECTIONS = Object\.keys\(DAP_BUS_BRANCHES\)/);
-  assert.match(source, /aria-label="DAP Bus"/);
-  assert.match(source, /!startsInDap && !endsInDap/);
-  assert.match(source, /const getDapBusBranchAnchor = \(nodeKey\) =>/);
-  assert.match(source, /y: node\.y \+ branch\.anchorOffsetY/);
-  assert.match(source, /buildDapBusBranchPath\(nodeKey\)/);
-  assert.match(source, /return `M \$\{anchor\.x\} \$\{anchor\.y\} L \$\{tap\.x\} \$\{tap\.y\}`/);
-  assert.match(source, /const startAnchor = DAP_BUS_BRANCHES\[from\][\s\S]*getDapBusBranchAnchor\(from\)/);
-  assert.match(source, /const endAnchor = DAP_BUS_BRANCHES\[to\][\s\S]*getDapBusBranchAnchor\(to\)/);
-  assert.match(source, /return \[\s*startAnchor,[\s\S]*endAnchor,\s*\]/);
-  assert.match(source, /index === 0 \? "M" : "L"/);
-  assert.match(source, /M \$\{DAP_BUS\.startX\} \$\{DAP_BUS\.y\} L \$\{DAP_BUS\.endX\} \$\{DAP_BUS\.y\}/);
-  assert.doesNotMatch(source, /getDapBusCurveSegment|startControlY|busControl/);
-  assert.match(source, /\[stage, activeFlowType, topologyLines, latencySampleTick\]/);
-  assert.match(source, /DAP_BUS_BRANCHES\[connection\[0\]\] && DAP_BUS_BRANCHES\[connection\[1\]\]/);
-  assert.match(source, /stroke="#cbd5e1"[\s\S]*strokeWidth="0\.35"[\s\S]*strokeDasharray="1\.2 1\.1"/);
-  assert.doesNotMatch(source, />\s*DAP Bus\s*</);
+test("DAP exposes only three abstract NF capability groups", () => {
+  assert.match(source, /const DAP_CAPABILITIES = \[/);
+  assert.match(source, /label: '智能网元', english: 'INTELLIGENT NFs'/);
+  assert.match(source, /label: '数据网元', english: 'DATA NFs'/);
+  assert.match(source, /label: '算力网元', english: 'COMPUTING NFs'/);
+  assert.match(source, /data-dap-capability=\{capability\.key\}/);
+  assert.doesNotMatch(source, /UnifiedToolPanel|DAP_BUS|TOPOLOGY_NODES/);
+  assert.doesNotMatch(source, /systemagent_transparent|Connetction\.png|upfnew\.png/);
 });
 
-test("CP tool panel keeps only AM, SM, Policy, and UDM", () => {
-  const start = source.indexOf("const UnifiedToolPanel =");
-  const end = source.indexOf("const QosMetricsChart =", start);
-  const panelSource = source.slice(start, end);
-
-  assert.match(source, /const CP_TOOL_ITEMS = \["AM Tool", "SM Tool", "Policy Tool", "UDM Tool"\]/);
-  assert.match(panelSource, /left-\[42%\] top-\[2\.3%\].*h-\[7\.6%\] w-\[55%\] grid-cols-4/);
-  assert.doesNotMatch(panelSource, /Agentic Base/);
-  assert.doesNotMatch(panelSource, /Beyond Connectivity/);
-  assert.doesNotMatch(panelSource, /IDM Tool|ARF Tool|CMF Tool|CSPF Tool/);
-  assert.match(panelSource, /left-1\/2 top-\[43%\][\s\S]*-translate-x-1\/2 -translate-y-1\/2[\s\S]*text-\[14px\]/);
-  assert.doesNotMatch(panelSource, /items-center justify-start/);
-  assert.match(panelSource, /text-\[14px\]/);
-  assert.match(panelSource, /text-\[10px\]/);
-  assert.match(panelSource, /name\.replace\(\/\\s\+Tool\$\/, ""\)/);
-  assert.match(panelSource, /absolute bottom-1\.5 right-1\.5 rounded border[\s\S]*text-\[10px\][\s\S]*Tool/);
-  assert.match(panelSource, /hasWorkingTool/);
-  assert.match(panelSource, /cp-tool-panel-flash/);
-  assert.match(panelSource, /cp-tool-call-flash/);
+test("legacy stage node keys collapse onto the new plane capability anchors", () => {
+  assert.match(source, /SRF: 'intelligent'[\s\S]*SystemAgent: 'intelligent'[\s\S]*ConnectionAgent: 'intelligent'[\s\S]*ACN: 'intelligent'/);
+  assert.match(source, /DCF: 'data'[\s\S]*DSF: 'data'[\s\S]*IDM: 'data'/);
+  assert.match(source, /Computing: 'computing'/);
+  assert.match(source, /UP_NODE_KEYS = new Set\(\['UPF', 'Gateway', 'AgentGW', 'OttAgentGW'\]\)/);
+  assert.match(source, /categoryIsActive/);
+  assert.match(source, /cpActive = toolStates\.some/);
 });
 
-test("DAP functions use borderless icons without descriptive subtitles", () => {
-  const compactStart = source.indexOf("if (value.compact)");
-  const compactEnd = source.indexOf("return (", source.indexOf("return (", compactStart) + 1);
-  const compactSource = source.slice(compactStart, compactEnd);
-
-  assert.match(compactSource, /relative flex w-\[96px\] flex-col items-center px-1 py-1/);
-  assert.match(compactSource, /h-\[72px\] w-\[88px\] object-contain/);
-  assert.match(compactSource, /text-\[14px\]/);
-  assert.doesNotMatch(compactSource, /rounded-lg border|bg-slate-950\/88|value\.description/);
-  assert.match(source, /UPF: \{[^\n]*size: "w-20 md:w-24 2xl:w-32"/);
-  assert.match(source, /AgentGW: \{[^\n]*size: "w-16 md:w-20 2xl:w-28"/);
-  assert.match(source, /OttAgentGW: \{[^\n]*size: "w-16 md:w-20 2xl:w-28"/);
-  assert.match(source, /MarketAgent: \{[^\n]*size: "w-16 md:w-20 2xl:w-28"/);
-  assert.match(source, /Gateway: \{[^\n]*size: "w-16 md:w-20 2xl:w-28"/);
+test("the access-to-DAP path is a persistent, emphasized 意图 NAS link", () => {
+  assert.match(source, /aria-label="端侧到DAP意图NAS链路"/);
+  assert.match(source, /M 43\.5 89 L 4\.4 89 Q 3 89 3 87\.6 L 3 22\.1 Q 3 20\.7 4\.4 20\.7 L 25\.6 20\.7/);
+  assert.match(source, /stroke="#c9a34e" strokeWidth="0\.35" strokeDasharray="1\.2 1\.1"[^>]*opacity="0\.42"/);
+  assert.match(source, /stroke="#ead79b" strokeWidth="0\.68" strokeDasharray="1\.8 4\.6"[^>]*opacity="0\.95"[^>]*className="intent-nas-flow"/);
+  assert.doesNotMatch(source, /id="intent-nas-gradient"|url\(#intent-nas-gradient\)/);
+  assert.match(source, /className="intent-nas-flow"/);
+  assert.match(source, /intent-nas-label[^"]*left-\[10\.5%\][^"]*top-\[49%\][^"]*w-\[168px\]/);
+  assert.match(source, /data-intent-nas-detail="expanded"[\s\S]*意图 NAS[\s\S]*原生意图入口[\s\S]*端网协同[\s\S]*丰富的业务需求表达/);
+  assert.doesNotMatch(source, /stage-flow-|active-flow-|latency-/);
+  assert.doesNotMatch(source, /\[animation:topology-flow/);
 });
 
-test("DAP agent bubbles use shared lanes and give CCF a wider execution area", () => {
-  assert.match(source, /const isDapAgentBubble = DAP_NF_KEYS\.has\(bubble\.targetNode\)/);
-  assert.match(source, /width: dapBubbleGroup\.width/);
-  assert.doesNotMatch(source, /isDapSystemIntentBubble|width: .*38\.5%.*dapBubbleGroup/);
-  assert.match(source, /const placement = isDapAgentBubble \? "below" : requestedPlacement/);
-  assert.match(source, /const DAP_BUBBLE_GROUPS = \{[\s\S]*intelligent: \{ left: "39\.2%", top: "46\.5%", width: "24\.1%" \}[\s\S]*data: \{ left: "65\.2%"[\s\S]*computing: \{ left: "78\.5%", top: "46\.5%", width: "18%" \}/);
-  assert.doesNotMatch(source, /DAP_WIDE_COMPUTING_BUBBLE_GROUP/);
-  assert.match(source, /SystemAgent: "intelligent"[\s\S]*ConnectionAgent: "intelligent"[\s\S]*ACN: "intelligent"[\s\S]*DCF: "data"[\s\S]*DSF: "data"[\s\S]*IDM: "data"[\s\S]*Computing: "computing"/);
-  assert.match(source, /dapBubbleGroup\.left[\s\S]*dapBubbleGroup\.top[\s\S]*dapBubbleGroup\.width/);
-  assert.match(source, /activeDapBubbleByGroup[\s\S]*groups\[group\] = bubble[\s\S]*activeDapBubbleByGroup\[group\] === bubble/);
-  assert.doesNotMatch(source, /activeDapBubbleByGroup\[zone\.key\].*opacity-0/);
-  assert.match(source, /up-planning[\s\S]*left-\[12%\]/);
-  assert.match(source, /up-connection[\s\S]*left-1\/2/);
-  assert.match(source, /up-acf[\s\S]*left-\[89%\]/);
-  assert.match(source, /up-dcf[\s\S]*left-\[14%\]/);
-  assert.match(source, /up-idm[\s\S]*left-\[88%\]/);
-  assert.match(source, /up-computing[\s\S]*left-\[72%\]/);
-  assert.match(source, /Computing: "up-computing"/);
-  assert.match(source, /isBelowSystemPlan[\s\S]*replace\(\/\\n\+\/g, " "\)/);
-  assert.match(source, /!isBelowSystemPlan &&[\s\S]*网络任务规划/);
-  assert.match(source, /const mergedStyle = \{[\s\S]*\.\.\.\(bubble\.style \|\| \{\}\)/);
-  assert.match(source, /if \(isDapAgentBubble\) \{[\s\S]*mergedStyle\.left = placementStyle\.left;[\s\S]*mergedStyle\.top = placementStyle\.top;[\s\S]*mergedStyle\.width = placementStyle\.width;[\s\S]*mergedStyle\.maxWidth = placementStyle\.maxWidth/);
-  assert.match(source, /用户意图\{isDapSharedBubble \? "" : " · "\}/);
-  assert.match(source, /isDapSharedBubble \? "mt-0\.5 block text-\[14px\] leading-tight"/);
-  assert.match(source, /isDapSharedBubble[\s\S]*flex flex-col gap-0\.5[\s\S]*text-\[13px\] leading-\[1\.15\]/);
-  assert.match(source, /isDapSharedBubble \? "h-3\.5 w-3\.5" : "h-2\.5 w-2\.5"/);
-  assert.match(source, /className=\{isSystemIntentBubble \|\| bubble\.nowrap \? "whitespace-nowrap" : ""\}/);
-});
-
-test("the former core-functions strip is removed so topology space stays with DAP", () => {
-  assert.doesNotMatch(source, /核心网作用|Core Network Functions|core-functions-heading|core-function-item-label/);
-  assert.doesNotMatch(source, /coreFunctions = \[\]/);
-});
-
-test("only CP tool-state bubbles are hidden from the topology", () => {
-  assert.match(source, /const isCpToolStateBubble = \(bubble\) =>/);
-  assert.match(source, /!\["qoeAssurance", "acnSkillProgress", "sandboxServices", "taskProgress"\]\.includes\(bubble\.variant\)/);
-  assert.match(source, /bubble\.activeTools\.some\(\(tool\) => CP_TOOL_ITEM_SET\.has\(tool\)\)/);
-  assert.match(source, /!isCpToolStateBubble\(bubble\)/);
-});
-
-test("Skill progress bubbles keep their sequential Tool states together", () => {
-  assert.match(source, /const isSkillProgressBubble = \["qoeAssurance", "acnSkillProgress", "sandboxServices"\]\.includes\(bubble\.variant\)/);
-  assert.match(source, /isSkillProgressBubble \|\| isTaskProgressBubble[\s\S]*\{bubble\.title\}[\s\S]*items\.map\(\(item\)[\s\S]*item\.status === "success"[\s\S]*item\.status === "working"/);
-  assert.match(source, /item\.fitOneLine \? "gap-1 text-\[9px\] leading-none tracking-\[-0\.035em\]"/);
-  assert.match(source, /bubble\.denseItems \? "gap-1 text-\[10px\] leading-\[0\.9\]"/);
-  assert.match(source, /const isSandboxServicesBubble = bubble\.variant === "sandboxServices"/);
-  assert.match(source, /aria-label="Sandbox Tool progress"/);
-  assert.match(source, /grid grid-cols-6 place-items-center/);
-  assert.match(source, /toolName\.split\("_"\)/);
-  assert.match(source, /`\$\{previousLine\}\$\{token\}`\.length <= 22/);
-  assert.match(source, /sandboxFocusedLines\.map\(\(line\)/);
-  assert.match(source, /block whitespace-nowrap/);
-  assert.match(source, /text-\[13px\] font-bold leading-\[1\.1\]/);
-  assert.doesNotMatch(source, /sandbox-tool-marquee|sandbox-tool-list-marquee/);
-  assert.doesNotMatch(source, /data-topology-subzone=\{zone\.key\}/);
-  assert.doesNotMatch(source, /bubble\.titleStatus/);
-});
-
-test("DAP task acceptance is a final row inside the original execution bubble", () => {
-  assert.match(source, /const isTaskProgressBubble = bubble\.variant === "taskProgress"/);
-  assert.match(source, /item\.acceptance \? "mt-0\.5 border-t border-dashed border-emerald-300\/30 pt-1 text-emerald-100"/);
-});
-
-test("intent receipt and validation render as two independently marked steps", () => {
-  assert.match(source, /const isIntentValidationBubble = bubble\.variant === "intentValidation"/);
-  assert.match(source, /isIntentValidationBubble \? \([\s\S]*lines\.map\(\(line, index\)[\s\S]*CheckCircle2[\s\S]*formatBubbleText\(line\)/);
-});
-
-test("robot-dog intent uses a horizontal arrow into the DAP boundary", () => {
-  assert.match(source, /const IntentEntryArrow =/);
-  assert.match(source, /left-\[13\.5%\] top-\[31%\].*w-\[23\.5%\]/);
-  assert.match(source, /aria-label="意图入口"/);
-  assert.match(source, /意图入口/);
-  assert.match(source, /text-amber-300/);
-  assert.match(source, /h-1 .*from-amber-400\/45.*to-amber-200/);
-  assert.match(source, /<IntentEntryArrow \/>/);
-  assert.match(source, /const isRobotDogToRan = from === "RobotDog" && to === "gNB"/);
-  assert.match(source, /isRobotDogToRan[\s\S]*\(\(start\.y \+ end\.y\) \/ 2\) - 2\.5/);
-});
-
-test("ordinary traffic uses particles while stage 9 owns the Token Tunnel", () => {
-  assert.match(source, /const TOKEN_TUNNEL_CONNECTIONS = \[\s*\["UE", "gNB"\],\s*\["gNB", "UPF"\],\s*\["UPF", "Gateway"\],\s*\]/);
-  assert.match(source, /shouldShowTokenTunnel\(stage\)/);
-  assert.match(source, /Token Tunnel/);
-  assert.match(source, /left-\[40%\] top-\[68%\][^\n]*text-xs/);
+test("the NAS path mirrors Token Tunnel from the front endpoint into the intelligent NF", () => {
+  assert.match(source, /aria-label="正前方终端经左侧接入智能网元意图NAS链路"/);
+  assert.match(source, /data-intent-target="intelligent"/);
+  assert.match(source, /data-intent-routing="token-tunnel-mirror"/);
+  assert.match(source, /M 43\.5 89 L 4\.4 89 Q 3 89 3 87\.6 L 3 22\.1 Q 3 20\.7 4\.4 20\.7 L 25\.6 20\.7/);
+  assert.match(source, /id="intent-nas-around-glow"/);
   assert.match(source, /strokeDasharray="1\.8 4\.6"/);
-  assert.match(source, /strokeWidth="0\.68"/);
-  assert.match(source, /key=\{`token-tunnel-\$\{key\}`\}[\s\S]*stroke="#22f5ff"[\s\S]*filter="url\(#topology-line-glow\)"/);
-  assert.match(source, /TOKEN_TUNNEL_CONNECTION_KEYS\.has\(pathKey\)/);
-  assert.match(source, /topology-flow_1\.05s_linear_infinite_reverse/);
+  assert.doesNotMatch(source, /M 41\.5 90\.4 C|M 7 34|M 4\.7 71 C|intent-nas-dap-gradient/);
+});
+
+test("the endpoint participants are enclosed by the restored dashed terminal ring", () => {
+  assert.match(source, /aria-label="端侧终端虚线环"/);
+  assert.match(source, /ellipse cx="50" cy="83\.5" rx="42" ry="14\.5"/);
+  assert.match(source, /strokeDasharray="1\.45 1\.55"/);
+});
+
+test("the RAN cone uses layered soft gradients and fine clipped rays", () => {
+  assert.match(source, /id="ran-cone-outer-fill"/);
+  assert.match(source, /id="ran-cone-inner-fill"/);
+  assert.match(source, /id="ran-cone-soft-glow"/);
+  assert.match(source, /id="ran-light-cone-clip"/);
+  assert.match(source, /\[18, 26, 34, 42, 50, 58, 66, 74, 82\]/);
+  assert.match(source, /strokeWidth="0\.07"/);
+});
+
+test("DAP is one large perspective plane with three unboxed capability groups", () => {
+  assert.match(source, /isDap[\s\S]*'polygon\(12\.3% 0,87\.7% 0,100% 100%,0 100%\)'[\s\S]*'polygon\(9% 0,91% 0,100% 100%,0 100%\)'/);
+  const cpEdgeSlope = (0.09 * 52) / 7.8;
+  const dapEdgeSlope = (0.123 * 82) / 16.8;
+  assert.ok(Math.abs(cpEdgeSlope - dapEdgeSlope) < 0.002);
+  assert.match(source, /isDap \? 'translate-y-\[16px\]' : 'translate-y-\[10px\]'/);
+  assert.match(source, /polygon\(9% 0,91% 0,100% 100%,0 100%\)/);
+  assert.match(source, /code="CP"[\s\S]*className="left-\[24%\] top-\[5%\] h-\[7\.8%\] w-\[52%\]"/);
+  assert.match(source, /className="left-\[9%\] top-\[17\.5%\] h-\[16\.8%\] w-\[82%\]"/);
+  assert.match(source, /code="UP"[\s\S]*className="left-\[18%\] top-\[39\.5%\] h-\[7\.8%\] w-\[64%\]"/);
+  assert.match(source, /network-plane-surface/);
+  assert.match(source, /network-plane-active/);
+  assert.equal((source.match(/data-plane-label=/g) || []).length, 2);
+  assert.match(cssSource, /\.network-plane-label \{[\s\S]*transform: translate\(-50%, -50%\)[\s\S]*brightness\(1\.08\)/);
+  assert.equal((source.match(/className="network-plane-code text/g) || []).length, 2);
+  assert.equal((source.match(/network-plane-code-reflection-window/g) || []).length, 2);
+  assert.match(cssSource, /\.network-plane-code-reflection-window \{[\s\S]*height: 15px[\s\S]*overflow: hidden[\s\S]*opacity: 0\.6[\s\S]*mask-image: linear-gradient/);
+  assert.match(cssSource, /\.network-plane-code-reflection \{[\s\S]*translateY\(-5px\) scaleY\(-0\.58\)[\s\S]*blur\(0\.3px\)/);
+  assert.doesNotMatch(cssSource, /skewX\(/);
+  assert.doesNotMatch(cssSource, /-webkit-box-reflect/);
+  assert.doesNotMatch(cssSource, /\.network-plane-label[\s\S]{0,240}drop-shadow/);
+  assert.doesNotMatch(cssSource, /\.network-plane-label::(?:before|after)/);
+  assert.match(cssSource, /\.network-plane-label > span \{[\s\S]*color-mix\(in srgb, var\(--plane-color\) 42%, transparent\)/);
+  assert.match(source, /architecture-glow/);
+  assert.match(source, /top-\[7%\] grid h-\[42%\] translate-x-\[5%\][\s\S]*left-\[14%\][\s\S]*top-\[83%\][\s\S]*text-\[27px\][\s\S]*>DAP<\/span>[\s\S]*text-\[14px\] font-normal[\s\S]*DATA &amp; AI PLANE/);
+  assert.doesNotMatch(source, /top-\[59%\] h-px bg-gradient-to-r/);
+  assert.ok((source.match(/text-\[(?:14|8)px\] font-normal tracking-/g) || []).length >= 4);
+  assert.doesNotMatch(source, /DAP_CAPABILITY_CLIP_PATH|clipPath: DAP_CAPABILITY_CLIP_PATH/);
+  assert.doesNotMatch(source, /network-plane-dap|border-violet-300\/45|data-dap-capability=\{capability\.key\}[\s\S]{0,400}borderColor/);
+});
+
+test("the intent source rotates into the front carousel slot", () => {
+  assert.match(source, /const CAROUSEL_SLOTS = \[[\s\S]*key: 'front'[\s\S]*key: 'right'[\s\S]*key: 'back'[\s\S]*key: 'back-left'[\s\S]*key: 'left'/);
+  assert.match(source, /const DEFAULT_INTENT_SOURCE_BY_STAGE = \{/);
+  assert.match(source, /4: 'UE'/);
+  assert.match(source, /9: 'UE'/);
+  assert.match(source, /10: 'MarketAgent'/);
+  assert.match(source, /const intentSourceKey = showQosExperience[\s\S]*\? 'UE'/);
+  assert.match(source, /bubbleIntentSource[\s\S]*highlightedIntentSource[\s\S]*routedIntentSource[\s\S]*intentSourceKey/);
+  assert.match(source, /CAROUSEL_SLOTS\[\(index - frontEndpointIndex \+ ENDPOINTS\.length\) % ENDPOINTS\.length\]/);
+  assert.match(source, /data-carousel-position=\{slot\.key\}/);
+  assert.match(source, /transition-\[left,top,opacity,transform\] duration-700/);
+  assert.match(source, /isFront \? '#fbbf24' : endpoint\.accent/);
+});
+
+test("stage 9 draws an orthogonal Token Tunnel from the front AR glasses to the computing NF", () => {
+  assert.match(source, /shouldShowTokenTunnel\(stage\)/);
+  assert.match(source, /data-token-tunnel="stage-9"/);
+  assert.match(source, /aria-label="AR眼镜到算力网元Token Tunnel链路"/);
+  assert.match(source, /const tokenTunnelTargetX = isStage9FinalView \? 76\.1 : 80\.8/);
+  assert.match(source, /const tokenTunnelPath = `M 56\.5 89 L 95\.6 89 Q 97 89 97 87\.6 L 97 22\.1 Q 97 20\.7 95\.6 20\.7 L \$\{tokenTunnelTargetX\} 20\.7`/);
+  assert.equal((source.match(/d=\{tokenTunnelPath\}/g) || []).length, 2);
+  assert.match(source, /stroke="#63b5df" strokeWidth="1\.25" strokeLinecap="round" opacity="0\.82" filter="url\(#token-tunnel-glow\)"/);
+  assert.match(source, /stroke="#d6f1ff" strokeWidth="0\.68" strokeDasharray="1\.8 4\.6"[^>]*opacity="0\.95"[^>]*className="token-tunnel-flow"/);
+  assert.doesNotMatch(source, /id="token-tunnel-gradient"|url\(#token-tunnel-gradient\)/);
+  assert.match(source, /token-tunnel-label/);
+  assert.match(source, />\s*Token Tunnel\s*<\/div>/);
+  assert.match(cssSource, /\.network-static-topology \.intent-nas-flow,\s*\.network-static-topology \.token-tunnel-flow[\s\S]*animation: intent-nas-flow 1\.3s linear infinite !important/);
+  assert.match(cssSource, /@keyframes intent-nas-flow[\s\S]*stroke-dashoffset: 12[\s\S]*stroke-dashoffset: 0/);
+});
+
+test("the AR glasses use the same physical AI category as the other physical endpoints", () => {
+  assert.match(source, /key: 'UE', label: 'AR 眼镜', eyebrow: 'PHYSICAL AI'/);
+  assert.doesNotMatch(source, /SPATIAL TERMINAL/);
+});
+
+test("workflow bubbles preserve plan, Tool progress, and acceptance states", () => {
+  assert.match(source, /isIntentValidation[\s\S]*lines\.map\(\(line\)/);
+  assert.match(source, /isPlan[\s\S]*tasks\.map\(\(task\)/);
+  assert.match(source, /isSandbox[\s\S]*aria-label="Sandbox Tool progress"/);
+  assert.match(source, /item\.acceptance[\s\S]*border-t border-dashed border-emerald/);
+  assert.match(source, /shouldHideCpToolBubble/);
+  assert.match(source, /BUBBLE_SLOTS/);
+});
+
+test("endpoint intent bubbles reuse the nearby Stage 22 amber NAS treatment", () => {
+  assert.match(source, /const getEndpointIntentStyle = \(targetNode\) => \{[\s\S]*left: `\$\{anchor\.x\}%`[\s\S]*anchor\.y - 11\.5[\s\S]*width: 'max-content'[\s\S]*maxWidth: '24%'[\s\S]*translateX\(-50%\)[\s\S]*animationDelay: '620ms'/);
+  assert.match(source, /const endpointIntentBubble = bubble\.variant === 'voiceIntent'[\s\S]*ENDPOINTS\.some[\s\S]*tone: 'intent'[\s\S]*getEndpointIntentStyle\(bubble\.targetNode\)/);
+  assert.match(source, /targetNode: 'RobotDog'[\s\S]*variant: 'voiceIntent'[\s\S]*tone: 'intent'[\s\S]*getEndpointIntentStyle\('RobotDog'\)/);
+  assert.match(source, /targetNode: 'UE'[\s\S]*variant: 'voiceIntent'[\s\S]*tone: 'intent'[\s\S]*getEndpointIntentStyle\('UE'\)/);
+});
+
+test("DAP execution bubbles stay close to their capability while CCF temporarily yields room", () => {
+  assert.match(source, /const BUBBLE_SLOTS = \{[\s\S]*intelligent: \{ left: '32\.5%', top: '20\.6%', width: '18%' \}[\s\S]*data: \{ left: '32\.5%', top: '20\.6%', width: '18%' \}[\s\S]*computing: \{ left: '76\.5%', top: '20\.6%', width: '17%' \}/);
+  assert.match(source, /const hasComputingBubble = allBubbles\.some\(\(bubble\) => getBubbleGroup\(bubble\.targetNode\) === 'computing'\)/);
+  assert.match(source, /showQosExperience \? 'grid-cols-\[1fr_1\.7fr_1fr_1fr\] gap-\[3%\]' : 'grid-cols-3 gap-\[8%\]'/);
+  assert.match(source, /const hasPlanningBubble = planningBubbleIsConfigured \|\| allBubbles\.some\(\(bubble\) => \([\s\S]*'stage2SystemPlan', 'intentValidation'[\s\S]*includes\(bubble\.variant\)/);
+  assert.match(source, /capability\.key === 'computing' && hasComputingBubble \? '-translate-x-\[12%\]' : capability\.key === 'computing' && hasPlanningBubble && !showQosExperience \? 'translate-x-\[30%\]' : capability\.key === 'intelligent' && hasPlanningBubble && !showQosExperience \? '-translate-x-\[22%\]' : capability\.key === 'data' && hasPlanningBubble && !showQosExperience \? 'translate-x-\[30%\]' : ''/);
+  assert.doesNotMatch(source, /capability\.key === 'data' && hasComputingBubble/);
+  assert.match(source, /gridColumn: showQosExperience\s*\?/);
+  assert.match(source, /translate: capability\.key === 'data'[\s\S]*'\-23% 0'[\s\S]*capability\.key === 'computing'[\s\S]*'\-46% 0'/);
+  assert.match(source, /data-bubble-offset=\{capability\.key === 'computing' && hasComputingBubble \? 'left' : 'rest'\}/);
+  assert.match(source, /suppressCapabilityShadow = capability\.key === 'intelligent'[\s\S]*capabilityHasBubble && capability\.key === 'computing'/);
+  assert.match(source, /boxShadow: active && !suppressCapabilityShadow/);
+});
+
+test("only sub-agents sharing the center slot replace Planning while CCF coexists on the right", () => {
+  assert.match(source, /const hasPlanningSlotSubAgentBubble = agentBubbles\.some\(\(bubble\) => \['intelligent', 'data'\]\.includes\(getBubbleGroup\(bubble\.targetNode\)\)\)/);
+  assert.match(source, /const planningBubbleIsConfigured = agentBubble\?\.variant === 'stage2SystemPlan'/);
+  assert.match(source, /const visibleAgentBubble = hasPlanningSlotSubAgentBubble && planningBubbleIsConfigured \? null : agentBubble/);
+  assert.match(source, /const allBubbles = \[visibleAgentBubble, \.\.\.agentBubbles, stage9ArQosBubble\]\.filter\(Boolean\)/);
+  assert.match(source, /suppressDarkShadow: true[\s\S]*className: 'origin-bottom'[\s\S]*left: '32\.5%'[\s\S]*width: '18%'/);
+  assert.match(source, /text-\[8px\][\s\S]*text-\[11px\][\s\S]*text-\[13px\][\s\S]*text-\[9px\][\s\S]*text-\[10px\]/);
+});
+
+test("Planning intent validation shares the right-side Planning slot without covering a capability", () => {
+  assert.match(source, /const INTENT_VALIDATION_SLOT = \{ left: '32\.5%', top: '20\.6%', width: '18%' \}/);
+  assert.match(source, /bubble\.variant === 'intentValidation' && getBubbleGroup\(bubble\.targetNode\) === 'intelligent'[\s\S]*dapGroup: 'intelligent'[\s\S]*suppressDarkShadow: true[\s\S]*INTENT_VALIDATION_SLOT/);
+});
+
+test("stage 9 anchors the QoS intent above the AR glasses and Planning orchestration beside the intelligent NF", () => {
+  assert.match(source, /const stage9ArQosBubble = showQosExperience[\s\S]*targetNode: 'UE'[\s\S]*Number\(stage\) === 24 \? '保障机器狗回传视频清晰流畅' : '增强机器狗回传的视频'[\s\S]*variant: 'voiceIntent'[\s\S]*tone: 'intent'[\s\S]*positionKey: 'stage9-ar-qos'/);
+  assert.match(source, /positionKey === 'stage9-ar-qos'[\s\S]*left: '50%'[\s\S]*top: '77\.5%'[\s\S]*width: 'max-content'[\s\S]*maxWidth: '32%'[\s\S]*translateX\(-50%\)/);
+  assert.match(source, /positionKey === 'stage22-planning' \|\| bubble\.variant === 'stage2SystemPlan'[\s\S]*planningFrameHeight[\s\S]*'20\.5%'[\s\S]*'18\.5%'[\s\S]*'16\.5%'[\s\S]*left: '32\.5%'[\s\S]*width: '18%'[\s\S]*top: '20\.3%'[\s\S]*height: planningFrameHeight[\s\S]*rotateY\(4deg\)/);
+  assert.match(source, /data-planning-reference=\{isPlan \? 'stage22' : undefined\}/);
+  assert.match(source, /isVerticalPlan && !suppressDarkShadow[\s\S]*perspective\(120px\) rotateX\(64deg\)/);
+  assert.match(source, /isVerticalPlan \? 'grid-cols-1 gap-\[1px\]'/);
+  assert.doesNotMatch(source, /isStage9QoeExecution|top: '35\.5%'/);
+  assert.match(source, /\[visibleAgentBubble, \.\.\.agentBubbles, stage9ArQosBubble\]/);
+  assert.match(source, /isStage9FinalView \? 'grid-cols-\[1fr_0\.9fr_1fr_1\.8fr\] gap-\[3%\]' : showQosExperience \? 'grid-cols-\[1fr_1\.7fr_1fr_1fr\] gap-\[3%\]' : 'grid-cols-3 gap-\[8%\]'/);
+  assert.match(source, /gridColumn: showQosExperience[\s\S]*intelligent: '1', data: '3', computing: '4'/);
+});
+
+test("stage 9 final view brings the data NF closer and materializes SM on CP", () => {
+  assert.match(source, /const isStage9FinalView = showQosExperience[\s\S]*stage9_qos_done[\s\S]*stage9_qos_clear/);
+  assert.match(source, /data-stage9-sm-invocation="final"[\s\S]*stroke="#4f9fc9"[\s\S]*stroke="#c9efff"[\s\S]*className="sm-tool-call-flow"/);
+  assert.match(source, /data-stage9-sm-badge="final"[\s\S]*stage9-sm-tool-call-flash h-\[40px\] w-\[120px\][\s\S]*polygon\(32px 0, calc\(100% - 32px\) 0, 100% 100%, 0 100%\)[\s\S]*<Cpu[\s\S]*>SM<[\s\S]*>work<[\s\S]*Tool/);
+  assert.match(source, /const isDapGlassPlan[\s\S]*backdrop-blur-xl[\s\S]*border-violet-300\/60[\s\S]*from-white\/\[0\.12\]/);
+  assert.match(cssSource, /\.network-static-topology \.sm-tool-call-flow[\s\S]*animation: intent-nas-flow 1\.3s linear infinite/);
+  assert.match(cssSource, /\.network-static-topology \.stage9-sm-tool-call-flash[\s\S]*stage9-sm-tool-call-flash 0\.72s ease-out both/);
+  assert.match(cssSource, /@keyframes stage9-sm-tool-call-flash[\s\S]*22%[\s\S]*brightness\(1\.7\)[\s\S]*scale\(1\.045\)/);
+  assert.match(cssSource, /background: rgba\(56, 189, 248, 0\.48\)/);
+});
+
+test("video stages reuse the Stage 22 rounded transport motion from the robot dog through UP to the AR glasses", () => {
+  assert.match(source, /const numericStage = Number\(stage\)/);
+  assert.match(source, /const showStage22Transport = numericStage === 22[\s\S]*numericStage === 24[\s\S]*numericStage === 8[\s\S]*numericStage === 5[\s\S]*numericStage === 7/);
+  assert.match(source, /aria-label="机器狗经UP到AR眼镜的视频传输链路"[\s\S]*data-stage22-transport="RobotDog-UP-UE"/);
+  assert.match(source, /const transportStart = \{[\s\S]*displayAnchors\.RobotDog\.x[\s\S]*displayAnchors\.RobotDog\.y - 8/);
+  assert.match(source, /const transportEnd = \{[\s\S]*displayAnchors\.UE\.x[\s\S]*displayAnchors\.UE\.y - 7/);
+  assert.match(source, /const buildRanAvoidingTerminalPath = \(start, end\) =>/);
+  assert.match(source, /routeOnRight = \(\(start\.x \+ end\.x\) \/ 2\) >= 50/);
+  assert.match(source, /sideDirection = routeOnRight \? 1 : -1[\s\S]*startIsCloserToRan = Math\.abs\(start\.x - 50\) <= Math\.abs\(end\.x - 50\)/);
+  assert.match(source, /firstControlX = startIsCloserToRan[\s\S]*sideDirection \* 10[\s\S]*sideDirection \* 4[\s\S]*secondControlX = startIsCloserToRan[\s\S]*controlY = 34\.5/);
+  assert.match(source, /single high cubic arch follows the red reference in 66\.png[\s\S]*buildRanAvoidingTerminalPath\(transportStart, transportEnd\)/);
+  assert.match(source, /path: `M \$\{start\.x\} \$\{start\.y\} C \$\{firstControlX\} \$\{controlY\}, \$\{secondControlX\} \$\{controlY\}, \$\{end\.x\} \$\{end\.y\}`/);
+  assert.match(source, /data-ran-avoidance-side=\{stage22TransportRoute\.side\}/);
+  assert.equal((source.match(/d=\{stage22TransportPath\}/g) || []).length, 2);
+  assert.match(source, /z-\[23\][\s\S]*data-stage22-layer="above-UP-below-bubble"/);
+  assert.match(source, /stroke="#3fae9f"[\s\S]*stroke="#baf7e8"[\s\S]*className="stage22-transport-flow"/);
+  assert.match(cssSource, /\.network-static-topology \.stage22-transport-flow[\s\S]*animation: intent-nas-flow 1\.3s linear infinite/);
+});
+
+test("stage 23 removes the transient stage 22 overlays while retaining the final topology", () => {
+  assert.match(source, /const isStage23CleanView = Number\(stage\) === 23/);
+  assert.match(source, /const showStage9Sm = isStage9FinalView && !isStage23CleanView/);
+  assert.match(source, /const stage9ArQosBubble = showQosExperience && !isStage23CleanView/);
+  assert.match(source, /\{showStage9Sm && \(/);
+  assert.match(source, /const showStage22Transport = numericStage === 22[\s\S]*numericStage === 24/);
+});
+
+test("stage 24 keeps the stage 22 final overlays, updates its copy, and restores Token Tunnel", () => {
+  assert.match(source, /const showQosExperience = isQosExperienceStage\(stage\)/);
+  assert.match(source, /const showTokenTunnel = shouldShowTokenTunnel\(stage\)/);
+  assert.match(source, /Number\(stage\) === 24 \? '保障机器狗回传视频清晰流畅'/);
+  assert.match(source, /\{showTokenTunnel && \([\s\S]*data-token-tunnel="stage-9"/);
+});
+
+test("Stages 1-10 use the Stage 22 motion language without restoring legacy topology-line clutter", () => {
+  assert.match(source, /network-static-topology/);
+  assert.match(source, /data-animation-reference="stage22"/);
+  assert.match(source, /stage-motion-bubble/);
+  assert.match(source, /stage-motion-node-active/);
+  assert.match(source, /stage-motion-capability-active/);
+  assert.match(source, /shouldShowTokenTunnel/);
+  assert.doesNotMatch(source, /explicitActiveConnections|activeLineConfig/);
+  assert.doesNotMatch(source, /useEffect|useState|setInterval/);
+  assert.doesNotMatch(cssSource, /\.network-static-topology \*[\s\S]*transition-duration: 0s !important/);
+  assert.match(cssSource, /\.network-static-topology \.network-plane-surface[\s\S]*animation: none !important/);
+  assert.match(cssSource, /@keyframes stage-motion-bubble-enter/);
+  assert.match(cssSource, /@keyframes stage-motion-active-response/);
 });

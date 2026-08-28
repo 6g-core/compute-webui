@@ -14,10 +14,26 @@ const effectiveStageSource = readFileSync(
 test("identity issuance and capability registration use IDM and ACF", () => {
   assert.match(stageSource, /label: "IDM颁发数字身份:"[\s\S]*targetNode: "IDM"/);
   assert.match(stageSource, /label: "能力注册:"[\s\S]*融合ARF能力[\s\S]*targetNode: "ACN"/);
-  assert.match(stageSource, /label: "IDM：\\n签发数字身份"/);
-  assert.match(stageSource, /label: "ACF：\\n能力注册"/);
+  assert.match(stageSource, /owner: "IDM", label: "签发数字身份"/);
+  assert.match(stageSource, /owner: "ACF", label: "能力注册"/);
   assert.match(stageSource, /activeConnections: \["SystemAgent->IDM"\]/);
   assert.match(stageSource, /pathKey: "ACN->IDM", reverse: true/);
+});
+
+test("Stage 2 child agents report Tool outcomes without task dispatch or receipt copy", () => {
+  const stage2Start = stageSource.indexOf("const STAGE2_INTENT_SUMMARY");
+  const stage2End = stageSource.indexOf("const STAGE4_PHASE_TIMING");
+  const stage2Source = stageSource.slice(stage2Start, stage2End);
+
+  [
+    "IDM Agent：调用IDM Tool完成数字身份签发",
+    "ACF Agent：调用ARF Tool完成能力注册",
+    "Connection Agent：调用AM Tool完成接入注册",
+    "Connection Agent：调用SM Tool完成PDU会话创建",
+  ].forEach((copy) => assert.ok(stage2Source.includes(copy), `missing Stage 2 child-agent copy: ${copy}`));
+  assert.doesNotMatch(stage2Source, /发送.*任务|将.*任务交给|收到任务/);
+  assert.match(stage2Source, /key: "stage2_4_dispatch"[\s\S]*buildStage2ChildAgentBubble/);
+  assert.match(stage2Source, /key: "stage2_5_dispatch"[\s\S]*buildNetworkAccessAgentBubbles\("am"\)/);
 });
 
 test("ACF creates home-domain credentials with the ordered ACN Skill tool chain", () => {
@@ -49,8 +65,8 @@ test("physical subnet configuration calls the PDU session tool while SM and the 
 
 test("compute orchestration is owned by the merged CCF", () => {
   assert.match(stageSource, /CCF收到任务：创建算力会话/);
-  assert.match(stageSource, /label: "CCF：\\n创建算力会话"/);
-  assert.match(stageSource, /label: "CCF：\\n分配算力资源"/);
+  assert.match(stageSource, /owner: "CCF", label: "创建算力会话"/);
+  assert.match(stageSource, /owner: "CCF", label: "分配算力资源"/);
   assert.doesNotMatch(stageSource, /CMF Tool|Computing Agent|ACN Agent|System Agent/);
 });
 
@@ -73,14 +89,14 @@ test("Stage 5 and Stage 7 CCF use the ordered Sandbox Services Skill tool chain"
     const calls = stageSource.match(new RegExp(`buildSandboxServicesAgentBubbles\\("${step}"\\)`, "g")) || [];
     assert.equal(calls.length, 2, `${step} must be shown in both Stage 5 and Stage 7`);
   });
-  assert.match(stageSource, /label: "CCF：\\n拉起沙箱用于清晰视频"/);
+  assert.match(stageSource, /owner: "CCF", label: "拉起沙箱用于清晰视频"/);
   assert.match(stageSource, /Planning Agent将清晰视频沙箱任务交给CCF/);
   assert.match(stageSource, /key: "stage5_ccf_dispatch"[\s\S]*SystemAgent->Computing/);
   assert.ok(
     stageSource.indexOf('key: "stage5_qoe_done"') < stageSource.indexOf('key: "stage5_ccf_dispatch"'),
     "Stage 5 must finish QoE assurance before the compute sandbox starts",
   );
-  assert.match(stageSource, /tasks: \[\s*\{ label: "Connection Agent：\\nL2级通信保障"[\s\S]*\{ label: "CCF：\\n拉起沙箱用于清晰视频"/);
+  assert.match(stageSource, /tasks: \[\s*\{ owner: "连接智能体", label: "L2级通信保障"[\s\S]*\{ owner: "CCF", label: "拉起沙箱用于清晰视频"/);
 });
 
 test("stage 6 keeps Agent GW bubbles visible long enough for the demo", () => {
@@ -136,7 +152,34 @@ test("L1, L2, L3, and in-path QoS share the detailed QoE assurance sequence", ()
     "stage7_5_qoe_decision",
     "stage9_qos_policy_decision",
   ].forEach((phaseKey) => assert.ok(stageSource.includes(`key: "${phaseKey}"`), `missing phase: ${phaseKey}`));
-  assert.match(effectiveStageSource, /if \(stage === 9\)[\s\S]*agentBubbles: phase\.agentBubbles \|\| \[\]/);
+  assert.match(effectiveStageSource, /if \(isQosExperienceStage\(stage\)\)[\s\S]*agentBubbles: hideStage23Overlays \? \[\] : phase\.agentBubbles \|\| \[\]/);
+});
+
+test("stage 9 restores the Planning Agent orchestration bubble with phase progress", () => {
+  assert.match(stageSource, /const STAGE9_PLAN_PROGRESS = \{[\s\S]*uplink:[\s\S]*downlink:[\s\S]*decision:[\s\S]*done:/);
+  assert.match(stageSource, /const STAGE22_PLANNING_BUBBLE_PRESET = \{[\s\S]*variant: "stage2SystemPlan"[\s\S]*positionKey: "stage22-planning"[\s\S]*compact: true[\s\S]*orientation: "vertical"[\s\S]*tone: "dapGlass"[\s\S]*heading: "Planning Agent"/);
+  assert.match(stageSource, /const buildStage9SystemPlanBubble = \(step\) =>[\s\S]*\.\.\.STAGE22_PLANNING_BUBBLE_PRESET[\s\S]*title: "随路QoS保障"/);
+  assert.match(stageSource, /连接智能体[\s\S]*端侧QoE感知[\s\S]*QoS策略工具[\s\S]*保障策略生成[\s\S]*RAN \/ UPF[\s\S]*随路路径建立/);
+  for (const builder of ['buildStage2SystemPlanBubble', 'buildStage4SystemPlanBubble', 'buildStage5SystemPlanBubble', 'buildStage7SystemPlanBubble']) {
+    assert.match(stageSource, new RegExp(`const ${builder} = [\\s\\S]*?\\.\\.\\.STAGE22_PLANNING_BUBBLE_PRESET`));
+  }
+  assert.equal((stageSource.match(/systemAgentBubble: buildStage9SystemPlanBubble\(/g) || []).length, 4);
+  assert.match(effectiveStageSource, /if \(isQosExperienceStage\(stage\)\)[\s\S]*const planningTaskComplete = phase\.key === "stage9_qos_clear"[\s\S]*systemAgentBubble: hideStage23Overlays \|\| planningTaskComplete \? null : phase\.systemAgentBubble \|\| null/);
+  assert.match(effectiveStageSource, /isFrozenFinalStage = stage === 21 \|\| stage === 22 \|\| stage === 23 \|\| stage === 24[\s\S]*STAGE9_QOS_PHASES\.length - 1/);
+  assert.match(effectiveStageSource, /hideStage23Overlays = stage === 23[\s\S]*systemAgentBubble: hideStage23Overlays \|\| planningTaskComplete \? null[\s\S]*agentBubbles: hideStage23Overlays \? \[\]/);
+  assert.match(stageSource, /STAGE_CONFIG\[21\] = \{[\s\S]*STAGE_CONFIG\[9\][\s\S]*STAGE_CONFIG\[22\] = \{[\s\S]*STAGE_CONFIG\[21\][\s\S]*STAGE_CONFIG\[23\] = \{[\s\S]*STAGE_CONFIG\[22\]/);
+  assert.match(stageSource, /STAGE_CONFIG\[24\] = \{[\s\S]*STAGE_CONFIG\[22\][\s\S]*enhancedDogVisionLabel: "保障视频效果"[\s\S]*title: "随路QoS保障"/);
+});
+
+test("completed sub-agent execution briefly returns to Planning and then clears it", () => {
+  assert.match(stageSource, /key: "stage2_6"[\s\S]*systemAgentBubble: buildStage2SystemPlanBubble\(\{ idmStatus: "success", acfStatus: "success", connectionStatus: "success" \}\)/);
+  assert.match(stageSource, /key: "stage4_6"[\s\S]*systemAgentBubble: buildStage4SystemPlanBubble\(\{ acfStatus: "success", connectionStatus: "success", policyStatus: "success" \}\)/);
+  assert.match(stageSource, /key: "stage7_5"[\s\S]*systemAgentBubble: buildStage7SystemPlanBubble\(\{ computingStatus: "success", policyStatus: "success" \}\)/);
+  assert.match(stageSource, /key: "stage5_6"[\s\S]*systemAgentBubble: buildStage5SystemPlanBubble\(\{ connectionStatus: "success", sandboxStatus: "success" \}\)/);
+  assert.doesNotMatch(stageSource, /lines: \["Task Finished"\]/);
+  assert.ok((effectiveStageSource.match(/systemAgentBubble: hideFinalFlash \? null : phase\.systemAgentBubble \|\| null/g) || []).length >= 3);
+  assert.match(effectiveStageSource, /systemAgentBubble: stage5Prewarming \|\| hideFinalFlash[\s\S]*\? null[\s\S]*: phase\.systemAgentBubble \|\| null/);
+  assert.match(stageSource, /key: "stage9_qos_clear"[\s\S]*systemAgentBubble: null[\s\S]*agentBubbles: \[\]/);
 });
 
 test("non-Planning DAP completion stays in the execution bubble and appends orchestration acceptance", () => {
@@ -145,7 +188,7 @@ test("non-Planning DAP completion stays in the execution bubble and appends orch
   ["stage2_4_done"].forEach((phaseKey) => {
     assert.match(
       stageSource,
-      new RegExp(`key: "${phaseKey}"[\\s\\S]*?agentBubbles: buildAcceptedTaskAgentBubbles\\(`),
+      new RegExp(`key: "${phaseKey}"[\\s\\S]*?agentBubbles: buildStage2ChildAgentBubble\\(`),
       `${phaseKey} must retain its execution rows and append acceptance`,
     );
   });

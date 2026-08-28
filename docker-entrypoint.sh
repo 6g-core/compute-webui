@@ -22,6 +22,7 @@ export STAGE_API_URL="${STAGE_API_URL:-}"
 export LATENCY_API_URL="${LATENCY_API_URL:-}"
 export QOS_PUSH_CHANNEL="${QOS_PUSH_CHANNEL:-}"
 export QOS_PUSH_CHANNEL_URL="${QOS_PUSH_CHANNEL_URL:-$QOS_PUSH_CHANNEL}"
+export ENABLE_STAGE_SERVER="${ENABLE_STAGE_SERVER:-true}"
 export WEBRTC_SIGNAL_URL="${WEBRTC_SIGNAL_URL:-}"
 export DOG_WEBRTC_SIGNAL_URL="${DOG_WEBRTC_SIGNAL_URL:-}"
 export DOG_ENHANCED_WEBRTC_SIGNAL_URL="${DOG_ENHANCED_WEBRTC_SIGNAL_URL:-}"
@@ -39,6 +40,7 @@ config = {
     "stageApiUrl": os.environ.get("STAGE_API_URL") or None,
     "latencyApiUrl": os.environ.get("LATENCY_API_URL") or None,
     "qosPushChannelUrl": os.environ.get("QOS_PUSH_CHANNEL_URL") or None,
+    "mockStage9Dialogs": os.environ["ENABLE_STAGE_SERVER"].lower() != "false",
     "webRtcHost": os.environ.get("WEBRTC_HOST") or None,
     "dogWebRtcHost": os.environ.get("DOG_WEBRTC_HOST") or None,
     "dogEnhancedWebRtcHost": os.environ.get("DOG_ENHANCED_WEBRTC_HOST") or None,

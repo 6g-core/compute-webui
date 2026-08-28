@@ -1,4 +1,16 @@
-import { ChevronRight, Network, ShieldAlert, ShieldCheck, User } from 'lucide-react';
+import {
+  ChevronRight,
+  Cpu,
+  Network,
+  RadioTower,
+  ShieldAlert,
+  ShieldCheck,
+  Smartphone,
+  User,
+} from 'lucide-react';
+import { isQosExperienceStage } from '../utils/topologyStageVisibility.js';
+import personalNetworkDiagram from '../../88.png';
+import agentCommunicationDiagram from '../../89.png';
 
 export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", translateText = (text) => text, components, qosDialogItems = [], onStage5VideoFrame }) => {
   const {
@@ -10,6 +22,7 @@ export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", transl
     RobotDog,
     SciFiPanel,
   } = components;
+  const showQosExperience = isQosExperienceStage(stage);
 
   return (
     <>
@@ -67,8 +80,9 @@ export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", transl
                             stage5SandboxComplete={Boolean(effectiveStageConfig.stage5SandboxComplete)}
                             stageAnimationDone={Boolean(effectiveStageConfig.stageAnimationDone)}
                             onFirstFrame={Number(stage) === 5 ? onStage5VideoFrame : undefined}
-                            showQosConversation={Number(stage) === 9}
-                            qosDialogItems={Number(stage) === 9 ? qosDialogItems : []}
+                            showQosConversation={showQosExperience}
+                            qosDialogItems={showQosExperience ? qosDialogItems : []}
+                            enhancedLabel={effectiveStageConfig.enhancedDogVisionLabel}
                           />
                         ) : effectiveStageConfig.showHomeDomainDevice && effectiveStageConfig.homeDomainDevicesReady === false ? (
                           <div className="min-h-[520px] flex-1 rounded-xl border border-emerald-500/20 bg-slate-950/10 backdrop-blur-md" aria-hidden="true" />
@@ -423,6 +437,12 @@ const STEP_DETAIL_ITEMS = {
   "05": ["机器狗感知输入", "网络算力节点识别标注", "标注结果回传AR眼镜", "随路QoS保障"],
 };
 
+const STAGE24_PLANNING_DETAIL_ITEMS = [
+  "连接智能体：端侧QoE感知",
+  "QoS策略工具：保障策略生成",
+  "RAN / UPF：保障通道建立",
+];
+
 const buildSequentialDetailStatuses = (length, activeIndex) => (
   Array.from({ length }, (_, index) => (
     index < activeIndex ? "success" : index === activeIndex ? "working" : "pending"
@@ -439,6 +459,10 @@ const getStepDetailStatuses = ({ step, detailItems, stage, stagePhaseKey, workfl
   }
 
   const phaseKey = stagePhaseKey || "";
+
+  if (Number(stage) === 24 && step.id === "04") {
+    return ["success", "success", "working"];
+  }
 
   if (step.id === "01") {
     const activeIndex = /stage2_4_arf/.test(phaseKey)
@@ -517,7 +541,9 @@ export const StepBar = ({ steps, orientation = "horizontal", stage, stagePhaseKe
           const StepIcon = step.icon;
           const isDone = step.status === "success";
           const isWorking = step.status === "working";
-          const detailItems = STEP_DETAIL_ITEMS[step.id] || [];
+          const detailItems = Number(stage) === 24 && step.id === "04"
+            ? STAGE24_PLANNING_DETAIL_ITEMS
+            : STEP_DETAIL_ITEMS[step.id] || [];
           const compactSubtitle = step.subtitle.split(" / ")[0];
           const isExpanded = isVertical && stepIndex === expandedStepIndex && detailItems.length > 0;
           const detailStatuses = getStepDetailStatuses({
@@ -630,82 +656,112 @@ export const StepBar = ({ steps, orientation = "horizontal", stage, stagePhaseKe
   );
 };
 
-const CORE_NETWORK_VALUE_GROUPS = [
-  {
-    title: "智能体通信网络",
-    columns: 3,
-    items: [
-      { label: "数字身份管理", value: "安全互信" },
-      { label: "任务理解&技能路由", value: "匹配度 99%" },
-      { label: "动态专网建立", value: "协作安全" },
-    ],
-  },
-  {
-    title: "Token 体验保障",
-    columns: 2,
-    items: [
-      { label: "端网协同调度", value: "任务级快速（毫秒级）体验保障" },
-      { label: "动态随路QoS", value: "基站用户容量提升3倍" },
-    ],
-  },
-  {
-    title: "分布式算力网络",
-    columns: 2,
-    items: [
-      { label: "端网协同分布式推理", value: "算力成本降低30%" },
-      { label: "连接+算力协同调度", value: "任务成功率提升30%" },
-    ],
-  },
-];
+const ValuePanelHeading = ({ title, children }) => (
+  <header className="relative z-10 shrink-0 text-center">
+    <h3 className="font-['Microsoft_YaHei','PingFang_SC',sans-serif] text-[21px] font-black leading-none tracking-[0.02em] text-[#f5c128] xl:text-[24px]">
+      {title}
+    </h3>
+    <div className="mt-2 whitespace-nowrap font-['Microsoft_YaHei','PingFang_SC',sans-serif] text-[13px] font-medium leading-none text-slate-100 xl:text-[15px]">
+      {children}
+    </div>
+  </header>
+);
+
+const HumanAgentTaskMap = () => (
+  <div className="flex h-full min-h-0 flex-col items-center" aria-label="围绕人的群智协同任务拓扑">
+    <div className="shrink-0 whitespace-nowrap text-center text-[11px] font-medium leading-[1.15] text-slate-100 xl:text-[13px]">
+      <div>统一数字身份</div>
+      <div className="mt-0.5 text-[#f5c128]">绑定SIM卡</div>
+    </div>
+    <div className="mt-1 flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden px-[5%]">
+      <img
+        src={personalNetworkDiagram}
+        alt="任务1、任务2和任务3围绕用户协同"
+        className="block h-auto max-h-[110px] w-auto max-w-full object-contain xl:max-h-[118px]"
+        draggable="false"
+      />
+    </div>
+  </div>
+);
+
+const TokenChannel = () => {
+  const nodes = [
+    { label: '终端', Icon: Smartphone },
+    { label: 'RAN', Icon: RadioTower },
+    { label: '用户面', Icon: Network },
+    { label: '算力/MaaS/工具', Icon: Cpu },
+  ];
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center pt-1">
+      <div className="text-[17px] font-black leading-none text-[#f5c128] xl:text-[20px]">Token通道</div>
+      <div className="mt-2 flex w-[72%] items-center justify-center" aria-label="终端到算力的Token通道">
+        {nodes.map(({ label, Icon }, index) => (
+          <div key={label} className="contents">
+            {index > 0 && <span className="h-[3px] min-w-3 flex-1 bg-[#f5c128] shadow-[0_0_7px_rgba(245,193,40,0.28)]" />}
+            <div className={`relative flex h-[36px] shrink-0 items-center justify-center border border-slate-500/70 bg-[#252c37] px-2 text-center text-[10px] font-medium leading-[1.05] text-slate-100 xl:h-[40px] xl:text-[12px] ${index === nodes.length - 1 ? 'w-[105px] xl:w-[124px]' : 'w-[52px] xl:w-[60px]'}`}>
+              <Icon className="mr-1 h-3.5 w-3.5 shrink-0 text-slate-300" strokeWidth={1.5} />
+              <span>{label}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 whitespace-nowrap text-center text-[11px] font-medium leading-tight text-slate-100 xl:text-[13px]">
+        400KB 图片/视频上行传输，
+        <span className="ml-1 text-[#f5c128]">E2E时延 &lt; 400ms</span>
+      </div>
+      <div className="mt-0.5 text-center text-[10px] font-medium leading-none text-slate-200 xl:text-[12px]">（多尔蒂阈值，类人交互）</div>
+    </div>
+  );
+};
+
+const AgentCommunicationMap = () => (
+  <div className="flex h-full min-h-0 items-center justify-center overflow-hidden px-[7%] py-1" aria-label="智能体南北向与东西向通信拓扑">
+    <img
+      src={agentCommunicationDiagram}
+      alt="人、手机和机器狗之间的智能体通信网络"
+      className="block h-auto max-h-[110px] w-auto max-w-full object-contain xl:max-h-[118px]"
+      draggable="false"
+    />
+  </div>
+);
 
 export const CoreNetworkValuePanel = () => (
   <section
     aria-label="核心网价值能力"
-    className="core-network-value-panel relative z-10 mt-3 h-[138px] shrink-0 overflow-hidden rounded-xl bg-[linear-gradient(180deg,rgba(4,14,25,0.82),rgba(2,8,17,0.94))] px-4 py-2 shadow-[inset_0_1px_0_rgba(125,211,252,0.1),inset_0_-1px_0_rgba(30,64,175,0.16)] backdrop-blur-md"
+    className="core-network-value-panel relative z-10 mt-3 h-[22vh] min-h-[200px] max-h-[260px] shrink-0 overflow-hidden rounded-xl border border-white/[0.06] bg-[linear-gradient(105deg,#191b1a_0%,#171918_46%,#1a1c1b_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_10px_30px_rgba(0,0,0,0.32)]"
   >
-    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_15%_-35%,rgba(14,165,233,0.16),transparent_35%),radial-gradient(ellipse_at_52%_145%,rgba(59,130,246,0.1),transparent_38%),radial-gradient(ellipse_at_88%_-30%,rgba(34,211,238,0.12),transparent_32%)]" />
-    <div className="pointer-events-none absolute -left-24 top-1/2 h-28 w-[42%] -translate-y-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-sky-400/[0.025] to-transparent blur-2xl" />
-    <div className="pointer-events-none absolute -right-24 top-1/2 h-28 w-[42%] -translate-y-1/2 skew-x-12 bg-gradient-to-l from-transparent via-cyan-300/[0.025] to-transparent blur-2xl" />
+    <div className="pointer-events-none absolute inset-0 opacity-[0.16] [background-image:radial-gradient(circle,rgba(255,255,255,0.22)_0.55px,transparent_0.7px)] [background-size:4px_4px]" />
+    <div className="pointer-events-none absolute inset-y-3 left-[34.2%] w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+    <div className="pointer-events-none absolute inset-y-3 left-[68.2%] w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
 
-    <div className="relative grid h-full grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_minmax(0,1.08fr)] gap-4">
-      {CORE_NETWORK_VALUE_GROUPS.map((group) => {
-        const isTokenExperience = group.title === "Token 体验保障";
+    <div className="relative grid h-full grid-cols-[1.04fr_1.08fr_1fr]">
+      <article className="grid min-w-0 grid-rows-[46px_minmax(0,1fr)] px-5 py-3">
+        <ValuePanelHeading title="个人专网">通信对象：人 → 智能体</ValuePanelHeading>
+        <div className="grid min-h-0 grid-cols-[max-content_minmax(180px,240px)] justify-center gap-3 pt-1 xl:gap-5">
+          <div className="flex min-w-0 flex-col justify-center gap-6 whitespace-nowrap text-center text-[15px] font-black leading-tight text-[#f5c128] xl:text-[18px]">
+            <div>跨生态安全互信</div>
+            <div>围绕人的群智协同</div>
+          </div>
+          <HumanAgentTaskMap />
+        </div>
+      </article>
 
-        return (
-          <article
-            key={group.title}
-            className="relative grid h-full min-h-0 min-w-0 grid-rows-[48px_minmax(0,1fr)] overflow-hidden px-3 py-1"
-          >
-            <header className="relative flex min-w-0 items-center justify-center">
-              <h3 className="cyber-tech-title whitespace-nowrap py-0.5 font-['Bahnschrift_SemiCondensed','Microsoft_YaHei',sans-serif] text-[23px] font-medium leading-[1.25] tracking-[0.1em] text-[#c7ebff] xl:text-[26px]">
-                {group.title}
-              </h3>
-            </header>
+      <article className="grid min-w-0 grid-rows-[46px_minmax(0,1fr)] px-5 py-3">
+        <ValuePanelHeading title="AI任务低时延">差异化体验保障：面向人 → 面向AI任务</ValuePanelHeading>
+        <TokenChannel />
+      </article>
 
-            <div
-              className={`grid min-h-0 items-center ${isTokenExperience ? "gap-2 pb-1" : "gap-2 pb-1.5"}`}
-              style={{ gridTemplateColumns: `repeat(${group.columns}, minmax(0, 1fr))` }}
-            >
-              {group.items.map((item) => (
-                <div
-                  key={item.label}
-                  className="relative flex min-w-0 flex-col items-center justify-center px-1 text-center"
-                >
-                  <div className="flex shrink-0 items-center justify-center font-['Bahnschrift','Microsoft_YaHei',sans-serif] text-[13px] font-medium leading-tight tracking-[0.06em] text-slate-100 xl:text-[15px]">
-                    <span className="drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">{item.label}</span>
-                  </div>
-                  {item.value && (
-                    <div className={`cyber-metric-badge mt-1 inline-flex items-center rounded py-0.5 font-['Bahnschrift','Microsoft_YaHei',sans-serif] text-[12px] font-semibold leading-tight tracking-[0.08em] text-cyan-200 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)] xl:text-sm ${isTokenExperience ? "whitespace-nowrap px-1.5" : "px-2"}`}>
-                      <span className="mr-1 h-1 w-1 rounded-full bg-cyan-300 shadow-[0_0_4px_#67e8f9]" />
-                      <span>{item.value}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </article>
-        );
-      })}
+      <article className="grid min-w-0 grid-rows-[46px_minmax(0,1fr)] px-5 py-3">
+        <ValuePanelHeading title="智能体通信网络">数据路径：南-北 → 东-西</ValuePanelHeading>
+        <div className="grid min-h-0 grid-cols-[minmax(170px,230px)_max-content] justify-center gap-4 pt-1 xl:gap-6">
+          <AgentCommunicationMap />
+          <div className="flex min-w-0 flex-col items-center justify-center text-center">
+            <div className="whitespace-nowrap text-[17px] font-black leading-none text-[#f5c128] xl:text-[20px]">安全&nbsp;&nbsp;高效</div>
+            <div className="mt-2 whitespace-nowrap text-[16px] font-black leading-none text-white xl:text-[19px]">免公网绕行</div>
+          </div>
+        </div>
+      </article>
     </div>
   </section>
 );

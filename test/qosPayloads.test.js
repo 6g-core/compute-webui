@@ -3,22 +3,8 @@ import test from "node:test";
 
 import {
   isSupportedQosImageSource,
-  orderQosDialogItems,
   parseQosPushPayload,
 } from "../src/utils/qosPayloads.js";
-
-test("orderQosDialogItems renders right before left while keeping same-side order", () => {
-  const items = [
-    { id: "left-1", imageHorizontalPlacement: "left" },
-    { id: "right-1", imageHorizontalPlacement: "right" },
-    { id: "right-2", imageHorizontalPlacement: "right" },
-  ];
-
-  assert.deepEqual(
-    orderQosDialogItems(items, 3).map((item) => item.id),
-    ["right-1", "right-2", "left-1"],
-  );
-});
 
 test("parseQosPushPayload accepts metrics-only payloads", () => {
   const parsed = parseQosPushPayload({

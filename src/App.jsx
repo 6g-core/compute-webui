@@ -11,16 +11,34 @@ import {
   UserRound,
 } from 'lucide-react';
 import { STAGE10_COMPLETED_TASKS, getWorkflowBubbleFromRows, pinBubbleToSystemAgent } from './config/stageConfig.jsx';
+import { getRuntimeConfig } from './config/runtimeUrls.js';
 import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, useBackendVideoStream, useDogVideoOfferGate } from './hooks/useBackendVideo';
 import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
 import { useArLastWhisper, useStagePolling } from './hooks/usePolling';
 import { useQosFeed } from './hooks/useQosFeed';
+import { isQosExperienceStage } from './utils/topologyStageVisibility.js';
 import { CoreNetworkValuePanel, LeftPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
-import { orderQosDialogItems } from './utils/qosPayloads.js';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
 
 const LANGUAGE_STORAGE_KEY = "compute-webui-language";
+
+const STAGE9_MOCK_DIALOG_ITEMS = [
+  {
+    id: "stage9-mock-grape-juice-question",
+    dialog: "这是什么饮料",
+    image: "/mock/grape-juice.png",
+    imageHorizontalPlacement: "left",
+    imageVerticalPlacement: "below",
+  },
+  {
+    id: "stage9-mock-grape-juice-answer",
+    dialog: "这是葡萄汁",
+    image: "/mock/grape-juice-rotate.gif",
+    imageHorizontalPlacement: "right",
+    imageVerticalPlacement: "below",
+  },
+];
 
 const UI_TRANSLATIONS = {
   "典型业务&价值": "Typical Scenarios & Value",
@@ -55,6 +73,9 @@ const UI_TRANSLATIONS = {
   "Planning Agent将身份签发任务交给IDM": "Planning Agent assigns identity issuance to IDM",
   "Planning Agent将能力注册任务交给ACF": "Planning Agent assigns capability registration to ACF",
   "Planning Agent将网络接入任务交给Connection Agent": "Planning Agent assigns network access to Connection Agent",
+  "Planning Agent匹配IDM Agent": "Planning Agent matches IDM Agent",
+  "Planning Agent匹配ACF Agent": "Planning Agent matches ACF Agent",
+  "Planning Agent匹配Connection Agent": "Planning Agent matches Connection Agent",
   "Planning Agent将家庭域凭证任务交给ACF": "Planning Agent assigns home-domain credentials to ACF",
   "Planning Agent将物理组网配置任务交给Connection Agent": "Planning Agent assigns physical network configuration to Connection Agent",
   "Planning Agent将L1级通信保障任务交给Connection Agent": "Planning Agent assigns L1 communication assurance to Connection Agent",
@@ -64,6 +85,10 @@ const UI_TRANSLATIONS = {
   "Planning Agent将L3级通信保障任务交给Connection Agent": "Planning Agent assigns L3 communication assurance to Connection Agent",
   "IDM收到任务：签发数字身份": "IDM receives task: issue digital identity",
   "IDM签发数字身份": "IDM issues digital identity",
+  "IDM Agent：调用IDM Tool完成数字身份签发": "IDM Agent: calls IDM Tool to complete digital identity issuance",
+  "ACF Agent：调用ARF Tool完成能力注册": "ACF Agent: calls ARF Tool to complete capability registration",
+  "Connection Agent：调用AM Tool完成接入注册": "Connection Agent: calls AM Tool to complete access registration",
+  "Connection Agent：调用SM Tool完成PDU会话创建": "Connection Agent: calls SM Tool to complete PDU session creation",
   "ACF收到任务：创建家庭域凭证": "ACF receives task: create home-domain credentials",
   "ACF融合ARF能力并发布能力卡片": "ACF integrates ARF capability and publishes a capability card",
   "ACF协调DCF调用UDM Tool控制签约数据更新": "ACF coordinates DCF to control subscription updates through UDM Tool",
@@ -222,6 +247,11 @@ const UI_TRANSLATIONS = {
   "随路QoS保障用户体验，视频链路体验进入动态保障态。": "In-path QoS assures user experience while the video link enters dynamic assurance.",
   "随路QoS保障用户体验": "In-Path QoS Experience Assurance",
   "收到视觉推理请求后启用随路QoS保障策略": "Enable in-path QoS assurance after receiving the visual reasoning request",
+  "增强机器狗回传的视频": "Enhance the video returned by the robot dog",
+  "丰富的业务需求表达": "Rich business requirement expression",
+  "原生意图入口": "Native intent entry",
+  "端网协同": "Device-network collaboration",
+  "意图 NAS": "Intent NAS",
   "RAN、UPF与算力节点建立QoS保障路径": "RAN, UPF, and the compute node establish a QoS assurance path",
   "QoS指标和用户对话层进入实时刷新": "QoS metrics and the user dialog layer refresh in real time",
   "实时问答": "Live Q&A",
@@ -344,6 +374,7 @@ const UI_TRANSLATIONS = {
   "机器狗视野增强": "Enhanced Robot Dog Vision",
   "机器狗原始视野": "Raw Robot Dog Vision",
   "机器狗增强后的视野": "Enhanced Robot Dog Vision",
+  "保障视频效果": "Assured Video Effect",
   "机器狗原始视频": "Original Robot Dog Video",
   "AR眼镜视野": "AR Glasses View",
   "增强后AR眼镜视角": "Enhanced AR Glasses Live View",
@@ -1172,10 +1203,10 @@ const HandoffPanel = () => (
 );
 
 const QosConversationPanel = ({ items = [] }) => {
-  const visibleItems = orderQosDialogItems(items, 3);
+  const visibleItems = items.slice(-3);
 
   const renderImage = (item) => (
-    <figure className="relative h-[82px] w-[118px] shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/95 shadow-[0_4px_12px_rgba(0,0,0,0.24)]">
+    <figure className={`relative shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/95 shadow-[0_4px_12px_rgba(0,0,0,0.24)] ${item.id.startsWith("stage9-mock-grape-juice-") ? "h-[64px] w-[96px]" : "h-[82px] w-[118px]"}`}>
       <img
         src={item.image}
         alt=""
@@ -1211,27 +1242,27 @@ const QosConversationPanel = ({ items = [] }) => {
           const imageAbove = item.imageVerticalPlacement === "above";
 
           return (
-            <div key={item.id} className={`flex w-full items-start gap-2 ${isAgentReply ? "justify-start" : "justify-end"}`}>
-              {isAgentReply && (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#7db5c0]/40 bg-[#1b4149] text-[#9ed5de]">
-                  <Settings className="h-4 w-4" />
+            <div key={item.id} className={`flex w-full items-start gap-2 ${isAgentReply ? "justify-end" : "justify-start"}`}>
+              {!isAgentReply && (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#b5d6dd]/60 bg-[#5f94a9] text-white">
+                  <UserRound className="h-4 w-4" />
                 </div>
               )}
-              <div className={`flex w-[78%] max-w-[520px] flex-col ${isAgentReply ? "items-start" : "items-end"}`}>
-                <div className={`mb-1 flex items-center px-1 text-[10px] font-medium text-[#b6d0d5]/65 ${isAgentReply ? "flex-row" : "flex-row-reverse"}`}>
+              <div className={`flex w-[78%] max-w-[520px] flex-col ${isAgentReply ? "items-end" : "items-start"}`}>
+                <div className={`mb-1 flex items-center px-1 text-[10px] font-medium text-[#b6d0d5]/65 ${isAgentReply ? "flex-row-reverse" : "flex-row"}`}>
                   <span>{isAgentReply ? "Agent" : "用户"}</span>
                 </div>
-                <div className={`flex w-full flex-col gap-2 ${isAgentReply ? "items-start" : "items-end"}`}>
+                <div className={`flex w-full flex-col gap-2 ${isAgentReply ? "items-end" : "items-start"}`}>
                   {imageAbove && renderImage(item)}
-                  <article className={`w-fit max-w-full rounded-[9px] border px-3 py-2 text-[13px] font-medium leading-[1.5] shadow-[0_5px_14px_rgba(0,0,0,0.18)] ${isAgentReply ? "rounded-bl-[3px] border-[#648f98]/45 bg-[#193941]/92 text-[#e7f1f3]" : "rounded-br-[3px] border-[#9ac6d0]/60 bg-[#4f8297]/95 text-white"}`}>
+                  <article className={`w-fit max-w-full rounded-[9px] border px-3 py-2 text-[13px] font-medium leading-[1.5] shadow-[0_5px_14px_rgba(0,0,0,0.18)] ${isAgentReply ? "rounded-br-[3px] border-[#648f98]/45 bg-[#193941]/92 text-[#e7f1f3]" : "rounded-bl-[3px] border-[#9ac6d0]/60 bg-[#4f8297]/95 text-white"}`}>
                     <p className="text-left">{item.dialog}</p>
                   </article>
                   {!imageAbove && renderImage(item)}
                 </div>
               </div>
-              {!isAgentReply && (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#b5d6dd]/60 bg-[#5f94a9] text-white">
-                  <UserRound className="h-4 w-4" />
+              {isAgentReply && (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#7db5c0]/40 bg-[#1b4149] text-[#9ed5de]">
+                  <Settings className="h-4 w-4" />
                 </div>
               )}
             </div>
@@ -1488,6 +1519,7 @@ const DogVisionStreams = ({
   onFirstFrame,
   showQosConversation = false,
   qosDialogItems = [],
+  enhancedLabel = "机器狗增强后的视野",
 }) => {
   const { health, ready, state: gateState } = useDogVideoOfferGate(true);
   const [gateOpened, setGateOpened] = useState(false);
@@ -1547,7 +1579,7 @@ const DogVisionStreams = ({
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <DogVisionPanel
-          label="机器狗增强后的视野"
+          label={enhancedLabel}
           state={enhanced.state}
           videoRef={enhanced.videoRef}
           tall
@@ -1586,7 +1618,7 @@ const DogVisionStreams = ({
         tall
       />
       <DogVisionPanel
-        label="机器狗增强后的视野"
+        label={enhancedLabel}
         state={enhanced.state}
         videoRef={enhanced.videoRef}
         tall
@@ -1708,7 +1740,12 @@ export default function App() {
     }
   }, [stage]);
   const effectiveStageConfig = useEffectiveStageConfig(stage, { stage5VideoReady });
-  const qosFeed = useQosFeed(stage === 9);
+  const qosExperienceStage = isQosExperienceStage(stage);
+  const qosFeed = useQosFeed(qosExperienceStage);
+  const mockStage9Dialogs = getRuntimeConfig().mockStage9Dialogs === true;
+  const qosDialogItems = mockStage9Dialogs
+    ? STAGE9_MOCK_DIALOG_ITEMS
+    : qosFeed.dialogItems;
   const postAnimationWhisperBaselineRef = useRef({ stage, whisper: arLastWhisper });
   const [postAnimationArSpeechText, setPostAnimationArSpeechText] = useState("");
 
@@ -1722,7 +1759,7 @@ export default function App() {
   }, [stage]);
 
   useEffect(() => {
-    if (stage <= 1 || stage === 8 || stage === 9) {
+    if (stage <= 1 || stage === 8 || qosExperienceStage) {
       setPostAnimationArSpeechText("");
       postAnimationWhisperBaselineRef.current = { stage, whisper: arLastWhisper };
       return;
@@ -1749,6 +1786,7 @@ export default function App() {
     arLastWhisper,
     effectiveStageConfig.showArSpeech,
     effectiveStageConfig.stageAnimationDone,
+    qosExperienceStage,
     stage,
   ]);
 
@@ -1757,7 +1795,7 @@ export default function App() {
     : postAnimationArSpeechText;
   const topologyAgentBubble = effectiveStageConfig.systemAgentBubble
     ? pinBubbleToSystemAgent(effectiveStageConfig.systemAgentBubble)
-    : stage === 9 || stage === 10
+    : qosExperienceStage || stage === 10
     ? null
     : pinBubbleToSystemAgent(
         getWorkflowBubbleFromRows(effectiveStageConfig.workflow, stage)
@@ -2014,11 +2052,11 @@ export default function App() {
             language={language}
             translateText={translateTextNodeValue}
             components={panelComponents}
-            qosDialogItems={qosFeed.dialogItems}
+            qosDialogItems={qosDialogItems}
             onStage5VideoFrame={handleStage5VideoFrame}
           />
 
-          {/* 中间列：6G核心网 3D 拓扑与平面网元、上方弧线数据流 */}
+          {/* 中间列：6G核心网静态平面架构与意图 NAS 入口 */}
           <div className="min-h-0">
             <NetworkTopology3D
               stage={stage}
@@ -2031,10 +2069,10 @@ export default function App() {
               topologyLines={effectiveStageConfig.topologyLines}
               workflow={effectiveStageConfig.workflow}
               highlightedNodes={effectiveStageConfig.highlightedNodes}
-              activeConnections={effectiveStageConfig.activeConnections}
               stagePhaseKey={effectiveStageConfig.stagePhaseKey}
-              language={language}
               qosMetrics={qosFeed.metrics}
+              language={language}
+              robotDogVisual={RobotDog}
             />
           </div>
 

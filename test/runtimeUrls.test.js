@@ -61,6 +61,10 @@ test("normalizeStage accepts only stages used by the mock UI", () => {
   assert.equal(normalizeStage("3"), 2);
   assert.equal(normalizeStage(9), 9);
   assert.equal(normalizeStage(10), 10);
+  assert.equal(normalizeStage(21), 21);
+  assert.equal(normalizeStage("22"), 22);
+  assert.equal(normalizeStage(23), 23);
+  assert.equal(normalizeStage("24"), 24);
   assert.equal(normalizeStage(0), null);
   assert.equal(normalizeStage("not-a-stage"), null);
 });

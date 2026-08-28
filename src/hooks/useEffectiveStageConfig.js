@@ -26,6 +26,7 @@ import {
   STAGE_CONFIG,
   normalizeWorkflowLabel,
 } from '../config/stageConfig.jsx';
+import { isQosExperienceStage } from '../utils/topologyStageVisibility.js';
 
 const buildStageIntentSummary = (summaryItems, phases, phaseIndex) => {
   const phase = phases[phaseIndex] || phases[0];
@@ -624,7 +625,9 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
         stagePhaseKey: stage5Prewarming ? "stage5_preheating" : phase.key,
         highlightedNodes: stage5Prewarming || hideFinalFlash ? [] : phase.highlightedNodes || [],
         activeConnections: stage5Prewarming || hideFinalFlash ? [] : phase.activeConnections || [],
-        systemAgentBubble: stage5Prewarming || hideFinalFlash ? null : phase.systemAgentBubble || null,
+        systemAgentBubble: stage5Prewarming || hideFinalFlash
+          ? null
+          : phase.systemAgentBubble || null,
         agentBubbles: stage5Prewarming ? [] : phase.agentBubbles || [],
         showArSpeech,
         hideArSpeech: !showArSpeech,
@@ -757,9 +760,15 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
       };
     }
 
-    if (stage === 9) {
-      const phase = STAGE9_QOS_PHASES[stage9QosPhaseIndex] || STAGE9_QOS_PHASES[0];
-      const allDone = stage9QosPhaseIndex >= STAGE9_QOS_PHASES.length - 1;
+    if (isQosExperienceStage(stage)) {
+      const isFrozenFinalStage = stage === 21 || stage === 22 || stage === 23 || stage === 24;
+      const hideStage23Overlays = stage === 23;
+      const phaseIndex = isFrozenFinalStage
+        ? STAGE9_QOS_PHASES.length - 1
+        : stage9QosPhaseIndex;
+      const phase = STAGE9_QOS_PHASES[phaseIndex] || STAGE9_QOS_PHASES[0];
+      const allDone = isFrozenFinalStage || phaseIndex >= STAGE9_QOS_PHASES.length - 1;
+      const planningTaskComplete = phase.key === "stage9_qos_clear";
 
       return {
         ...stageConfig,
@@ -768,8 +777,8 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
         stagePhaseKey: phase.key,
         highlightedNodes: phase.highlightedNodes || [],
         activeConnections: phase.activeConnections || [],
-        systemAgentBubble: null,
-        agentBubbles: phase.agentBubbles || [],
+        systemAgentBubble: hideStage23Overlays || planningTaskComplete ? null : phase.systemAgentBubble || null,
+        agentBubbles: hideStage23Overlays ? [] : phase.agentBubbles || [],
         showArSpeech: false,
         hideArSpeech: true,
         hideRobotDogSpeech: true,

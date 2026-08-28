@@ -39,8 +39,13 @@ test("QoS conversation panel follows the supplied communication-log reference", 
   assert.match(panelSource, /max-h-\[450px\] flex-\[1\.32_1_0%\]/);
   assert.match(panelSource, /min-h-0 flex-1 overflow-hidden px-4 py-3/);
   assert.doesNotMatch(panelSource, /overflow-y-auto/);
-  assert.match(panelSource, /orderQosDialogItems\(items, 3\)/);
+  assert.match(panelSource, /const visibleItems = items\.slice\(-3\)/);
   assert.match(panelSource, /horizontalPlacement === "right"/);
+  assert.match(panelSource, /isAgentReply \? "justify-end" : "justify-start"/);
+  assert.match(panelSource, /isAgentReply \? "items-end" : "items-start"/);
+  assert.match(panelSource, /!isAgentReply && \([\s\S]*<UserRound className=/);
+  assert.match(panelSource, /isAgentReply && \([\s\S]*<Settings className=/);
+  assert.match(panelSource, /isAgentReply \? "rounded-br-\[3px\][^"]*" : "rounded-bl-\[3px\]/);
   assert.match(panelSource, /imageVerticalPlacement === "above"/);
   assert.match(panelSource, /\{imageAbove && renderImage\(item\)\}[\s\S]*<article[\s\S]*item\.dialog[\s\S]*<\/article>[\s\S]*\{!imageAbove && renderImage\(item\)\}/);
   assert.match(panelSource, /AGENT COMMUNICATION LOG/);
@@ -63,6 +68,16 @@ test("Stage 9 puts enhanced video above the conversation panel and replaces raw 
   assert.match(streamsSource, /if \(showQosConversation\)/);
   assert.match(streamsSource, /<DogVisionPanel[\s\S]*<QosConversationPanel items=\{qosDialogItems\}/);
   assert.doesNotMatch(streamsSource, /overlay=\{<Qos/);
+});
+
+test("Stage 9 mock mode pins the grape juice exchange while real mode uses pushed dialogs", () => {
+  assert.match(source, /const STAGE9_MOCK_DIALOG_ITEMS = \[/);
+  assert.match(source, /dialog: "这是什么饮料"[\s\S]*image: "\/mock\/grape-juice\.png"[\s\S]*imageHorizontalPlacement: "left"/);
+  assert.match(source, /dialog: "这是葡萄汁"[\s\S]*image: "\/mock\/grape-juice-rotate\.gif"[\s\S]*imageHorizontalPlacement: "right"/);
+  assert.match(source, /const mockStage9Dialogs = getRuntimeConfig\(\)\.mockStage9Dialogs === true/);
+  assert.match(source, /const qosDialogItems = mockStage9Dialogs[\s\S]*\? STAGE9_MOCK_DIALOG_ITEMS[\s\S]*: qosFeed\.dialogItems/);
+  assert.match(source, /qosDialogItems=\{qosDialogItems\}/);
+  assert.match(source, /item\.id\.startsWith\("stage9-mock-grape-juice-"\) \? "h-\[64px\] w-\[96px\]"/);
 });
 
 test("Stage 5 keeps one raw stream and progressively removes stalls and noise", () => {
@@ -112,7 +127,7 @@ test("Stage 5 keeps one raw stream and progressively removes stalls and noise", 
   assert.match(effectiveStageSource, /leftPanelTitle: stage5Prewarming \? STAGE_CONFIG\[4\]\.leftPanelTitle : stageConfig\.leftPanelTitle/);
   assert.match(effectiveStageSource, /topologyLines: stage5Prewarming \? \[\] : phase\.topologyLines \|\| \[\]/);
   assert.match(effectiveStageSource, /stagePhaseKey: stage5Prewarming \? "stage5_preheating" : phase\.key/);
-  assert.match(effectiveStageSource, /systemAgentBubble: stage5Prewarming \|\| hideFinalFlash \? null : phase\.systemAgentBubble \|\| null/);
+  assert.match(effectiveStageSource, /systemAgentBubble: stage5Prewarming \|\| hideFinalFlash[\s\S]*\? null[\s\S]*: phase\.systemAgentBubble \|\| null/);
   assert.match(effectiveStageSource, /const showArSpeech = !stage5Prewarming && phase\.key === "stage5_source"/);
   assert.match(panelSource, /data-stage5-video-prewarm=\{effectiveStageConfig\.stage5Prewarming \? "warming" : "ready"\}/);
   assert.match(panelSource, /className=\{effectiveStageConfig\.stage5Prewarming[\s\S]*"pointer-events-none absolute inset-0 flex opacity-0"[\s\S]*"contents"/);

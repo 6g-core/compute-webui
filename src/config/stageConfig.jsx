@@ -184,6 +184,37 @@ const buildQoeAssuranceAgentBubbles = (step) => {
   }];
 };
 
+const STAGE9_PLAN_PROGRESS = {
+  uplink: { analytic: "working", decision: "pending", assurance: "pending" },
+  downlink: { analytic: "success", decision: "working", assurance: "pending" },
+  decision: { analytic: "success", decision: "success", assurance: "working" },
+  done: { analytic: "success", decision: "success", assurance: "success" },
+};
+
+const STAGE22_PLANNING_BUBBLE_PRESET = {
+  variant: "stage2SystemPlan",
+  positionKey: "stage22-planning",
+  planSize: "wide",
+  compact: true,
+  orientation: "vertical",
+  tone: "dapGlass",
+  heading: "Planning Agent",
+};
+
+const buildStage9SystemPlanBubble = (step) => {
+  const progress = STAGE9_PLAN_PROGRESS[step];
+
+  return {
+    ...STAGE22_PLANNING_BUBBLE_PRESET,
+    title: "随路QoS保障",
+    tasks: [
+      { owner: "连接智能体", label: "端侧QoE感知", status: progress.analytic },
+      { owner: "QoS策略工具", label: "保障策略生成", status: progress.decision },
+      { owner: "RAN / UPF", label: "随路路径建立", status: progress.assurance },
+    ],
+  };
+};
+
 const ACN_SKILL_BUBBLE_COPY = {
   title: "使用ACN Skill",
   subscription: "调用Subscription_tool",
@@ -252,22 +283,6 @@ const buildAcnSkillAgentBubbles = (step) => {
   }];
 };
 
-const buildAcceptedTaskAgentBubbles = ({ targetNode, placement = "left", items }) => [{
-  targetNode,
-  placement,
-  variant: "taskProgress",
-  compactItems: true,
-  items: [
-    ...items.map((item) => (
-      typeof item === "string"
-        ? { label: item, status: "success" }
-        : { ...item, status: "success" }
-    )),
-    { label: ORCHESTRATION_ACCEPTANCE_COPY, status: "success", acceptance: true },
-  ],
-  status: "success",
-}];
-
 const buildNetworkAccessAgentBubbles = (step) => {
   const progress = {
     am: { am: "working", sm: "pending" },
@@ -281,14 +296,26 @@ const buildNetworkAccessAgentBubbles = (step) => {
     variant: "taskProgress",
     compactItems: true,
     items: [
-      { label: "调用AM Tool注册", status: progress.am },
-      { label: "调用SM Tool创建会话", status: progress.sm },
+      { label: "Connection Agent：调用AM Tool完成接入注册", status: progress.am },
+      { label: "Connection Agent：调用SM Tool完成PDU会话创建", status: progress.sm },
       ...(step === "done" ? [{ label: ORCHESTRATION_ACCEPTANCE_COPY, status: "success", acceptance: true }] : []),
     ],
     activeTools: step === "am" ? ["AM Tool"] : step === "sm" ? ["SM Tool"] : [],
     status: step === "done" ? "success" : "working",
   }];
 };
+
+const buildStage2ChildAgentBubble = ({ targetNode, label, status = "working", accepted = false }) => [{
+  targetNode,
+  placement: "left",
+  variant: "taskProgress",
+  compactItems: true,
+  items: [
+    { label, status },
+    ...(accepted ? [{ label: ORCHESTRATION_ACCEPTANCE_COPY, status: "success", acceptance: true }] : []),
+  ],
+  status,
+}];
 
 const buildPduSessionAgentBubbles = (step) => [{
   targetNode: "ConnectionAgent",
@@ -349,33 +376,27 @@ const STAGE2_INTENT_SUMMARY = [
     id: "agent-matched",
     label: "匹配",
     lines: [
-      "Planning Agent将身份签发任务交给IDM",
-      "Planning Agent将能力注册任务交给ACF",
-      "Planning Agent将网络接入任务交给Connection Agent",
+      "Planning Agent匹配IDM Agent",
+      "Planning Agent匹配ACF Agent",
+      "Planning Agent匹配Connection Agent",
     ],
   },
-  { id: "idm-received", label: "任务", lines: ["IDM收到任务：签发数字身份"] },
-  { id: "identity-actions", label: "执行", lines: ["IDM签发数字身份"] },
+  { id: "idm-tool", label: "执行", lines: ["IDM Agent：调用IDM Tool完成数字身份签发"] },
+  { id: "acf-tool", label: "执行", lines: ["ACF Agent：调用ARF Tool完成能力注册"] },
   { id: "identity-complete", label: "确认", lines: ["Planning Agent确认身份签发和能力注册完成"] },
-  { id: "connection-received", label: "任务", lines: ["Connection Agent收到任务：接入网络"] },
-  { id: "connection-tools", label: "Skill", lines: ["Connection Agent调用AM Tool注册"] },
+  { id: "connection-am", label: "执行", lines: ["Connection Agent：调用AM Tool完成接入注册"] },
+  { id: "connection-sm", label: "执行", lines: ["Connection Agent：调用SM Tool完成PDU会话创建"] },
   { id: "connection-complete", label: "确认", lines: ["Planning Agent确认完成接入网络任务"] },
   { id: "stage2-finished", label: "完成", lines: ["Planning Agent任务完成"] },
 ];
 
 const buildStage2SystemPlanBubble = ({ idmStatus = "pending", acfStatus = "pending", connectionStatus = "pending" } = {}) => ({
-  variant: "stage2SystemPlan",
-  planSize: "boxed",
-  planWidthClass: "w-[125px]",
-  placement: "below",
-  scale: 1,
-  style: { left: "37.5%", top: "27%" },
-  transformOrigin: "0 0",
+  ...STAGE22_PLANNING_BUBBLE_PRESET,
   title: "Apply for the Digital ID",
   tasks: [
-    { label: "IDM：\n签发数字身份", status: idmStatus },
-    { label: "ACF：\n能力注册", status: acfStatus },
-    { label: "Connection Agent：\n接入网络", status: connectionStatus },
+    { owner: "IDM", label: "签发数字身份", status: idmStatus },
+    { owner: "ACF", label: "能力注册", status: acfStatus },
+    { owner: "连接智能体", label: "接入网络", status: connectionStatus },
   ],
 });
 
@@ -418,34 +439,44 @@ const STAGE2_PHASES = [
     highlightedNodes: ["SystemAgent", "IDM"],
     activeConnections: ["SystemAgent->IDM"],
     systemAgentBubble: buildStage2SystemPlanBubble({ idmStatus: "working" }),
-    agentBubbles: [{ targetNode: "IDM", placement: "above", lines: ["收到任务：签发数字身份"] }],
+    agentBubbles: buildStage2ChildAgentBubble({
+      targetNode: "IDM",
+      label: "IDM Agent：调用IDM Tool完成数字身份签发",
+    }),
     intentSummaryCount: 4,
   },
   {
     key: "stage2_4_idm",
     highlightedNodes: ["IDM"],
     systemAgentBubble: buildStage2SystemPlanBubble({ idmStatus: "working" }),
-    agentBubbles: [{ targetNode: "IDM", placement: "above", lines: ["颁发数字身份"] }],
-    intentSummaryCount: 5,
+    agentBubbles: buildStage2ChildAgentBubble({
+      targetNode: "IDM",
+      label: "IDM Agent：调用IDM Tool完成数字身份签发",
+      status: "success",
+    }),
+    intentSummaryCount: 4,
   },
   {
     key: "stage2_4_arf",
     highlightedNodes: ["IDM", "ACN"],
     activeConnections: [{ key: "IDM->ACN", pathKey: "ACN->IDM", reverse: true }],
     systemAgentBubble: buildStage2SystemPlanBubble({ idmStatus: "success", acfStatus: "working" }),
-    agentBubbles: [{ targetNode: "ACN", placement: "below", lines: ["融合ARF能力", "发布能力卡片"] }],
+    agentBubbles: buildStage2ChildAgentBubble({
+      targetNode: "ACN",
+      label: "ACF Agent：调用ARF Tool完成能力注册",
+    }),
     intentSummaryCount: 5,
-    appendIntentSummary: { targetId: "identity-actions", line: "ACF融合ARF能力并发布能力卡片" },
   },
   {
     key: "stage2_4_done",
     highlightedNodes: ["SystemAgent", "ACN"],
     activeConnections: [{ key: "ACN->SystemAgent", pathKey: "SystemAgent->ACN", reverse: true }],
     systemAgentBubble: buildStage2SystemPlanBubble({ idmStatus: "success", acfStatus: "success" }),
-    agentBubbles: buildAcceptedTaskAgentBubbles({
+    agentBubbles: buildStage2ChildAgentBubble({
       targetNode: "ACN",
-      placement: "below",
-      items: ["融合ARF能力", "发布能力卡片"],
+      label: "ACF Agent：调用ARF Tool完成能力注册",
+      status: "success",
+      accepted: true,
     }),
     intentSummaryCount: 6,
   },
@@ -454,7 +485,7 @@ const STAGE2_PHASES = [
     highlightedNodes: ["SystemAgent", "ConnectionAgent"],
     activeConnections: ["SystemAgent->ConnectionAgent"],
     systemAgentBubble: buildStage2SystemPlanBubble({ idmStatus: "success", acfStatus: "success", connectionStatus: "working" }),
-    agentBubbles: [{ targetNode: "ConnectionAgent", placement: "left", lines: ["收到任务：接入网络"] }],
+    agentBubbles: buildNetworkAccessAgentBubbles("am"),
     intentSummaryCount: 7,
   },
   {
@@ -462,7 +493,7 @@ const STAGE2_PHASES = [
     highlightedNodes: ["ConnectionAgent"],
     systemAgentBubble: buildStage2SystemPlanBubble({ idmStatus: "success", acfStatus: "success", connectionStatus: "working" }),
     agentBubbles: buildNetworkAccessAgentBubbles("am"),
-    intentSummaryCount: 8,
+    intentSummaryCount: 7,
   },
   {
     key: "stage2_5_sm",
@@ -471,7 +502,6 @@ const STAGE2_PHASES = [
     systemAgentBubble: buildStage2SystemPlanBubble({ idmStatus: "success", acfStatus: "success", connectionStatus: "working" }),
     agentBubbles: buildNetworkAccessAgentBubbles("sm"),
     intentSummaryCount: 8,
-    appendIntentSummary: { targetId: "connection-tools", line: "Connection Agent调用SM Tool创建会话" },
   },
   {
     key: "stage2_5_done",
@@ -489,11 +519,7 @@ const STAGE2_PHASES = [
       { key: "SRF->gNB", pathKey: "gNB->SRF", reverse: true },
       { key: "gNB->RobotDog", pathKey: "RobotDog->gNB", reverse: true },
     ],
-    systemAgentBubble: {
-      lines: ["Task Finished"],
-      status: "success",
-      style: { left: "36.5%", top: "28%", fontSize: "14px" },
-    },
+    systemAgentBubble: buildStage2SystemPlanBubble({ idmStatus: "success", acfStatus: "success", connectionStatus: "success" }),
     intentSummaryCount: 10,
   },
 ];
@@ -536,20 +562,12 @@ const STAGE4_INTENT_SUMMARY = [
 ];
 
 const buildStage4SystemPlanBubble = ({ acfStatus = "pending", connectionStatus = "pending", policyStatus = "pending" } = {}) => ({
-  variant: "stage2SystemPlan",
-  planSize: "boxed",
-  placement: "below",
-  className: "stage-plan-en-compact",
-  planTextBoost: true,
-  planWidthClass: "w-[132px]",
-  scale: 1,
-  style: { left: "37.5%", top: "26.5%" },
-  transformOrigin: "0 0",
+  ...STAGE22_PLANNING_BUBBLE_PRESET,
   title: "Create Home Domain",
   tasks: [
-    { label: "ACF：\n创建家庭域凭证", status: acfStatus },
-    { label: "Connection Agent：\n下发物理组网配置", status: connectionStatus },
-    { label: "Connection Agent：\nL1级通信保障", status: policyStatus },
+    { owner: "ACF", label: "创建家庭域凭证", status: acfStatus },
+    { owner: "连接智能体", label: "下发物理组网配置", status: connectionStatus },
+    { owner: "连接智能体", label: "L1级通信保障", status: policyStatus },
   ],
 });
 
@@ -700,11 +718,7 @@ const STAGE4_PHASES = [
       { key: "SRF->gNB", pathKey: "gNB->SRF", reverse: true },
       { key: "gNB->UE", pathKey: "UE->gNB", reverse: true },
     ],
-    systemAgentBubble: {
-      lines: ["Task Finished"],
-      status: "success",
-      style: { left: "36.5%", top: "28%", fontSize: "14px" },
-    },
+    systemAgentBubble: buildStage4SystemPlanBubble({ acfStatus: "success", connectionStatus: "success", policyStatus: "success" }),
     intentSummaryCount: 19,
   },
 ];
@@ -737,20 +751,12 @@ const STAGE7_INTENT_SUMMARY = [
 ];
 
 const buildStage7SystemPlanBubble = ({ computingStatus = "pending", policyStatus = "pending" } = {}) => ({
-  variant: "stage2SystemPlan",
-  planSize: "boxed",
-  placement: "below",
-  className: "stage-plan-en-compact",
-  planTextBoost: true,
-  planWidthClass: "w-[145px]",
-  scale: 1,
-  style: { left: "36.5%", top: "26%" },
-  transformOrigin: "0 0",
+  ...STAGE22_PLANNING_BUBBLE_PRESET,
   title: "Compute offloading for object recognition",
   tasks: [
-    { label: "CCF：\n创建算力会话", status: computingStatus },
-    { label: "CCF：\n分配算力资源", status: computingStatus },
-    { label: "Connection Agent：\nL3级通信保障", status: policyStatus },
+    { owner: "CCF", label: "创建算力会话", status: computingStatus },
+    { owner: "CCF", label: "分配算力资源", status: computingStatus },
+    { owner: "连接智能体", label: "L3级通信保障", status: policyStatus },
   ],
 });
 
@@ -928,11 +934,7 @@ const STAGE7_PHASES = [
       { key: "SRF->gNB", pathKey: "gNB->SRF", reverse: true },
       { key: "gNB->RobotDog", pathKey: "RobotDog->gNB", reverse: true },
     ],
-    systemAgentBubble: {
-      lines: ["Task Finished"],
-      status: "success",
-      style: { left: "36.5%", top: "28%", fontSize: "14px" },
-    },
+    systemAgentBubble: buildStage7SystemPlanBubble({ computingStatus: "success", policyStatus: "success" }),
     intentSummaryCount: 18,
   },
 ];
@@ -1005,17 +1007,11 @@ const STAGE5_INTENT_SUMMARY = [
 ];
 
 const buildStage5SystemPlanBubble = ({ sandboxStatus = "pending", connectionStatus = "pending" } = {}) => ({
-  variant: "stage2SystemPlan",
-  planSize: "boxed",
-  planWidthClass: "w-[145px]",
-  placement: "below",
-  scale: 1,
-  style: { left: "37.5%", top: "28%" },
-  transformOrigin: "0 0",
+  ...STAGE22_PLANNING_BUBBLE_PRESET,
   title: "Share Video",
   tasks: [
-    { label: "Connection Agent：\nL2级通信保障", status: connectionStatus },
-    { label: "CCF：\n拉起沙箱用于清晰视频", status: sandboxStatus },
+    { owner: "连接智能体", label: "L2级通信保障", status: connectionStatus },
+    { owner: "CCF", label: "拉起沙箱用于清晰视频", status: sandboxStatus },
   ],
 });
 
@@ -1171,11 +1167,7 @@ const STAGE5_PHASES = [
       { key: "SRF->gNB", pathKey: "gNB->SRF", reverse: true },
       { key: "gNB->UE", pathKey: "UE->gNB", reverse: true },
     ],
-    systemAgentBubble: {
-      lines: ["Task Finished"],
-      status: "success",
-      style: { left: "36.5%", top: "28%", fontSize: "14px" },
-    },
+    systemAgentBubble: buildStage5SystemPlanBubble({ connectionStatus: "success", sandboxStatus: "success" }),
     intentSummaryCount: 18,
     qoeComplete: true,
     sandboxComplete: true,
@@ -1193,6 +1185,7 @@ const STAGE9_QOS_PHASES = [
     ],
     activeConnections: ["UE->gNB", "gNB->UPF"],
     highlightedNodes: ["UE", "gNB", "UPF"],
+    systemAgentBubble: buildStage9SystemPlanBubble("uplink"),
     agentBubbles: buildQoeAssuranceAgentBubbles("skill"),
   },
   {
@@ -1208,6 +1201,7 @@ const STAGE9_QOS_PHASES = [
       "UPF->Gateway",
     ],
     highlightedNodes: ["UPF", "gNB", "UE", "Gateway"],
+    systemAgentBubble: buildStage9SystemPlanBubble("downlink"),
     agentBubbles: buildQoeAssuranceAgentBubbles("analytic"),
   },
   {
@@ -1223,6 +1217,7 @@ const STAGE9_QOS_PHASES = [
       "UPF->Gateway",
     ],
     highlightedNodes: ["UPF", "gNB", "UE", "Gateway"],
+    systemAgentBubble: buildStage9SystemPlanBubble("decision"),
     agentBubbles: buildQoeAssuranceAgentBubbles("decision"),
   },
   {
@@ -1230,6 +1225,7 @@ const STAGE9_QOS_PHASES = [
     topologyLines: [],
     activeConnections: [],
     highlightedNodes: [],
+    systemAgentBubble: buildStage9SystemPlanBubble("done"),
     agentBubbles: buildQoeAssuranceAgentBubbles("done"),
   },
   {
@@ -1237,6 +1233,7 @@ const STAGE9_QOS_PHASES = [
     topologyLines: [],
     activeConnections: [],
     highlightedNodes: [],
+    systemAgentBubble: null,
     agentBubbles: [],
   },
 ];
@@ -1649,6 +1646,28 @@ STAGE_CONFIG[10] = {
   )),
 };
 
+// stage21 freezes the final frame of stage9; later static stages build on it.
+STAGE_CONFIG[21] = {
+  ...STAGE_CONFIG[9],
+};
+
+STAGE_CONFIG[22] = {
+  ...STAGE_CONFIG[21],
+};
+
+STAGE_CONFIG[23] = {
+  ...STAGE_CONFIG[22],
+};
+
+STAGE_CONFIG[24] = {
+  ...STAGE_CONFIG[22],
+  enhancedDogVisionLabel: "保障视频效果",
+  steps: [
+    ...STAGE_CONFIG[22].steps.slice(0, 3),
+    { id: "04", icon: ShieldCheck, title: "随路QoS保障", subtitle: "进行中 / Working", status: "working" },
+  ],
+};
+
 const getWorkflowBubbleFromRows = (workflow = [], stage) => {
   if (!workflow.length) {
     return null;
@@ -1738,7 +1757,7 @@ const getWorkflowBubbleFromRows = (workflow = [], stage) => {
     };
   }
 
-  if (stage === 8 || stage === 9) {
+  if (stage === 8 || stage === 9 || stage === 21 || stage === 22 || stage === 23 || stage === 24) {
     return null;
   }
 

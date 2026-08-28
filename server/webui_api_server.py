@@ -7,7 +7,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
-ALLOWED_STAGES = (1, 2, 4, 5, 6, 7, 8, 9, 10)
+ALLOWED_STAGES = (1, 2, 4, 5, 6, 7, 8, 9, 10, 21, 22, 23, 24)
 QOS_DIALOG_CACHE_LIMIT = 20
 QOS_DIALOG_EMPTY_PAYLOAD = {
     "dialogs": [],
@@ -282,7 +282,7 @@ class WebUiApiRequestHandler(BaseHTTPRequestHandler):
             next_stage = 2
 
         if next_stage not in ALLOWED_STAGES:
-            write_json(self, {"error": "stage must be one of 1, 2, 4, 5, 6, 7, 8, 9, 10"}, status=400)
+            write_json(self, {"error": "stage must be one of 1, 2, 4, 5, 6, 7, 8, 9, 10, 21, 22, 23, 24"}, status=400)
             return
 
         self.server.state.stage = next_stage
@@ -341,7 +341,7 @@ def normalize_initial_stage(stage):
     if stage == 3:
         return 2
     if stage not in ALLOWED_STAGES:
-        raise ValueError("stage must be one of 1, 2, 4, 5, 6, 7, 8, 9, 10")
+        raise ValueError("stage must be one of 1, 2, 4, 5, 6, 7, 8, 9, 10, 21, 22, 23, 24")
     return stage
 
 

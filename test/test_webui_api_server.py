@@ -88,6 +88,22 @@ class WebUiApiServerTest(unittest.TestCase):
         self.assertEqual(200, status)
         self.assertEqual({"stage": 10}, body)
 
+        status, body = self.request(server, "POST", "/api/stage", {"stage": 21})
+        self.assertEqual(200, status)
+        self.assertEqual({"stage": 21}, body)
+
+        status, body = self.request(server, "POST", "/api/stage", {"stage": 22})
+        self.assertEqual(200, status)
+        self.assertEqual({"stage": 22}, body)
+
+        status, body = self.request(server, "POST", "/api/stage", {"stage": 23})
+        self.assertEqual(200, status)
+        self.assertEqual({"stage": 23}, body)
+
+        status, body = self.request(server, "POST", "/api/stage", {"stage": 24})
+        self.assertEqual(200, status)
+        self.assertEqual({"stage": 24}, body)
+
     def test_qos_events_stream_receives_posted_payloads(self):
         server = self.start_server(enable_stage=False)
         event_connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=2)
@@ -160,7 +176,9 @@ class WebUiApiServerTest(unittest.TestCase):
 
         self.assertIn('export QOS_PUSH_CHANNEL="${QOS_PUSH_CHANNEL:-}"', entrypoint)
         self.assertIn('export QOS_PUSH_CHANNEL_URL="${QOS_PUSH_CHANNEL_URL:-$QOS_PUSH_CHANNEL}"', entrypoint)
+        self.assertIn('export ENABLE_STAGE_SERVER="${ENABLE_STAGE_SERVER:-true}"', entrypoint)
         self.assertIn('"qosPushChannelUrl": os.environ.get("QOS_PUSH_CHANNEL_URL") or None,', entrypoint)
+        self.assertIn('"mockStage9Dialogs": os.environ["ENABLE_STAGE_SERVER"].lower() != "false",', entrypoint)
 
 
 if __name__ == "__main__":

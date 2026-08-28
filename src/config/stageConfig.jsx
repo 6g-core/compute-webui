@@ -1,4 +1,8 @@
 import { Cloud, Cpu, Globe, Share2, ShieldCheck } from 'lucide-react';
+import {
+  applyStoryProfileToArray,
+  applyStoryProfileToObject,
+} from './storyScenario.js';
 
 const STAGE4_WORKFLOW = [
   { label: "签约数据更新:", value: "Pending", status: "pending" },
@@ -1788,6 +1792,36 @@ const pinBubbleToSystemAgent = (bubble) => (
       }
     : null
 );
+
+[
+  BASE_AGENT_LOGS,
+  STAGE2_COMPLETION_LOGS,
+  STAGE2_INTENT_SUMMARY,
+  STAGE2_PHASES,
+  STAGE2_WORKFLOW,
+  STAGE4_INTENT_SUMMARY,
+  STAGE4_PHASES,
+  STAGE4_WORKFLOW,
+  STAGE5_INTENT_SUMMARY,
+  STAGE5_PHASES,
+  STAGE5_LOGS,
+  STAGE6_LOGS,
+  STAGE6_WORKFLOW,
+  STAGE7_INTENT_SUMMARY,
+  STAGE7_PHASES,
+  STAGE7_LOGS,
+  STAGE7_WORKFLOW,
+  STAGE9_QOS_PHASES,
+  STAGE10_COMPLETED_TASKS,
+  STAGE10_WORKFLOW,
+].forEach((items) => applyStoryProfileToArray(items));
+
+[
+  AGENT_TOOL_SETS,
+  STAGE4_TOOL_BUBBLES,
+  STAGE_CONFIG,
+  STAGE_STORY_LINES,
+].forEach((item) => applyStoryProfileToObject(item));
 
 
 export {

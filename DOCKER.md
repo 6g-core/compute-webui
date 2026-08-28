@@ -34,6 +34,15 @@ docker compose up --build
 
 `*_HOST` can be used instead of `*_IP` if the endpoint is a DNS name.
 
+Switch the story copy profile at startup:
+
+```bash
+COMPUTE_WEBUI_STORY_SCENARIO=parcel_pickup docker compose up --build
+```
+
+Use `COMPUTE_WEBUI_STORY_SCENARIO=blind_box_store` to switch back to the
+default mystery-box/store copy.
+
 Use full URLs when the backend or WebRTC paths are not the defaults:
 
 ```bash

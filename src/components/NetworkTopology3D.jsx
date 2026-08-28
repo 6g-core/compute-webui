@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { getTopologyFlowConfig } from '../topologyFlowConfig';
 import { formatSystemAgentBubbleLabel, normalizeWorkflowLabel } from '../config/stageConfig.jsx';
+import { applyStoryProfileToValue } from '../config/storyScenario.js';
 import { isQosExperienceStage, shouldShowTokenTunnel } from '../utils/topologyStageVisibility.js';
 import acnImage from '../ACN.png';
 import computingImage from '../Computing.png';
@@ -543,6 +544,7 @@ export const NetworkTopology3D = ({
   qosMetrics = [],
   robotDogVisual,
 }) => {
+  const storyEndpoints = useMemo(() => applyStoryProfileToValue(ENDPOINTS), []);
   const activeFlowConfig = topologyLines
     ? { color: '#22f5ff', lines: topologyLines }
     : getTopologyFlowConfig(stage, activeFlowType);
@@ -588,15 +590,15 @@ export const NetworkTopology3D = ({
     [highlightedNodes, bubbleTargetKey],
   );
   const bubbleIntentSource = allBubbles.find((bubble) => (
-    bubble.variant === 'voiceIntent' && ENDPOINTS.some((endpoint) => endpoint.key === bubble.targetNode)
+    bubble.variant === 'voiceIntent' && storyEndpoints.some((endpoint) => endpoint.key === bubble.targetNode)
   ))?.targetNode;
   const highlightedIntentSource = String(stagePhaseKey || '').includes('source')
-    ? highlightedNodes.find((node) => ENDPOINTS.some((endpoint) => endpoint.key === node))
+    ? highlightedNodes.find((node) => storyEndpoints.some((endpoint) => endpoint.key === node))
     : null;
   const routedIntentSource = String(stagePhaseKey || '').includes('source')
     ? activeFlowConfig.lines
         .map((line) => line.key.split('->')[0])
-        .find((node) => ENDPOINTS.some((endpoint) => endpoint.key === node))
+        .find((node) => storyEndpoints.some((endpoint) => endpoint.key === node))
     : null;
   const intentSourceKey = showQosExperience
     ? 'UE'
@@ -605,10 +607,10 @@ export const NetworkTopology3D = ({
       || routedIntentSource
       || DEFAULT_INTENT_SOURCE_BY_STAGE[Number(stage)]
       || 'RobotDog';
-  const frontEndpointIndex = Math.max(0, ENDPOINTS.findIndex((endpoint) => endpoint.key === intentSourceKey));
-  const carouselEndpoints = ENDPOINTS.map((endpoint, index) => ({
+  const frontEndpointIndex = Math.max(0, storyEndpoints.findIndex((endpoint) => endpoint.key === intentSourceKey));
+  const carouselEndpoints = storyEndpoints.map((endpoint, index) => ({
     endpoint,
-    slot: CAROUSEL_SLOTS[(index - frontEndpointIndex + ENDPOINTS.length) % ENDPOINTS.length],
+    slot: CAROUSEL_SLOTS[(index - frontEndpointIndex + storyEndpoints.length) % storyEndpoints.length],
   }));
   const displayAnchors = {
     ...LOGICAL_ANCHORS,
@@ -726,7 +728,7 @@ export const NetworkTopology3D = ({
     }
 
     const endpointIntentBubble = bubble.variant === 'voiceIntent'
-      && ENDPOINTS.some((endpoint) => endpoint.key === bubble.targetNode);
+      && storyEndpoints.some((endpoint) => endpoint.key === bubble.targetNode);
     if (endpointIntentBubble) {
       return {
         ...bubble,

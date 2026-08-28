@@ -50,6 +50,22 @@ test("getTaskSummaryText falls back to workflow mapping and hides idle stage 10"
   }), "");
 });
 
+test("getTaskSummaryText follows parcel_pickup story copy", () => {
+  globalThis.window = {
+    __RUNTIME_CONFIG__: { storyScenario: "parcel_pickup" },
+  };
+  try {
+    assert.equal(getTaskSummaryText({
+      workflow: [{ label: "身份可信认证:", status: "working" }],
+    }), "机器狗和AR眼镜分别与快递站智能体双向认证");
+    assert.equal(getTaskSummaryText({
+      workflow: [{ label: "快递交接:", status: "working" }],
+    }), "机器狗与快递站智能体交接快递");
+  } finally {
+    delete globalThis.window;
+  }
+});
+
 test("TASK_SUMMARY_CLASSNAME keeps summary narrow, wrapped, and non-truncated", () => {
   assert.match(TASK_SUMMARY_CLASSNAME, /max-w-\[24%\]/);
   assert.match(TASK_SUMMARY_TEXT_CLASSNAME, /whitespace-normal/);

@@ -10,6 +10,7 @@ WEBRTC_PORT="${WEBRTC_PORT:-28450}"
 DOG_WEBRTC_PORT="${DOG_WEBRTC_PORT:-28451}"
 DOG_ENHANCED_WEBRTC_PORT="${DOG_ENHANCED_WEBRTC_PORT:-28452}"
 WEBRTC_ADVERTISE_IP="${WEBRTC_ADVERTISE_IP:-auto}"
+COMPUTE_WEBUI_STORY_SCENARIO="${COMPUTE_WEBUI_STORY_SCENARIO:-${STORY_SCENARIO:-blind_box_store}}"
 
 export FRONTEND_PORT
 export STAGE_PORT
@@ -26,6 +27,7 @@ export ENABLE_STAGE_SERVER="${ENABLE_STAGE_SERVER:-true}"
 export WEBRTC_SIGNAL_URL="${WEBRTC_SIGNAL_URL:-}"
 export DOG_WEBRTC_SIGNAL_URL="${DOG_WEBRTC_SIGNAL_URL:-}"
 export DOG_ENHANCED_WEBRTC_SIGNAL_URL="${DOG_ENHANCED_WEBRTC_SIGNAL_URL:-}"
+export COMPUTE_WEBUI_STORY_SCENARIO
 export WEBRTC_PORT
 export DOG_WEBRTC_PORT
 export DOG_ENHANCED_WEBRTC_PORT
@@ -50,6 +52,7 @@ config = {
     "webRtcSignalUrl": os.environ.get("WEBRTC_SIGNAL_URL") or None,
     "dogWebRtcSignalUrl": os.environ.get("DOG_WEBRTC_SIGNAL_URL") or None,
     "dogEnhancedWebRtcSignalUrl": os.environ.get("DOG_ENHANCED_WEBRTC_SIGNAL_URL") or None,
+    "storyScenario": os.environ.get("COMPUTE_WEBUI_STORY_SCENARIO") or "blind_box_store",
 }
 
 with open("/app/dist/runtime-config.js", "w", encoding="utf-8") as handle:

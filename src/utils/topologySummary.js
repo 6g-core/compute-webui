@@ -1,3 +1,5 @@
+import { getStoryScenarioText } from "../config/storyScenario.js";
+
 export const PHASE_TASK_SUMMARY = {
   stage2_source: "数字身份申请",
   stage2_1: "数字身份申请",
@@ -113,16 +115,19 @@ export const getTaskSummaryText = ({
   }
 
   if (stagePhaseKey && PHASE_TASK_SUMMARY[stagePhaseKey]) {
-    return PHASE_TASK_SUMMARY[stagePhaseKey];
+    return getStoryScenarioText(PHASE_TASK_SUMMARY[stagePhaseKey]);
   }
 
   const activeWorkflow = workflow.find((item) => item.status === "working")
     || [...workflow].reverse().find((item) => item.status === "success");
-  const workflowSummary = WORKFLOW_TASK_SUMMARY[activeWorkflow?.label];
+  const workflowSummary = WORKFLOW_TASK_SUMMARY[activeWorkflow?.label]
+    || Object.entries(WORKFLOW_TASK_SUMMARY).find(
+      ([label]) => getStoryScenarioText(label) === activeWorkflow?.label,
+    )?.[1];
 
   if (workflowSummary) {
-    return workflowSummary;
+    return getStoryScenarioText(workflowSummary);
   }
 
-  return FLOW_TASK_SUMMARY[activeFlowType] || "";
+  return getStoryScenarioText(FLOW_TASK_SUMMARY[activeFlowType] || "");
 };

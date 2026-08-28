@@ -146,7 +146,7 @@ test("the intent source rotates into the front carousel slot", () => {
   assert.match(source, /10: 'MarketAgent'/);
   assert.match(source, /const intentSourceKey = showQosExperience[\s\S]*\? 'UE'/);
   assert.match(source, /bubbleIntentSource[\s\S]*highlightedIntentSource[\s\S]*routedIntentSource[\s\S]*intentSourceKey/);
-  assert.match(source, /CAROUSEL_SLOTS\[\(index - frontEndpointIndex \+ ENDPOINTS\.length\) % ENDPOINTS\.length\]/);
+  assert.match(source, /CAROUSEL_SLOTS\[\(index - frontEndpointIndex \+ storyEndpoints\.length\) % storyEndpoints\.length\]/);
   assert.match(source, /data-carousel-position=\{slot\.key\}/);
   assert.match(source, /transition-\[left,top,opacity,transform\] duration-700/);
   assert.match(source, /isFront \? '#fbbf24' : endpoint\.accent/);
@@ -184,7 +184,7 @@ test("workflow bubbles preserve plan, Tool progress, and acceptance states", () 
 
 test("endpoint intent bubbles reuse the nearby Stage 22 amber NAS treatment", () => {
   assert.match(source, /const getEndpointIntentStyle = \(targetNode\) => \{[\s\S]*left: `\$\{anchor\.x\}%`[\s\S]*anchor\.y - 11\.5[\s\S]*width: 'max-content'[\s\S]*maxWidth: '24%'[\s\S]*translateX\(-50%\)[\s\S]*animationDelay: '620ms'/);
-  assert.match(source, /const endpointIntentBubble = bubble\.variant === 'voiceIntent'[\s\S]*ENDPOINTS\.some[\s\S]*tone: 'intent'[\s\S]*getEndpointIntentStyle\(bubble\.targetNode\)/);
+  assert.match(source, /const endpointIntentBubble = bubble\.variant === 'voiceIntent'[\s\S]*storyEndpoints\.some[\s\S]*tone: 'intent'[\s\S]*getEndpointIntentStyle\(bubble\.targetNode\)/);
   assert.match(source, /targetNode: 'RobotDog'[\s\S]*variant: 'voiceIntent'[\s\S]*tone: 'intent'[\s\S]*getEndpointIntentStyle\('RobotDog'\)/);
   assert.match(source, /targetNode: 'UE'[\s\S]*variant: 'voiceIntent'[\s\S]*tone: 'intent'[\s\S]*getEndpointIntentStyle\('UE'\)/);
 });

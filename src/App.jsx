@@ -1227,7 +1227,69 @@ const HandoffPanel = () => (
 );
 
 const QosConversationPanel = ({ items = [] }) => {
-  const visibleItems = items.slice(-3);
+  const scrollAreaRef = useRef(null);
+  const [scrollLocked, setScrollLocked] = useState(false);
+  const programmaticScrollRef = useRef(false);
+  const bottomThreshold = 8;
+
+  useEffect(() => {
+    if (!items.length) {
+      setScrollLocked(false);
+      return;
+    }
+
+    if (scrollLocked) {
+      return;
+    }
+
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea) {
+      return;
+    }
+
+    programmaticScrollRef.current = true;
+    scrollArea.scrollTop = scrollArea.scrollHeight;
+    window.requestAnimationFrame(() => {
+      programmaticScrollRef.current = false;
+    });
+  }, [items, scrollLocked]);
+
+  const isScrollAtBottom = (scrollArea) => (
+    scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight <= bottomThreshold
+  );
+
+  const syncScrollLock = () => {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea) {
+      return;
+    }
+
+    setScrollLocked(!isScrollAtBottom(scrollArea));
+  };
+
+  const handleScroll = () => {
+    if (programmaticScrollRef.current) {
+      return;
+    }
+    syncScrollLock();
+  };
+
+  const handleManualScrollInput = () => {
+    window.requestAnimationFrame(syncScrollLock);
+  };
+
+  const handlePointerDown = (event) => {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea) {
+      return;
+    }
+
+    const scrollbarGutterWidth = 16;
+    const bounds = scrollArea.getBoundingClientRect();
+    if (event.clientX >= bounds.right - scrollbarGutterWidth) {
+      handleManualScrollInput();
+    }
+  };
 
   const renderImage = (item) => (
     <figure className={`relative shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/95 shadow-[0_4px_12px_rgba(0,0,0,0.24)] ${item.id.startsWith("stage9-mock-grape-juice-") ? "h-[64px] w-[96px]" : "h-[82px] w-[118px]"}`}>
@@ -1257,9 +1319,16 @@ const QosConversationPanel = ({ items = [] }) => {
         <AudioWaveform className="h-5 w-5 text-[#78c8d3]/80" />
       </header>
 
-      <div className="relative z-10 min-h-0 flex-1 overflow-hidden px-4 py-3">
-        <div className="flex min-h-full flex-col justify-center gap-3">
-        {visibleItems.length ? visibleItems.map((item, index) => {
+      <div
+        ref={scrollAreaRef}
+        className="relative z-10 min-h-0 flex-1 overflow-y-auto px-4 py-3 [scrollbar-color:#6fa6b0_rgba(11,32,38,0.72)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#6fa6b0]/80 [&::-webkit-scrollbar-track]:bg-[#0b2026]/70"
+        onScroll={handleScroll}
+        onPointerDown={handlePointerDown}
+        onTouchStart={handleManualScrollInput}
+        onWheel={handleManualScrollInput}
+      >
+        <div className="flex min-h-full flex-col justify-end gap-3">
+        {items.length ? items.map((item, index) => {
           const horizontalPlacement = item.imageHorizontalPlacement;
           const isAgentReply = horizontalPlacement === "right"
             || (!horizontalPlacement && index % 2 === 1);

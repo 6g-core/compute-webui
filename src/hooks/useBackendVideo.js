@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { buildRuntimeBackendUrl, getRuntimeConfig, getSandboxHealthApiUrl } from '../config/runtimeUrls';
+import { buildHttpUrl, buildRuntimeBackendUrl, getRuntimeConfig, getSandboxHealthApiUrl } from '../config/runtimeUrls.js';
+
+const getViteEnv = () => import.meta.env || {};
 
 const waitForIceGathering = (pc) => {
   if (pc.iceGatheringState === "complete") {
@@ -25,7 +27,21 @@ const waitForIceGathering = (pc) => {
 
 const getWebRtcOfferUrl = () => {
   const runtimeConfig = getRuntimeConfig();
-  const configuredUrl = runtimeConfig.webRtcSignalUrl || import.meta.env.VITE_WEBRTC_SIGNAL_URL;
+  const configuredUrl = runtimeConfig.webRtcSignalUrl || getViteEnv().VITE_WEBRTC_SIGNAL_URL;
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  return buildHttpUrl(
+    runtimeConfig.webRtcPort || 28450,
+    "/offer",
+    runtimeConfig.webRtcHost,
+  );
+};
+
+const getDogVisionOfferUrl = () => {
+  const runtimeConfig = getRuntimeConfig();
+  const configuredUrl = runtimeConfig.dogWebRtcSignalUrl || getViteEnv().VITE_DOG_WEBRTC_SIGNAL_URL;
   if (configuredUrl) {
     return configuredUrl;
   }
@@ -33,24 +49,14 @@ const getWebRtcOfferUrl = () => {
   return buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/v1/web/sdp/offer", "sandboxHost");
 };
 
-const getDogVisionOfferUrl = () => {
-  const runtimeConfig = getRuntimeConfig();
-  const configuredUrl = runtimeConfig.dogWebRtcSignalUrl || import.meta.env.VITE_DOG_WEBRTC_SIGNAL_URL;
-  if (configuredUrl) {
-    return configuredUrl;
-  }
-
-  return getWebRtcOfferUrl();
-};
-
 const getDogEnhancedOfferUrl = () => {
   const runtimeConfig = getRuntimeConfig();
-  const configuredUrl = runtimeConfig.dogEnhancedWebRtcSignalUrl || import.meta.env.VITE_DOG_ENHANCED_WEBRTC_SIGNAL_URL;
+  const configuredUrl = runtimeConfig.dogEnhancedWebRtcSignalUrl || getViteEnv().VITE_DOG_ENHANCED_WEBRTC_SIGNAL_URL;
   if (configuredUrl) {
     return configuredUrl;
   }
 
-  return getWebRtcOfferUrl();
+  return buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/v1/web/sdp/offer", "sandboxHost");
 };
 
 const isLocalNetworkHost = (hostname) => {

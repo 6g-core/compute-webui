@@ -13,7 +13,7 @@
     latencyApiUrl: `${mockBase}/api/latency`,
     qosPushChannelUrl: `${mockBase}/api/v1/qos/events`,
     mockStage9Dialogs: true,
-    webRtcSignalUrl: `${mockBase}/api/v1/web/sdp/offer`,
+    webRtcSignalUrl: `${protocol}//${host}:28450/offer`,
     dogWebRtcSignalUrl: `${mockBase}/api/v1/web/sdp/offer`,
     dogEnhancedWebRtcSignalUrl: `${mockBase}/api/v1/web/sdp/offer`,
   };

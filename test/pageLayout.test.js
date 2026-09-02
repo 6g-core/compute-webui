@@ -91,10 +91,27 @@ test("right step panel uses the concise title and explains every major stage", (
     "颁发数字身份",
     "创建家庭域",
     "身份可信认证",
-    "创建算力会话",
-    "网络算力节点识别标注",
+    "端网协同",
+    "确定性体验",
     "随路QoS保障",
+    "机器狗通知机械臂开始协作",
+    "机器狗前往交接区域",
+    "机械臂交接快递给机器狗",
+    "机器狗交付",
   ].forEach((text) => assert.ok(panelSource.includes(text), `missing step detail: ${text}`));
+  [
+    "跨域智能体认证",
+    "Token tunnel保障",
+    "跨域智能体协作",
+  ].forEach((text) => assert.ok(stageConfigSource.includes(text), `missing step title: ${text}`));
+  assert.equal((stageConfigSource.match(/title: "跨域智能体认证"/g) || []).length, 3);
+  assert.equal((stageConfigSource.match(/title: "Token tunnel保障"/g) || []).length, 3);
+  assert.equal((stageConfigSource.match(/title: "跨域智能体协作"/g) || []).length, 3);
+  assert.match(panelSource, /"04": \["端网协同", "确定性体验", "随路QoS保障"\]/);
+  assert.match(
+    panelSource,
+    /"05": \["机器狗通知机械臂开始协作", "机器狗前往交接区域", "机械臂交接快递给机器狗", "机器狗交付"\]/,
+  );
   assert.match(panelSource, /const expandedStepIndex = workingStepIndex >= 0 \? workingStepIndex : latestCompletedStepIndex/);
   assert.match(panelSource, /const isExpanded = isVertical && stepIndex === expandedStepIndex && detailItems\.length > 0/);
   assert.match(panelSource, /\{isExpanded && \(/);

@@ -1316,9 +1316,9 @@ const STAGE_CONFIG = {
     steps: [
       { id: "01", icon: ShieldCheck, title: "数字身份申请", subtitle: "即将开始 / Upcoming", status: "pending" },
       { id: "02", icon: Globe, title: "生成式网络", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "03", icon: Share2, title: "跨域智能体认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "04", icon: Cpu, title: "分配算力资源", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "03", icon: Share2, title: "跨域智能体认证", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "04", icon: Cpu, title: "Token tunnel保障", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "05", icon: Cloud, title: "跨域智能体协作", subtitle: "即将开始 / Upcoming", status: "pending" },
     ],
   },
   2: {
@@ -1355,9 +1355,9 @@ const STAGE_CONFIG = {
     steps: [
       { id: "01", icon: ShieldCheck, title: "数字身份申请", subtitle: "进行中 / Working", status: "working" },
       { id: "02", icon: Globe, title: "生成式网络", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "03", icon: Share2, title: "跨域智能体认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "04", icon: Cpu, title: "分配算力资源", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "03", icon: Share2, title: "跨域智能体认证", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "04", icon: Cpu, title: "Token tunnel保障", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "05", icon: Cloud, title: "跨域智能体协作", subtitle: "即将开始 / Upcoming", status: "pending" },
     ],
   },
   4: {
@@ -1400,9 +1400,9 @@ const STAGE_CONFIG = {
     steps: [
       { id: "01", icon: ShieldCheck, title: "数字身份申请", subtitle: "已完成 / Completed", status: "success" },
       { id: "02", icon: Globe, title: "生成式网络", subtitle: "进行中 / Working", status: "working" },
-      { id: "03", icon: Share2, title: "跨域智能体认证交互", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "04", icon: Cpu, title: "分配算力资源", subtitle: "即将开始 / Upcoming", status: "pending" },
-      { id: "05", icon: Cloud, title: "算力卸载", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "03", icon: Share2, title: "跨域智能体认证", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "04", icon: Cpu, title: "Token tunnel保障", subtitle: "即将开始 / Upcoming", status: "pending" },
+      { id: "05", icon: Cloud, title: "跨域智能体协作", subtitle: "即将开始 / Upcoming", status: "pending" },
     ],
   },
 };

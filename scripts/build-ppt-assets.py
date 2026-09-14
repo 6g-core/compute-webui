@@ -15,6 +15,7 @@ import zipfile
 from pathlib import Path
 
 import pymupdf
+from PIL import Image
 
 PROJECT = Path(__file__).resolve().parents[1]
 REFERENCE = PROJECT / '.reference'
@@ -65,13 +66,20 @@ def build() -> None:
 
     ET.ElementTree(native).write(OUTPUT / 'presentation.svg', encoding='utf-8', xml_declaration=True)
     shutil.copy2(PROJECT.parent / 'image001.png', OUTPUT / 'image001.png')
+    # Keep the reviewed ACN edit checked in; rebuilding PPT artwork must not
+    # replace it with the original NGC image from the source directory.
+    stage1_image = 'image001-acn.png'
+    with Image.open(OUTPUT / stage1_image) as edited_image:
+        stage1_resolution = list(edited_image.size)
     manifest = {
         'source': source.name, 'slide': 1, 'canvas': {'width': 1920, 'height': 1080},
         'text': 'PowerPoint PDF vector glyph outlines',
         'graphics': 'Lossless 3840 x 2160 PowerPoint rendering with original graphical effects',
         'backgroundResolution': [3840, 2160], 'backgroundExtension': 'Original PPT background, mirrored at its edges',
-        'stage1ImageResolution': [905, 588],
-        'stage1Image': 'image001.png', 'removedPlaceholderShapeId': 75,
+        'stage1ImageResolution': stage1_resolution,
+        'stage1Image': stage1_image,
+        'stage1ImageEdit': {'source': 'image001.png', 'change': 'NGC -> ACN', 'metadata': 'image001-acn.edit.json'},
+        'removedPlaceholderShapeId': 75,
         'baseBranch': 'fix/qos-reset-clears-dialog-cache',
         'stages': [1, 2, 4, 5, 6, 7, 8, 9, 10, 21, 22, 23, 24]
     }

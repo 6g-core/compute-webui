@@ -1,0 +1,7 @@
+{
+  "source": "image001.png",
+  "output": "image001-acn.png",
+  "tool": "Built-in image_gen.imagegen",
+  "resolution": [1556, 1011],
+  "prompt": "Use case: text-edit. Edit target: the supplied existing website image. Make exactly one tiny correction: replace the three Latin letters \"NGC\" in the glowing cyan sphere near pixel (455,155) of the 905×588 image with \"ACN\" (A, C, N in that order). Match the original lettering's size, font style, weight, cyan color, glow, baseline, and centered position. Preserve the original composition and aspect ratio. Keep every other pixel/element as close to the source as possible: the orb, its connections, all Chinese labels verbatim, AR glasses, robot dog, robot arm, buildings, lighting, and frame. Do not reimagine, recompose, repaint, sharpen, replace, or add any other objects or text. The only requested visual difference is NGC -> ACN. Return the edited image with clear ACN lettering and at least the source resolution."
+}

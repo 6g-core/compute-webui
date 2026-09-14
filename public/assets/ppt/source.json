@@ -13,10 +13,15 @@
   ],
   "backgroundExtension": "Original PPT background, mirrored at its edges",
   "stage1ImageResolution": [
-    905,
-    588
+    1556,
+    1011
   ],
-  "stage1Image": "image001.png",
+  "stage1Image": "image001-acn.png",
+  "stage1ImageEdit": {
+    "source": "image001.png",
+    "change": "NGC -> ACN",
+    "metadata": "image001-acn.edit.json"
+  },
   "removedPlaceholderShapeId": 75,
   "baseBranch": "fix/qos-reset-clears-dialog-cache",
   "stages": [

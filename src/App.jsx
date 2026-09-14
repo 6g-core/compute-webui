@@ -25,6 +25,8 @@ import { isQosExperienceStage } from './utils/topologyStageVisibility.js';
 import { CoreNetworkValuePanel, LeftPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
+import PptPresentation from './components/PptPresentation.jsx';
+import { usePresentationStage } from './hooks/usePresentationStage.js';
 
 const LANGUAGE_STORAGE_KEY = "compute-webui-language";
 
@@ -1820,6 +1822,7 @@ const LatencyChart = ({ points, error }) => {
 
 export default function App() {
   const appRootRef = useRef(null);
+  const presentationMode = new URLSearchParams(window.location.search).get("view") !== "network";
   const [language, setLanguage] = useState(() => (
     typeof window === "undefined"
       ? "zh"
@@ -1829,10 +1832,11 @@ export default function App() {
 
   useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-    document.title = language === "en" ? "Next-Generation Core Network" : "下一代核心网";
-  }, [language]);
+    document.title = presentationMode ? "智能体通信网络" : language === "en" ? "Next-Generation Core Network" : "下一代核心网";
+  }, [language, presentationMode]);
 
-  const { stage, connectionState, error } = useStagePolling();
+  const { stage: backendStage, connectionState, error } = useStagePolling();
+  const { stage, followingBackend, selectStage, moveStage } = usePresentationStage(backendStage);
   const arLastWhisper = useArLastWhisper();
   const [stage5VideoReady, setStage5VideoReady] = useState(false);
   const handleStage5VideoFrame = useCallback(() => {
@@ -1918,8 +1922,9 @@ export default function App() {
   return (
     <div
       ref={appRootRef}
-      className={`video-backed-ui h-screen w-screen text-white p-1.5 md:p-2 font-sans overflow-hidden flex items-stretch justify-stretch relative isolate ${language === "en" ? "lang-en" : "lang-zh"}`}
+      className={presentationMode ? `ppt-app h-screen w-screen ${language === "en" ? "lang-en" : "lang-zh"}` : `video-backed-ui h-screen w-screen text-white p-1.5 md:p-2 font-sans overflow-hidden flex items-stretch justify-stretch relative isolate ${language === "en" ? "lang-en" : "lang-zh"}`}
     >
+      {!presentationMode && <>
       <WebRtcBackground />
       <div className="video-dim-overlay fixed inset-0 -z-10 bg-black/35 pointer-events-none" />
       <button
@@ -1937,6 +1942,7 @@ export default function App() {
           {error && <span className="block truncate text-amber-200/70">{error}</span>}
         </div>
       )}
+      </>}
       {/* 动画样式定义 */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes sampled-noise-shift {
@@ -2123,6 +2129,21 @@ export default function App() {
         }
       `}} />
 
+      {presentationMode ? (
+        <PptPresentation stage={stage} title={effectiveStageConfig.leftPanelTitle}
+          connectionState={connectionState} followingBackend={followingBackend}
+          selectStage={selectStage} moveStage={moveStage} language={language} setLanguage={setLanguage}>
+          <LeftPanel
+            effectiveStageConfig={effectiveStageConfig}
+            stage={stage}
+            language={language}
+            translateText={translateTextNodeValue}
+            components={panelComponents}
+            qosDialogItems={qosDialogItems}
+            onStage5VideoFrame={handleStage5VideoFrame}
+          />
+        </PptPresentation>
+      ) : (<>
       {/* 主屏幕容器 - 整体升级为全毛玻璃HUD悬浮舱 */}
       <div className="relative flex h-full w-full max-w-none flex-col overflow-hidden rounded-xl border-2 border-cyan-300/55 bg-slate-950/38 p-3 shadow-[0_0_0_1px_rgba(15,23,42,0.85),0_0_34px_rgba(34,211,238,0.18),0_28px_90px_rgba(0,0,0,0.72)] ring-1 ring-white/10 backdrop-blur-xl md:p-4">
         <div className="absolute inset-0 rounded-xl border border-slate-950/80 pointer-events-none" />
@@ -2192,6 +2213,7 @@ export default function App() {
       </div>
       {/* 底部反光效果 */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-blue-900/10 to-transparent -z-10 pointer-events-none transform scale-y-[-1] opacity-50 blur-xl"></div>
+      </>)}
     </div>
   );
 }

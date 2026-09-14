@@ -1,0 +1,37 @@
+{
+  "source": "已美化-北展智能体通信网络-0914(1).pptx",
+  "slide": 1,
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "text": "PowerPoint PDF vector glyph outlines",
+  "graphics": "Lossless 3840 x 2160 PowerPoint rendering with original graphical effects",
+  "backgroundResolution": [
+    3840,
+    2160
+  ],
+  "backgroundExtension": "Original PPT background, mirrored at its edges",
+  "stage1ImageResolution": [
+    905,
+    588
+  ],
+  "stage1Image": "image001.png",
+  "removedPlaceholderShapeId": 75,
+  "baseBranch": "fix/qos-reset-clears-dialog-cache",
+  "stages": [
+    1,
+    2,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    21,
+    22,
+    23,
+    24
+  ]
+}

@@ -11,3 +11,12 @@ yarn-error.log*
 .env
 .env.*
 !.env.example
+
+# Local presentation references, verification, and previous runtime output
+.reference/
+artifacts/
+.nuxt/
+.output/
+.nitro/
+.cache/
+backend/data/

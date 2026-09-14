@@ -105,6 +105,9 @@ async def health(_request):
 
 async def offer(request):
     params = await request.json()
+    description = params.get("sdp_offer", params) if isinstance(params, dict) else None
+    if not isinstance(description, dict) or not isinstance(description.get("sdp"), str) or description.get("type") != "offer":
+        return cors_response({"error": "Expected an SDP offer"}, status=400)
     media_path = request.app["media_path"]
     advertise_ip = resolve_advertise_ip(request, request.app["advertise_ip"])
 
@@ -140,7 +143,7 @@ async def offer(request):
             pcs.discard(pc)
 
     await pc.setRemoteDescription(
-        RTCSessionDescription(sdp=params["sdp"], type=params["type"])
+        RTCSessionDescription(sdp=description["sdp"], type=description["type"])
     )
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
@@ -150,9 +153,8 @@ async def offer(request):
         answer_sdp = rewrite_candidate_addresses(answer_sdp, advertise_ip)
         logging.info("Peer %s advertising ICE address: %s", id(pc), advertise_ip)
 
-    return cors_response(
-        {"sdp": answer_sdp, "type": pc.localDescription.type}
-    )
+    answer_payload = {"sdp": answer_sdp, "type": pc.localDescription.type}
+    return cors_response({"sdp_answer": answer_payload} if "sdp_offer" in params else answer_payload)
 
 
 def resolve_advertise_ip(request, configured_ip):

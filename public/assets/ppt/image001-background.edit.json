@@ -1,0 +1,7 @@
+{
+  "source": "image001-acn.png",
+  "output": "image001-background.png",
+  "tool": "Built-in image_gen.imagegen",
+  "textLayer": "src/components/PptPresentation.jsx: inline SVG labels",
+  "prompt": "Use case: precise-object-edit. Edit target: the supplied 1556 x 1011 website scene image. This is a surgical text removal for a website: remove ONLY all six existing text labels and their text glow, seamlessly restoring the scene underneath. Remove the title 动态组网 at top center, AR眼镜 above the glasses at top left, ACN within the central glowing network orb, 快递点机械臂智能体 at top right, 小区机器狗智能体 at left middle, and 任务专属通信网络已建立 at lower center. Keep the six now-empty spaces in the identical positions because real vector typography will be overlaid later by the website. Preserve ALL non-text elements and their exact geometry: translucent cyan holographic panel outlines, cyan network orb and its mesh pattern, connecting beams, glasses, robot dog with box, mechanical arm, buildings, stairs, trees, ground reflections, lighting, colors, and camera composition. Inpaint only where the letters existed. No replacement letters, no invented text, no labels, no moved or redesigned panel frames, no added objects, no cropping. Remove the tiny white editing selection handles around the outer border as well. Keep the same image aspect ratio and output at least 1556 x 1011 resolution. Return the clean background with no written text."
+}

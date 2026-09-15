@@ -13,15 +13,16 @@
   ],
   "backgroundExtension": "Original PPT background, mirrored at its edges",
   "stage1ImageResolution": [
-    1556,
-    1011
+    1555,
+    1012
   ],
-  "stage1Image": "image001-acn.png",
+  "stage1Image": "image001-background.png",
   "stage1ImageEdit": {
-    "source": "image001.png",
-    "change": "NGC -> ACN",
-    "metadata": "image001-acn.edit.json"
+    "source": "image001-acn.png",
+    "change": "Remove raster labels for browser-rendered vector text",
+    "metadata": "image001-background.edit.json"
   },
+  "stage1Text": "Inline SVG text in PptPresentation.jsx, aligned to a 1556 x 1011 viewBox",
   "removedPlaceholderShapeId": 75,
   "baseBranch": "fix/qos-reset-clears-dialog-cache",
   "stages": [

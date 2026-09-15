@@ -33,8 +33,18 @@ export default function PptPresentation({ stage, title, connectionState, followi
               </div>
             </section>
             <section className="scene-frame" aria-label="Stage 1 动态组网场景" hidden={stage !== 1}>
-              <img className="scene-image" src="/assets/ppt/image001-acn.png" width="1556" height="1011" fetchPriority="high" draggable="false"
-                alt="动态组网：AR 眼镜、ACN、小区机器狗智能体与快递点机械臂智能体，任务专属通信网络已建立" />
+              <div className="scene-illustration" role="img" aria-label="动态组网：AR 眼镜、ACN、小区机器狗智能体与快递点机械臂智能体，任务专属通信网络已建立">
+                <img className="scene-image" src="/assets/ppt/image001-background.png" width="1556" height="1011" fetchPriority="high" draggable="false" alt="" aria-hidden="true" />
+                {/* Keep labels as vector text so browser zoom never enlarges raster glyphs. */}
+                <svg className="scene-labels" viewBox="0 0 1556 1011" aria-hidden="true" focusable="false" textAnchor="middle">
+                  <text className="scene-label-title" x="772" y="134">动态组网</text>
+                  <text className="scene-label-glasses" x="326" y="138">AR眼镜</text>
+                  <text className="scene-label-acn" x="779" y="284">ACN</text>
+                  <text x="1134" y="194"><tspan x="1134">快递点机械臂</tspan><tspan x="1134" dy="37">智能体</tspan></text>
+                  <text x="362" y="443">小区机器狗智能体</text>
+                  <text className="scene-label-status" x="820" y="566">任务专属通信网络已建立</text>
+                </svg>
+              </div>
             </section>
             <section className="runtime-frame" aria-label="原三栏布局左栏" hidden={stage === 1}>
               {children}

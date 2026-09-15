@@ -66,9 +66,9 @@ def build() -> None:
 
     ET.ElementTree(native).write(OUTPUT / 'presentation.svg', encoding='utf-8', xml_declaration=True)
     shutil.copy2(PROJECT.parent / 'image001.png', OUTPUT / 'image001.png')
-    # Keep the reviewed ACN edit checked in; rebuilding PPT artwork must not
-    # replace it with the original NGC image from the source directory.
-    stage1_image = 'image001-acn.png'
+    # Keep the reviewed clean background checked in. Labels are rendered as
+    # SVG text in React; rebuilding PPT assets must not restore raster labels.
+    stage1_image = 'image001-background.png'
     with Image.open(OUTPUT / stage1_image) as edited_image:
         stage1_resolution = list(edited_image.size)
     manifest = {
@@ -78,7 +78,8 @@ def build() -> None:
         'backgroundResolution': [3840, 2160], 'backgroundExtension': 'Original PPT background, mirrored at its edges',
         'stage1ImageResolution': stage1_resolution,
         'stage1Image': stage1_image,
-        'stage1ImageEdit': {'source': 'image001.png', 'change': 'NGC -> ACN', 'metadata': 'image001-acn.edit.json'},
+        'stage1ImageEdit': {'source': 'image001-acn.png', 'change': 'Remove raster labels for browser-rendered vector text', 'metadata': 'image001-background.edit.json'},
+        'stage1Text': 'Inline SVG text in PptPresentation.jsx, aligned to a 1556 x 1011 viewBox',
         'removedPlaceholderShapeId': 75,
         'baseBranch': 'fix/qos-reset-clears-dialog-cache',
         'stages': [1, 2, 4, 5, 6, 7, 8, 9, 10, 21, 22, 23, 24]

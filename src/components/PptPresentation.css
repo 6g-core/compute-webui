@@ -18,12 +18,12 @@
 .scene-labels {
   position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
   font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', sans-serif;
-  font-size: 30px; font-weight: 600; fill: #f4fbff; text-rendering: optimizeLegibility;
+  font-size: 30px; font-weight: 400; fill: #f4fbff; text-rendering: optimizeLegibility;
 }
 .scene-labels text { paint-order: stroke; stroke: #061a2cd9; stroke-width: 1.3px; stroke-linejoin: round; }
 .scene-label-title { font-size: 48px; letter-spacing: 3px; }
 .scene-label-glasses { font-size: 34px; }
-.scene-labels .scene-label-acn { font-family: Arial, sans-serif; font-size: 64px; font-weight: 700; fill: #8cecff; stroke: #084465; }
+.scene-labels .scene-label-acn { font-family: Arial, sans-serif; font-size: 64px; font-weight: 400; fill: #8cecff; stroke: #084465; }
 .scene-label-status { font-size: 28px; }
 .runtime-frame { position: absolute; left: 154px; top: 150px; width: 698px; height: 764px; overflow: auto; }
 .runtime-frame > div { height: 100%; }

@@ -274,6 +274,8 @@ const UI_TRANSLATIONS = {
   "用户消息": "User Message",
   "智能体回复": "Agent Reply",
   "等待问答内容推送": "Waiting for Q&A content",
+  "端侧状态：AI Tunnel 随路QoS保障": "Device Status:\nAI Tunnel In-Path QoS Assurance",
+  "AI Tunnel 随路QoS保障": "AI Tunnel In-Path QoS Assurance",
   "端侧状态：随路QoS保障": "Device Status:\nIn-Path QoS Assurance",
   "随路QoS保障": "In-Path QoS Assurance",
   "GBR动态保障": "Dynamic GBR Assurance",
@@ -371,6 +373,8 @@ const UI_TRANSLATIONS = {
   "申请网内算力": "Request In-Network Compute",
   "创建管理家庭域": "Create and Manage Home Domain",
   "创建家庭域": "Create Home Domain",
+  "安全域创建": "Security Domain Creation",
+  "创建安全域": "Create Security Domain",
   "创建算力会话": "Create Compute Session",
   "分配算力资源": "Compute Resource Allocation",
   "算力卸载已完成": "Compute Offload Completed",
@@ -718,27 +722,6 @@ const UnitreeGo2Vector = ({ className = "", status = "neutral", colors }) => {
 
 // 支持自适应检测和全息渲染的智能机器狗组件
 const RobotDog = ({ className = "", status = "neutral" }) => {
-  const [imgFailed, setImgFailed] = useState(false);
-
-  // 针对白底灰色实物图的高级全息滤镜算法
-  const getFilterStyle = () => {
-    switch (status) {
-      case 'unregistered':
-        return {
-          filter: 'invert(1) sepia(1) saturate(8) hue-rotate(315deg) brightness(1.1) contrast(1.3)',
-        };
-      case 'registered':
-        return {
-          filter: 'invert(1) sepia(1) saturate(6) hue-rotate(95deg) brightness(1.2) contrast(1.2)',
-        };
-      case 'neutral':
-      default:
-        return {
-          filter: 'invert(1) sepia(1) saturate(5) hue-rotate(170deg) brightness(1.2) contrast(1.2)',
-        };
-    }
-  };
-
   const getGlowColor = () => {
     switch (status) {
       case 'unregistered': return 'bg-red-500 shadow-[0_0_15px_#ef4444]';
@@ -770,19 +753,8 @@ const RobotDog = ({ className = "", status = "neutral" }) => {
       {/* 科技底盘感应发光圈 */}
       <div className={`absolute w-3/4 h-2 bottom-3 rounded-full blur-md opacity-45 transition-all duration-300 ${getGlowColor()}`} />
       
-      {imgFailed ? (
-        // 图片加载失败时，渲染精确修正了关节弯折和扁平背部的 3D 风格矢量图
-        <UnitreeGo2Vector className="w-full h-full" status={status} colors={statusColors} />
-      ) : (
-        // 机器狗实物图片层 (过滤去除白色背景色)
-        <img 
-          src="image_c2f288.png" 
-          alt="Unitree Go2"
-          style={getFilterStyle()} 
-          className="w-full h-full object-contain mix-blend-screen transition-all duration-300 drop-shadow-[0_0_12px_rgba(255,255,255,0.25)]"
-          onError={() => setImgFailed(true)}
-        />
-      )}
+      {/* 精确修正了关节弯折和扁平背部的 3D 风格全息矢量图（零延迟同步呈现） */}
+      <UnitreeGo2Vector className="w-full h-full" status={status} colors={statusColors} />
     </div>
   );
 };
@@ -1008,6 +980,8 @@ const ARGlasses = ({ className = "", speechText = "" }) => (
       alt="AR Glasses"
       className="w-full h-full object-contain transition-all duration-300 drop-shadow-[0_0_14px_rgba(34,211,238,0.35)]"
       draggable="false"
+      loading="eager"
+      fetchPriority="high"
     />
   </div>
 );
@@ -1151,7 +1125,7 @@ const RegisteredRobotDogCard = ({ className = "flex-1 h-[180px] lg:h-[210px]" })
         />
       </div>
 
-      <div className="absolute right-3 top-3 w-[44%] max-w-[155px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
+      <div className="absolute right-3 top-3 w-[46%] max-w-[175px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
         <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
           Digital ID
         </div>
@@ -2151,7 +2125,7 @@ export default function App() {
         
         {/* 顶部 Header */}
         <header className="relative z-10 mb-3 flex min-h-[60px] shrink-0 items-center justify-between">
-          <div className="w-24" aria-hidden="true" />
+          <div className="flex items-center justify-start gap-6 pl-2 z-10" />
           <div className="text-center absolute left-1/2 top-1/2 w-[calc(100%-12rem)] -translate-x-1/2 -translate-y-1/2">
             <h1 className={`text-3xl md:text-5xl font-bold tracking-widest text-white glow-text ${language === "zh" ? "mb-2" : "mb-0"}`}>
               {language === "en" ? "Next-Generation Core Network" : "下一代核心网"}
@@ -2162,7 +2136,7 @@ export default function App() {
               </p>
             )}
           </div>
-          <div className="w-24"></div>
+          <div className="w-24" aria-hidden="true" />
         </header>
 
         {/* 核心内容区 */}

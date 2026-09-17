@@ -55,7 +55,8 @@ const buildCompletedStageIntentSummary = (summaryItems, phases) => (
 
 const STAGE10_HANDOFF_FLASH_MS = 5000;
 
-export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {}) => {
+export const useEffectiveStageConfig = (stageInput, { stage5VideoReady = true } = {}) => {
+  const stage = (stageInput === 2 || stageInput === 4) ? 4 : stageInput;
   const stageConfig = STAGE_CONFIG[stage] || STAGE_CONFIG[1];
   const [stage2Progress, setStage2Progress] = useState({
     activeTask: 0,
@@ -79,7 +80,7 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
   });
   const [stage2PhaseIndex, setStage2PhaseIndex] = useState(0);
   const [stage2FinalFlashActive, setStage2FinalFlashActive] = useState(false);
-  const [stage4PhaseIndex, setStage4PhaseIndex] = useState(0);
+  const [stage4PhaseIndex, setStage4PhaseIndex] = useState(STAGE4_PHASES.length - 1);
   const [stage4FinalFlashActive, setStage4FinalFlashActive] = useState(false);
   const [stage5PhaseIndex, setStage5PhaseIndex] = useState(0);
   const [stage5AnimationComplete, setStage5AnimationComplete] = useState(false);
@@ -178,22 +179,22 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
 
   useEffect(() => {
     if (stage !== 4) {
-      setStage4PhaseIndex(0);
+      setStage4PhaseIndex(STAGE4_PHASES.length - 1);
       setStage4FinalFlashActive(false);
       setStage4Progress({
-        activeTask: 0,
-        completedCount: 0,
-        bubbleStatus: "working",
+        activeTask: STAGE4_WORKFLOW.length - 1,
+        completedCount: STAGE4_WORKFLOW.length,
+        bubbleStatus: "success",
       });
       return;
     }
 
     setStage4Progress({
-      activeTask: 0,
-      completedCount: 0,
-      bubbleStatus: "working",
+      activeTask: STAGE4_WORKFLOW.length - 1,
+      completedCount: STAGE4_WORKFLOW.length,
+      bubbleStatus: "success",
     });
-    setStage4PhaseIndex(0);
+    setStage4PhaseIndex(STAGE4_PHASES.length - 1);
     setStage4FinalFlashActive(false);
   }, [stage]);
 
@@ -300,12 +301,7 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
       return undefined;
     }
 
-    setStage4FinalFlashActive(true);
-    const timer = window.setTimeout(() => {
-      setStage4FinalFlashActive(false);
-    }, 1000);
-
-    return () => window.clearTimeout(timer);
+    setStage4FinalFlashActive(false);
   }, [stage, stage4PhaseIndex]);
 
   useEffect(() => {

@@ -158,7 +158,7 @@ test("L1, L2, L3, and in-path QoS share the detailed QoE assurance sequence", ()
 test("stage 9 restores the Planning Agent orchestration bubble with phase progress", () => {
   assert.match(stageSource, /const STAGE9_PLAN_PROGRESS = \{[\s\S]*uplink:[\s\S]*downlink:[\s\S]*decision:[\s\S]*done:/);
   assert.match(stageSource, /const STAGE22_PLANNING_BUBBLE_PRESET = \{[\s\S]*variant: "stage2SystemPlan"[\s\S]*positionKey: "stage22-planning"[\s\S]*compact: true[\s\S]*orientation: "vertical"[\s\S]*tone: "dapGlass"[\s\S]*heading: "Planning Agent"/);
-  assert.match(stageSource, /const buildStage9SystemPlanBubble = \(step\) =>[\s\S]*\.\.\.STAGE22_PLANNING_BUBBLE_PRESET[\s\S]*title: "随路QoS保障"/);
+  assert.match(stageSource, /const buildStage9SystemPlanBubble = \(step\) =>[\s\S]*\.\.\.STAGE22_PLANNING_BUBBLE_PRESET[\s\S]*title: "(?:AI Tunnel )?随路QoS保障"/);
   assert.match(stageSource, /连接智能体[\s\S]*端侧QoE感知[\s\S]*QoS策略工具[\s\S]*保障策略生成[\s\S]*RAN \/ UPF[\s\S]*随路路径建立/);
   for (const builder of ['buildStage2SystemPlanBubble', 'buildStage4SystemPlanBubble', 'buildStage5SystemPlanBubble', 'buildStage7SystemPlanBubble']) {
     assert.match(stageSource, new RegExp(`const ${builder} = [\\s\\S]*?\\.\\.\\.STAGE22_PLANNING_BUBBLE_PRESET`));
@@ -168,7 +168,7 @@ test("stage 9 restores the Planning Agent orchestration bubble with phase progre
   assert.match(effectiveStageSource, /isFrozenFinalStage = stage === 21 \|\| stage === 22 \|\| stage === 23 \|\| stage === 24[\s\S]*STAGE9_QOS_PHASES\.length - 1/);
   assert.match(effectiveStageSource, /hideStage23Overlays = stage === 23[\s\S]*systemAgentBubble: hideStage23Overlays \|\| planningTaskComplete \? null[\s\S]*agentBubbles: hideStage23Overlays \? \[\]/);
   assert.match(stageSource, /STAGE_CONFIG\[21\] = \{[\s\S]*STAGE_CONFIG\[9\][\s\S]*STAGE_CONFIG\[22\] = \{[\s\S]*STAGE_CONFIG\[21\][\s\S]*STAGE_CONFIG\[23\] = \{[\s\S]*STAGE_CONFIG\[22\]/);
-  assert.match(stageSource, /STAGE_CONFIG\[24\] = \{[\s\S]*STAGE_CONFIG\[22\][\s\S]*enhancedDogVisionLabel: "保障视频效果"[\s\S]*title: "随路QoS保障"/);
+  assert.match(stageSource, /STAGE_CONFIG\[24\] = \{[\s\S]*STAGE_CONFIG\[22\][\s\S]*enhancedDogVisionLabel: "保障视频效果"[\s\S]*title: "(?:AI Tunnel )?随路QoS保障"/);
 });
 
 test("completed sub-agent execution briefly returns to Planning and then clears it", () => {

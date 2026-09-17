@@ -210,7 +210,7 @@ const buildStage9SystemPlanBubble = (step) => {
 
   return {
     ...STAGE22_PLANNING_BUBBLE_PRESET,
-    title: "随路QoS保障",
+    title: "AI Tunnel 随路QoS保障",
     tasks: [
       { owner: "连接智能体", label: "端侧QoE感知", status: progress.analytic },
       { owner: "QoS策略工具", label: "保障策略生成", status: progress.decision },
@@ -1176,7 +1176,11 @@ const STAGE5_PHASES = [
     qoeComplete: true,
     sandboxComplete: true,
   },
-];
+].map((phase) => ({
+  ...phase,
+  qoeComplete: true,
+  sandboxComplete: true,
+}));
 
 const STAGE9_QOS_PHASE_TIMING = [1400, 1400, 1400, 1200, 2400];
 
@@ -1361,7 +1365,7 @@ const STAGE_CONFIG = {
     ],
   },
   4: {
-    leftPanelTitle: "家庭域创建",
+    leftPanelTitle: "安全域创建",
     topologyTitle: "生成式网络",
     activeFlowType: "domain",
     showRegisteredDevice: true,
@@ -1528,8 +1532,8 @@ STAGE_CONFIG[8] = {
 
 STAGE_CONFIG[9] = {
   ...STAGE_CONFIG[8],
-  leftPanelTitle: "随路QoS保障",
-  topologyTitle: "随路QoS保障",
+  leftPanelTitle: "AI Tunnel 随路QoS保障",
+  topologyTitle: "AI Tunnel 随路QoS保障",
   activeFlowType: null,
   showBackgroundVideo: false,
   showHandoff: false,
@@ -1539,11 +1543,11 @@ STAGE_CONFIG[9] = {
   showRegisteredDevice: false,
   showArRegistration: false,
   coreFunctions: [
-    "随路QoS保障",
+    "AI Tunnel 随路QoS保障",
     "GBR带宽保障",
     "体验质量感知",
   ],
-  statusTitle: "端侧状态：随路QoS保障",
+  statusTitle: "端侧状态：AI Tunnel 随路QoS保障",
   statusRows: [
     { label: "端侧带宽:", value: "GBR动态保障", status: "working" },
     { label: "平均时延:", value: "QoS随路优化中", status: "working" },
@@ -1668,7 +1672,7 @@ STAGE_CONFIG[24] = {
   enhancedDogVisionLabel: "保障视频效果",
   steps: [
     ...STAGE_CONFIG[22].steps.slice(0, 3),
-    { id: "04", icon: ShieldCheck, title: "随路QoS保障", subtitle: "进行中 / Working", status: "working" },
+    { id: "04", icon: ShieldCheck, title: "AI Tunnel 随路QoS保障", subtitle: "进行中 / Working", status: "working" },
   ],
 };
 

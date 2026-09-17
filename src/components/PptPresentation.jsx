@@ -1,17 +1,10 @@
 import { useRef } from 'react';
 import { usePresentationViewport } from '../hooks/usePresentationViewport.js';
-import { PRESENTATION_STAGES } from '../hooks/usePresentationStage.js';
 import './PptPresentation.css';
 
 export default function PptPresentation({ stage, title, connectionState, followingBackend, selectStage, moveStage, language, setLanguage, children }) {
   const presentationRef = useRef(null);
   const { viewportRef, scale, backgroundStyle, readScroll } = usePresentationViewport();
-  const toggleFullscreen = async () => {
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await presentationRef.current.requestFullscreen();
-    } catch { /* Embedded previews may not allow fullscreen. */ }
-  };
 
   return (
     <main ref={presentationRef} className="presentation-viewport">
@@ -49,26 +42,6 @@ export default function PptPresentation({ stage, title, connectionState, followi
             <section className="runtime-frame" aria-label="原三栏布局左栏" hidden={stage === 1}>
               {children}
             </section>
-            <nav className="stage-toolbar" aria-label="演示阶段">
-              <div className="stage-heading">
-                <label>Stage <select aria-label="演示阶段" value={stage} onChange={(event) => selectStage(event.target.value)}>
-                  {PRESENTATION_STAGES.map(value => <option key={value} value={value}>{value}</option>)}
-                </select></label>
-                <span className="stage-title">{stage === 1 ? '动态组网' : title}</span>
-              </div>
-              <div className="stage-status">
-                <span className={`connection-dot ${connectionState === 'connected' ? 'online' : ''}`} />
-                <span>{connectionState === 'connected' ? '后端已连接' : '后端连接中断'}</span>
-                <button className="follow-button" aria-pressed={followingBackend} onClick={() => selectStage(null)}>{followingBackend ? '跟随后端' : '恢复跟随后端'}</button>
-                <button className="language-button" aria-label="Toggle language" onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}>{language === 'zh' ? 'EN' : '中文'}</button>
-                <button onClick={toggleFullscreen}>全屏</button>
-              </div>
-            </nav>
-            <nav className="ppt-navigation" aria-label="页面导航">
-              <button aria-label="回到 Stage 1" title="回到 Stage 1" onClick={() => selectStage(1)} />
-              <button aria-label="上一阶段" title="上一阶段（←）" onClick={() => moveStage(-1)} />
-              <button aria-label="下一阶段" title="下一阶段（→）" onClick={() => moveStage(1)} />
-            </nav>
           </div>
         </div>
       </div>

@@ -252,7 +252,7 @@ export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", transl
                                 </div>
 
                                 {/* 3D 浮空倾斜全息卡片 (跟在机器狗身侧上部，带透视翻折) */}
-                                <div className="absolute right-3 top-3 w-[44%] max-w-[155px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 2xl:max-w-[220px] 2xl:p-3 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
+                                <div className="absolute right-3 top-3 w-[46%] max-w-[175px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 2xl:max-w-[220px] 2xl:p-3 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
                                   <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
                                     Digital ID
                                   </div>
@@ -308,7 +308,7 @@ export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", transl
                                 <RobotDog className="w-full h-full object-contain" status="registered" />
                               </div>
 
-                              <div className="absolute right-3 top-3 w-[44%] max-w-[155px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 2xl:max-w-[220px] 2xl:p-3 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
+                              <div className="absolute right-3 top-3 w-[46%] max-w-[175px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 2xl:max-w-[220px] 2xl:p-3 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
                                 <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
                                   Digital ID
                                 </div>

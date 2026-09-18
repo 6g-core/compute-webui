@@ -1001,7 +1001,7 @@ const ArAccessStateCard = ({ registered = false }) => {
         cardPanel: "bg-emerald-950/80 border-cyan-400/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]",
         panelTitle: "Digital ID",
         panelTitleClass: "text-cyan-300 border-cyan-500/20",
-        deviceName: "DID:3lt1zY73G@CMCC.org",
+        deviceName: "3lt1zY73G@CMCC.org",
         detail: "Capabilities:",
         detailValue: "[Device-Network Synergy, AR]",
         statusLabel: "Active",
@@ -1055,7 +1055,7 @@ const ArAccessStateCard = ({ registered = false }) => {
           <ARGlasses className="w-full h-full object-contain" />
         </div>
 
-        <div className={`absolute right-3 top-3 ${registered ? "w-[46%] max-w-[175px]" : "w-[42%] max-w-[145px]"} origin-top-right border p-2 sm:p-2.5 2xl:max-w-[220px] 2xl:p-3 rounded-lg backdrop-blur-md z-20 ${registered ? "animate-hologram" : "animate-hologram-red"} [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight ${stateStyles.cardPanel}`}>
+        <div className={`absolute right-3 top-3 w-[42%] max-w-[145px] origin-top-right border p-2 sm:p-2.5 2xl:max-w-[205px] 2xl:p-3 rounded-lg backdrop-blur-md z-20 ${registered ? "animate-hologram" : "animate-hologram-red"} [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight ${stateStyles.cardPanel}`}>
           <div className={`font-black mb-1 border-b pb-1 uppercase tracking-wide text-[10px] sm:text-[11px] ${stateStyles.panelTitleClass}`}>
             {stateStyles.panelTitle}
           </div>
@@ -2125,10 +2125,7 @@ export default function App() {
         
         {/* 顶部 Header */}
         <header className="relative z-10 mb-3 flex min-h-[60px] shrink-0 items-center justify-between">
-          <div className="flex items-center justify-start gap-3 md:gap-5 pl-2 z-10">
-            <img src="/cmcc.png" alt="China Mobile" className="h-5 md:h-7 w-auto object-contain" draggable="false" />
-            <img src="/huawei.png" alt="Huawei" className="h-6 md:h-8 w-auto object-contain" draggable="false" />
-          </div>
+          <div className="flex items-center justify-start gap-6 pl-2 z-10" />
           <div className="text-center absolute left-1/2 top-1/2 w-[calc(100%-12rem)] -translate-x-1/2 -translate-y-1/2">
             <h1 className={`text-3xl md:text-5xl font-bold tracking-widest text-white glow-text ${language === "zh" ? "mb-2" : "mb-0"}`}>
               {language === "en" ? "Next-Generation Core Network" : "下一代核心网"}

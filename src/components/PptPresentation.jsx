@@ -13,8 +13,8 @@ export default function PptPresentation({ stage, title, connectionState, followi
         <div className="presentation-fit" style={{ width: 1920 * scale, height: 1080 * scale }}>
           <div className="presentation-canvas" data-stage={stage} style={{ transform: `scale(${scale})` }}>
             <div className="ppt-header-logos">
-              <img className="ppt-logo-cmcc" src="/cmcc.png" alt="China Mobile" draggable="false" />
-              <img className="ppt-logo-huawei" src="/huawei.png" alt="Huawei" draggable="false" />
+              <img className="ppt-logo-cmcc" src="/assets/ppt/logo-cmcc.png" alt="China Mobile" draggable="false" />
+              <img className="ppt-logo-huawei" src="/assets/ppt/logo-huawei.png" alt="Huawei" draggable="false" />
             </div>
             <section className="ppt-artwork" aria-label="智能体通信网络">
               <img className="ppt-artwork-image" src="/assets/ppt/presentation.svg" width="1920" height="1080" alt="" aria-hidden="true" draggable="false" />

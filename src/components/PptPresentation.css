@@ -1,17 +1,24 @@
 .presentation-viewport {
+  --presentation-font: 'Huawei Sans', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+}
+@font-face { font-family: 'Huawei Sans'; src: url('/assets/fonts/HuaweiSans-Thin.ttf') format('truetype'); font-weight: 100; font-display: swap; }
+@font-face { font-family: 'Huawei Sans'; src: url('/assets/fonts/HuaweiSans-Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
+@font-face { font-family: 'Huawei Sans'; src: url('/assets/fonts/HuaweiSans-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Huawei Sans'; src: url('/assets/fonts/HuaweiSans-Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Huawei Sans'; src: url('/assets/fonts/HuaweiSans-Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+.presentation-viewport {
   position: relative; isolation: isolate; width: 100%; height: 100dvh; overflow: hidden;
-  background: #050a11; color: #f1f5f9; font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  background: #050a11; color: #f1f5f9; font-family: var(--presentation-font);
 }
 .presentation-background { position: absolute; inset: 0; pointer-events: none; background-image: url('/assets/ppt/background-tile.svg'); }
 .presentation-scroll { position: relative; width: 100%; height: 100%; overflow: auto; display: flex; scrollbar-color: #496079 #091422; }
 .presentation-fit { position: relative; flex: none; margin: auto; }
 .presentation-canvas { width: 1920px; height: 1080px; position: absolute; inset: 0 auto auto 0; transform-origin: top left; overflow: hidden; }
 .ppt-header-logos {
-  position: absolute; left: 108px; top: 32px; z-index: 20;
-  display: flex; align-items: center; gap: 30px; pointer-events: none;
+  position: absolute; inset: 0; z-index: 20; pointer-events: none;
 }
-.ppt-logo-cmcc { position: relative; top: 2px; height: 38px; width: auto; display: block; object-fit: contain; }
-.ppt-logo-huawei { height: 48px; width: auto; display: block; object-fit: contain; }
+.ppt-logo-cmcc { position: absolute; left: 103.9px; top: 61.81px; width: 152.78px; height: 47.02px; display: block; }
+.ppt-logo-huawei { position: absolute; left: 284.46px; top: 57.1px; width: 195.54px; height: 51.53px; display: block; }
 .ppt-artwork, .ppt-artwork-image { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .ppt-artwork-image { max-width: none; display: block; }
 .scene-frame {
@@ -23,13 +30,13 @@
 .scene-image { display: block; width: 100%; height: 100%; object-fit: contain; }
 .scene-labels {
   position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
-  font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', sans-serif;
+  font-family: var(--presentation-font);
   font-size: 30px; font-weight: 400; fill: #f4fbff; text-rendering: optimizeLegibility;
 }
 .scene-labels text { paint-order: stroke; stroke: #061a2cd9; stroke-width: 1.3px; stroke-linejoin: round; }
 .scene-label-title { font-size: 48px; letter-spacing: 3px; }
 .scene-label-glasses { font-size: 34px; }
-.scene-labels .scene-label-acn { font-family: Arial, sans-serif; font-size: 64px; font-weight: 400; fill: #8cecff; stroke: #084465; }
+.scene-labels .scene-label-acn { font-family: var(--presentation-font); font-size: 64px; font-weight: 400; fill: #8cecff; stroke: #084465; }
 .scene-label-status { font-size: 28px; }
 .runtime-frame { position: absolute; left: 108px; top: 150px; width: 680px; height: 804px; overflow: auto; }
 .runtime-frame > div { height: 100%; }

@@ -1,5 +1,5 @@
 {
-  "source": "已美化-北展智能体通信网络-0914(1).pptx",
+  "source": "已美化-北展智能体通信网络-0918 v2.pptx",
   "slide": 1,
   "canvas": {
     "width": 1920,
@@ -39,5 +39,12 @@
     22,
     23,
     24
+  ],
+  "fontSource": "字体.zip",
+  "latinText": "Huawei Sans vector outlines",
+  "backgroundSource": "ppt/media/image2.png",
+  "logos": [
+    "ppt/media/image24.png",
+    "ppt/media/image23.png"
   ]
 }

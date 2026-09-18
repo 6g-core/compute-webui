@@ -119,12 +119,12 @@ export const LeftPanel = ({ effectiveStageConfig, stage, language = "zh", transl
                                 <ARGlasses className="w-full h-full object-contain" />
                               </div>
 
-                              <div className="absolute right-3 top-3 w-[44%] max-w-[155px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 2xl:max-w-[220px] 2xl:p-3 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
+                              <div className="absolute right-3 top-3 w-[46%] max-w-[175px] origin-top-right bg-emerald-950/80 border border-cyan-400/50 p-2 sm:p-2.5 2xl:max-w-[220px] 2xl:p-3 rounded-lg backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.3)] z-20 animate-hologram [transform:perspective(500px)_rotateY(-15deg)_rotateX(8deg)_scale(1.25)] leading-tight text-emerald-300">
                                 <div className="text-cyan-300 font-extrabold mb-1 border-b border-cyan-500/20 pb-1 uppercase tracking-wide text-[10px] sm:text-[11px]">
                                   Digital ID
                                 </div>
                                 <div className="text-gray-100 font-mono font-bold tracking-tight mb-1 truncate text-[10px] sm:text-[11px]">
-                                  3lt1zY73G@CMCC.org
+                                  DID:3lt1zY73G@CMCC.org
                                 </div>
                                 <div className="flex flex-col gap-0.5 text-[9px] sm:text-[10px] font-medium">
                                   <div className="flex flex-col gap-0.5">

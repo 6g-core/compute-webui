@@ -1,7 +1,10 @@
 <template>
   <section class="panel mbbf-panel flex h-full min-h-0 flex-col overflow-hidden">
     <div class="panel-header mbbf-header">
-      <span>架构图</span>
+      <div class="network-heading">
+        <span class="network-heading-icon"><Network aria-hidden="true" /></span>
+        <h1>智能体通信网络</h1>
+      </div>
       <span class="mbbf-stage-chip">{{ stageCaption }}</span>
     </div>
 
@@ -18,10 +21,10 @@
 
       <div class="mbbf-canvas">
         <div class="mbbf-zone zone-cp">
-          <span>CP</span>
+          <span class="domain-label"><Network aria-hidden="true" />核心网控制域</span>
         </div>
         <div class="mbbf-zone zone-up">
-          <span>UP</span>
+          <span class="domain-label"><Cpu aria-hidden="true" />算力域</span>
         </div>
         <div v-if="showSecureDomain" class="secure-domain-box">
           <span>Secure Domain</span>
@@ -146,10 +149,6 @@
                   <component :is="toolIcon(tool)" class="tool-icon" />
                   {{ tool }}
                 </span>
-                <span class="tool-state">
-                  <span class="tool-dot" />
-                  {{ toolStates[tool] === 'working' ? 'work' : 'idle' }}
-                </span>
               </div>
             </div>
           </div>
@@ -169,7 +168,7 @@
           >
             <div class="node-body">
               <span class="node-glow" :style="{ backgroundColor: node.color }" />
-              <img :src="node.image" :alt="node.name" :class="['node-image', node.size]" draggable="false" />
+              <img :src="node.image" :alt="node.name" :class="['node-image', node.size, node.imageClass]" draggable="false" />
               <div
                 v-if="hoveredIdentityNode === node.id && isDigitalIdentityVisible(node.id)"
                 :class="['digital-identity-card', node.id === 'UE' && 'ar-identity-card']"
@@ -231,25 +230,27 @@
         </div>
       </div>
 
-      <div class="core-functions">
-        <div class="core-heading">
-          <h3>核心网作用</h3>
-          <span>Core Network Functions</span>
-        </div>
-        <div class="core-grid" :style="{ gridTemplateColumns: `repeat(${activeConfig.coreFunctions.length}, minmax(0, 1fr))` }">
-          <div v-for="item in activeConfig.coreFunctions" :key="item" class="core-item">
-            <CheckCircle2 class="core-icon" />
-            <span>{{ item }}</span>
-          </div>
-        </div>
-      </div>
+      <ul class="network-capabilities" aria-label="智能体通信网络核心能力">
+        <li v-for="item in networkCapabilities" :key="item.label" class="capability">
+          <span class="capability-icon"><component :is="item.icon" aria-hidden="true" :stroke-width="1.8" /></span>
+          <strong>{{ item.label }}</strong>
+          <span class="capability-caption">{{ item.caption }}</span>
+        </li>
+      </ul>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { BrainCircuit, CheckCircle2, CircleDot, Cpu, LoaderCircle, Radio } from 'lucide-vue-next'
+import { ArrowUpDown, BrainCircuit, CheckCircle2, CircleDot, Cpu, Gauge, LoaderCircle, Network, Radio, ShieldCheck } from 'lucide-vue-next'
+
+const networkCapabilities = [
+  { label: '群组连接', caption: 'GROUP CONNECTIVITY', icon: Gauge },
+  { label: '大上行连接', caption: 'HIGH-UPLINK CONNECTION', icon: ArrowUpDown },
+  { label: '确定性连接', caption: 'DETERMINISTIC CONNECTIVITY', icon: ShieldCheck },
+  { label: '就近算力卸载', caption: 'NEARBY COMPUTE OFFLOAD', icon: Cpu }
+]
 
 type StageKey = 'INIT' | 'ACN_NETWORKING' | 'COMPUTING' | 'MEDIA_ESTABLISHED'
 type NodeId = string
@@ -270,6 +271,7 @@ interface TopologyNode {
   size: string
   labelClass?: string
   labelStyle?: Record<string, string>
+  imageClass?: string
 }
 
 interface DigitalIdentity {
@@ -340,15 +342,15 @@ const identityApplicationQueue: IdentityNodeId[] = []
 const topologyNodes: TopologyNode[] = [
   { id: 'UE', name: 'AR Glasses\n(Physical AI)', x: 7, y: 78, color: '#22f5ff', image: '/topology/glasses_transparent.png', size: 'node-sm' },
   { id: 'RobotDog', name: 'Robot Dog\n(Physical AI)', x: 7, y: 32, color: '#22e6b8', image: '/topology/robotdog_transparent.png', size: 'node-lg' },
-  { id: 'gNB', name: 'RAN', x: 22, y: 55, color: '#60a5fa', image: '/topology/upload-ran.png', size: 'node-lg' },
+  { id: 'gNB', name: 'RAN', x: 37, y: 84, color: '#60a5fa', image: '/topology/ran_cmcc_style.png', size: 'node-lg', labelClass: 'tight-label', imageClass: 'ran-large' },
   { id: 'SRF', name: 'SRF', x: 36, y: 43, color: '#38bdf8', image: '/topology/upload-srf.png', size: 'node-lg', labelClass: 'tight-label' },
-  { id: 'SystemAgent', name: 'SystemAgent', x: 53.5, y: 40, color: '#c084fc', image: '/topology/upload-system-agent.png', size: 'node-lg', labelClass: 'tight-label' },
-  { id: 'UPF', name: 'UPF', x: 36, y: 82, color: '#34d399', image: '/topology/upload-upf.png', size: 'node-lg', labelClass: 'tight-label' },
+  { id: 'SystemAgent', name: 'System Agent', x: 53.5, y: 40, color: '#c084fc', image: '/topology/upload-system-agent.png', size: 'node-lg', labelClass: 'tight-label' },
+  { id: 'UPF', name: 'UPF', x: 50, y: 82, color: '#34d399', image: '/topology/upload-upf.png', size: 'node-lg', labelClass: 'tight-label' },
   { id: 'ConnectionAgent', name: 'Connection Agent', x: 69, y: 13, color: '#22d3ee', image: '/topology/upload-connection-agent.png', size: 'node-md', labelClass: 'tight-label' },
   { id: 'ACN', name: 'ACN Agent', x: 69, y: 32, color: '#f472b6', image: '/topology/upload-acn-agent.png', size: 'node-md', labelClass: 'tight-label' },
   { id: 'Computing', name: 'Computing Agent', x: 69, y: 50, color: '#fbbf24', image: '/topology/upload-computing-agent.png', size: 'node-md', labelClass: 'low-label', labelStyle: { whiteSpace: 'nowrap' } },
-  { id: 'AgentGW', name: 'Agent GW', x: 62.5, y: 91, color: '#38bdf8', image: '/topology/upload-agent-gw.png', size: 'node-md', labelClass: 'tight-label' },
-  { id: 'Gateway', name: 'Computing Node', x: 62.5, y: 72, color: '#38bdf8', image: '/topology/upload-computing-node.png', size: 'node-md', labelClass: 'tight-label' },
+  { id: 'AgentGW', name: 'Agent GW', x: 66, y: 91, color: '#38bdf8', image: '/topology/upload-agent-gw.png', size: 'node-md', labelClass: 'tight-label' },
+  { id: 'Gateway', name: 'Computing Node', x: 66, y: 72, color: '#38bdf8', image: '/topology/upload-computing-node.png', size: 'node-md', labelClass: 'tight-label' },
 ]
 
 const digitalIdentityByNode: Partial<Record<NodeId, DigitalIdentity>> = {
@@ -1384,7 +1386,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 22px rgba(16, 185, 129, 0.25);
 }
 .zone-up span {
-  bottom: 8px;
+  top: 8px;
   left: 8px;
   color: #d1fae5;
   border-color: rgba(167, 243, 208, 0.8);
@@ -1595,14 +1597,15 @@ onBeforeUnmount(() => {
 .tool-panel {
   position: absolute;
   left: 77.2%;
-  top: 2%;
+  top: 31%;
+  transform: translateY(-50%);
   z-index: 26;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   width: 20.2%;
-  height: 57.5%;
-  overflow: hidden;
+  max-height: 96%;
+  overflow: auto;
   border: 1px solid rgba(186, 230, 253, 0.28);
   border-radius: 8px;
   padding: 8px;
@@ -1619,11 +1622,11 @@ onBeforeUnmount(() => {
 }
 
 .tool-group:first-child {
-  flex: 6 1 0;
+  flex: 6 0 auto;
 }
 
 .tool-group:last-child {
-  flex: 2.2 1 0;
+  flex: 2.2 0 auto;
 }
 
 .tool-group + .tool-group {
@@ -1632,7 +1635,7 @@ onBeforeUnmount(() => {
 }
 
 .tool-group-title {
-  padding: 0 6px 6px;
+  padding: 0 6px 4px;
   color: #ecfeff;
   font-size: 14px;
   font-weight: 900;
@@ -1644,8 +1647,8 @@ onBeforeUnmount(() => {
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  justify-content: space-evenly;
-  gap: 5px;
+  justify-content: flex-start;
+  gap: 4px;
 }
 
 .tool-row {
@@ -1653,7 +1656,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 28px;
+  min-height: 24px;
   font-size: 14px;
   line-height: 1;
 }
@@ -1667,7 +1670,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border: 1px solid rgba(186, 230, 253, 0.18);
   border-radius: 6px;
-  padding: 5px 7px;
+  padding: 4px 6px;
   background: rgba(15, 23, 42, 0.2);
   color: rgba(239, 246, 255, 0.95);
   font-weight: 900;
@@ -1762,6 +1765,11 @@ onBeforeUnmount(() => {
 .node-md { width: 69px; }
 .node-lg { width: 83px; }
 .node-xl { width: 94px; }
+
+/* RAN 专用：保持原比例整体放大（原 node-lg 为 83px 宽） */
+.ran-large {
+  width: 120px;
+}
 
 .node-label {
   position: relative;
@@ -2024,59 +2032,68 @@ onBeforeUnmount(() => {
   border-right: 1px solid rgba(34, 211, 238, 0.45);
 }
 
-.core-functions {
-  flex-shrink: 0;
-  margin-top: 8px;
-  border-top: 1px solid rgba(59, 130, 246, 0.25);
-  padding-top: 8px;
-}
-
-.core-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-
-.core-heading h3 {
-  margin: 0;
-  color: #dbeafe;
-  font-size: 15px;
-  font-weight: 900;
-}
-
-.core-heading span {
-  color: #67e8f9;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.core-grid {
+/* A permanent capability strip anchors the live topology. */
+.network-capabilities {
   display: grid;
-  gap: 8px;
-}
-
-.core-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  border-radius: 4px;
-  padding: 8px 10px;
-  background: rgba(15, 23, 42, 0.22);
-  color: rgba(219, 234, 254, 0.92);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.core-icon {
-  width: 15px;
-  height: 15px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   flex-shrink: 0;
-  color: #67e8f9;
+  gap: 0;
+  margin: 16px 0 0;
+  padding: 10px 0;
+  list-style: none;
+  border: 1px solid var(--network-border);
+  border-radius: 12px;
+  background: linear-gradient(120deg, var(--network-surface), var(--color-panel-strong));
+  box-shadow: inset 0 1px 0 var(--color-panel-strong), 0 4px 16px rgba(0, 133, 208, 0.06);
+}
+
+.capability {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 8px;
+  text-align: center;
+}
+
+.capability + .capability {
+  border-left: 1px solid var(--network-border);
+}
+
+.capability-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--network-border);
+  border-radius: 12px;
+  color: var(--color-cmcc);
+  background: var(--color-panel-strong);
+  box-shadow: 0 4px 10px rgba(0, 133, 208, 0.1), inset 0 -3px 0 var(--network-surface);
+}
+
+.capability-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.capability strong {
+  color: var(--network-ink);
+  font-size: clamp(26px, 3.2cqi, 38px);
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.capability-caption {
+  color: var(--network-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: clamp(8px, 1.05cqi, 12px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
 }
 
 .line-pulse {
@@ -2125,17 +2142,25 @@ onBeforeUnmount(() => {
   .tool-group-title { font-size: 12px; }
   .tool-row { font-size: 12px; }
   .tool-state { font-size: 9.5px; }
-  .core-item { font-size: 12px; padding: 7px 8px; }
 }
 
 /* CMCC light theme adaptation */
 .mbbf-panel {
+  container-type: inline-size;
+  --network-ink: #075985;
+  --network-muted: #47738c;
+  --network-surface: #eaf6fc;
+  --network-border: #c5e4f4;
   background: #ffffff;
   border-color: #e2e8f0;
   color: #0f172a;
 }
 
 .mbbf-header {
+  gap: 16px;
+  flex-shrink: 0;
+  min-height: 88px;
+  padding: 16px 24px;
   background: rgba(255, 255, 255, 0.88);
   border-color: #e2e8f0;
   color: #0f172a;
@@ -2147,7 +2172,43 @@ onBeforeUnmount(() => {
   background: rgba(224, 242, 254, 0.72);
 }
 
+.network-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.network-heading-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--network-border);
+  border-radius: 14px;
+  color: var(--color-cmcc);
+  background: var(--network-surface);
+}
+
+.network-heading-icon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.network-heading h1 {
+  margin: 0;
+  color: var(--network-ink);
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: clamp(26px, 3.2cqi, 38px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-wrap: balance;
+}
+
 .mbbf-shell {
+  overflow: auto;
   border-color: rgba(148, 163, 184, 0.34);
   background: #f8fafc;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.82), 0 10px 24px rgba(15, 23, 42, 0.08);
@@ -2166,6 +2227,9 @@ onBeforeUnmount(() => {
 }
 
 .mbbf-canvas {
+  min-width: 600px;
+  min-height: 440px;
+  flex-shrink: 0;
   border-color: rgba(148, 163, 184, 0.28);
   background: rgba(255, 255, 255, 0.72);
 }
@@ -2174,6 +2238,27 @@ onBeforeUnmount(() => {
   border-color: rgba(251, 146, 60, 0.68);
   background: rgba(255, 247, 237, 0.7);
   box-shadow: 0 0 18px rgba(251, 146, 60, 0.16);
+}
+
+.mbbf-zone .domain-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: clamp(20px, 2.3cqi, 28px);
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07);
+}
+
+.domain-label svg {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  stroke-width: 2;
 }
 
 .zone-cp span {
@@ -2192,6 +2277,11 @@ onBeforeUnmount(() => {
   color: #047857;
   border-color: rgba(16, 185, 129, 0.38);
   background: rgba(255, 255, 255, 0.94);
+}
+
+.zone-up .domain-label {
+  top: -8px;
+  padding: 6px 12px;
 }
 
 .secure-domain-box {
@@ -2376,25 +2466,17 @@ onBeforeUnmount(() => {
   border-color: rgba(14, 165, 233, 0.28);
 }
 
-.core-functions {
-  border-top-color: rgba(148, 163, 184, 0.24);
-}
+@container (max-width: 700px) {
+  .mbbf-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 16px;
+  }
 
-.core-heading h3 {
-  color: #0f172a;
-}
-
-.core-heading span {
-  color: #0284c7;
-}
-
-.core-item {
-  border-color: rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.76);
-  color: #1e293b;
-}
-
-.core-icon {
-  color: #0284c7;
+  .network-heading { gap: 12px; }
+  .network-heading-icon { width: 44px; height: 44px; }
+  .network-capabilities { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 20px; }
+  .capability:nth-child(3) { border-left: 0; }
+  .capability-caption { font-size: 8px; }
 }
 </style>

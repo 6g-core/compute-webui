@@ -12,7 +12,6 @@
     "start": "cross-env HOST=0.0.0.0 PORT=3000 nuxt start"
   },
   "devDependencies": {
-    "@nuxt/devtools": "latest",
     "@nuxtjs/tailwindcss": "6.8.0",
     "@primevue/nuxt-module": "^4.3.1",
     "@types/http-proxy-middleware": "^1.0.0",

@@ -532,10 +532,10 @@ export const StepBar = ({ steps, orientation = "horizontal", stage, stagePhaseKe
             <div
               key={step.id}
               aria-expanded={isExpanded}
-              style={isExpanded ? { height: `${104 + detailItems.length * 42}px` } : undefined}
+              style={isExpanded ? { minHeight: `${104 + detailItems.length * 42}px` } : undefined}
               className={`stepbar-card relative flex overflow-hidden rounded-lg border bg-slate-900/45 shadow-md transition-colors ${
                 isVertical
-                  ? `${isExpanded ? "shrink-0" : "h-[72px] shrink-0 justify-center"} flex-col items-stretch gap-1.5 px-3 py-2`
+                  ? `${isExpanded ? "shrink-0" : "min-h-[72px] shrink-0 justify-center"} flex-col items-stretch gap-1.5 px-3 py-2`
                   : "items-center gap-3 px-3 py-1.5"
               } ${
                 isDone
@@ -552,7 +552,7 @@ export const StepBar = ({ steps, orientation = "horizontal", stage, stagePhaseKe
                     : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]"
                 }`} />
               )}
-              <div className="flex min-w-0 items-center gap-3">
+              <div className="flex min-w-0 shrink-0 items-center gap-3">
                 <span className={`stepbar-id shrink-0 font-mono text-2xl font-bold ${
                   isDone ? "text-emerald-400 opacity-90" : isWorking ? "text-amber-300 opacity-90" : "text-blue-300 opacity-60"
                 }`}>
@@ -561,8 +561,8 @@ export const StepBar = ({ steps, orientation = "horizontal", stage, stagePhaseKe
                 <StepIcon className={`stepbar-icon shrink-0 ${isVertical ? "h-6 w-6" : "h-7 w-7"} ${
                   isDone ? "text-emerald-400" : isWorking ? "animate-pulse text-amber-300" : "text-blue-300/80"
                 }`} />
-                <div className={`stepbar-copy flex min-w-0 leading-none ${
-                  isVertical ? "flex-1 flex-row items-center justify-between gap-2" : "flex-col gap-1"
+                <div className={`stepbar-copy min-w-0 leading-none ${
+                  isVertical ? "grid flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-2" : "flex flex-col gap-1"
                 }`}>
                   <span className={`stepbar-title min-w-0 font-bold leading-tight text-blue-100 ${
                     isVertical ? "whitespace-nowrap text-base xl:text-[17px]" : "text-lg"
@@ -578,10 +578,10 @@ export const StepBar = ({ steps, orientation = "horizontal", stage, stagePhaseKe
               </div>
 
               {isExpanded && (
-                <div className={`ml-12 flex min-h-0 flex-1 flex-col border-t pt-2 ${
+                <div className={`ml-12 flex flex-1 flex-col justify-center border-t pt-2 ${
                   isDone ? "border-emerald-300/20" : "border-amber-300/20"
                 }`}>
-                  <ol className="grid min-h-0 flex-1 content-center gap-1.5">
+                  <ol className="grid gap-1.5">
                     {detailItems.map((detail, detailIndex) => {
                       const detailStatus = detailStatuses[detailIndex] || "pending";
 

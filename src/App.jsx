@@ -1926,9 +1926,9 @@ export default function App() {
           font-size: 1rem;
           line-height: 1.05;
         }
-        .lang-en .stepbar-card:nth-child(4) .stepbar-title {
-          font-size: 0.9rem;
+        .lang-en .intent-entry-label {
           white-space: nowrap;
+          overflow-wrap: normal;
         }
         .lang-en .stepbar-subtitle {
           font-size: 0.875rem;

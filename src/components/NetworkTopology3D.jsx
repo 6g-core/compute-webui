@@ -547,7 +547,7 @@ const UnifiedToolPanel = ({ toolStates }) => {
   const hasWorkingTool = Object.values(toolStates).some((state) => state === "working");
 
   return (
-    <div className={`absolute left-[42%] top-[2.3%] z-[26] grid h-[7.6%] w-[55%] grid-cols-4 gap-3 text-blue-50 ${hasWorkingTool ? "cp-tool-panel-flash" : ""}`}>
+    <div className={`absolute left-[45%] top-[2.3%] z-[26] grid h-[7.6%] w-[52%] grid-cols-4 gap-3 text-blue-50 ${hasWorkingTool ? "cp-tool-panel-flash" : ""}`}>
       {CP_TOOL_ITEMS.map((name) => {
         const state = toolStates[name] || "idle";
         const ToolIcon = TOOL_ICON_BY_NAME[name] || BrainCircuit;
@@ -714,7 +714,7 @@ const IntentEntryArrow = () => (
     className="pointer-events-none absolute left-[13.5%] top-[31%] z-[19] h-12 w-[23.5%]"
     aria-label="意图入口"
   >
-    <span className="absolute bottom-[calc(50%+10px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-amber-300/55 bg-slate-950/92 px-3.5 py-1.5 text-base font-black tracking-[0.1em] text-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.32)] backdrop-blur-md">
+    <span className="intent-entry-label absolute bottom-[calc(50%+10px)] left-1/2 w-max -translate-x-1/2 whitespace-nowrap rounded-md border border-amber-300/55 bg-slate-950/92 px-3.5 py-1.5 text-base font-black tracking-[0.1em] text-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.32)] backdrop-blur-md">
       意图入口
     </span>
     <span className="absolute left-0 right-4 top-1/2 h-1 -translate-y-1/2 bg-gradient-to-r from-amber-400/45 via-amber-300 to-amber-200 shadow-[0_0_14px_rgba(251,191,36,0.82)]" />

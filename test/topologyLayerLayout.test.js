@@ -9,6 +9,7 @@ const source = readFileSync(
 
 test("topology uses stacked CP, DAP, and UP layers", () => {
   assert.match(source, /key: "cp",[\s\S]*label: "CP",[\s\S]*left-\[37%\] top-\[1%\] h-\[11\.5%\] w-\[61%\]/);
+  assert.match(source, /key: "cp",[\s\S]*labelClassName: "left-2 top-2/);
   assert.match(source, /key: "dap",[\s\S]*label: "DAP",[\s\S]*left-\[37%\] top-\[14\.5%\] h-\[51\.5%\]/);
   assert.match(source, /key: "up",[\s\S]*label: "UP",[\s\S]*top-\[67%\] h-\[32%\]/);
 });
@@ -57,7 +58,7 @@ test("CP tool panel keeps only AM, SM, Policy, and UDM", () => {
   const panelSource = source.slice(start, end);
 
   assert.match(source, /const CP_TOOL_ITEMS = \["AM Tool", "SM Tool", "Policy Tool", "UDM Tool"\]/);
-  assert.match(panelSource, /left-\[42%\] top-\[2\.3%\].*h-\[7\.6%\] w-\[55%\] grid-cols-4/);
+  assert.match(panelSource, /left-\[45%\] top-\[2\.3%\].*h-\[7\.6%\] w-\[52%\] grid-cols-4/);
   assert.doesNotMatch(panelSource, /Agentic Base/);
   assert.doesNotMatch(panelSource, /Beyond Connectivity/);
   assert.doesNotMatch(panelSource, /IDM Tool|ARF Tool|CMF Tool|CSPF Tool/);

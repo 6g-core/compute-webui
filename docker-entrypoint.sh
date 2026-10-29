@@ -33,27 +33,41 @@ python3 - <<'PY'
 import json
 import os
 
-config = {
-    "backendHost": os.environ.get("BACKEND_HOST") or None,
-    "stageApiPort": int(os.environ["BACKEND_PORT"]),
-    "stageApiUrl": os.environ.get("STAGE_API_URL") or None,
-    "latencyApiUrl": os.environ.get("LATENCY_API_URL") or None,
-    "qosPushChannelUrl": os.environ.get("QOS_PUSH_CHANNEL_URL") or None,
-    "webRtcHost": os.environ.get("WEBRTC_HOST") or None,
-    "dogWebRtcHost": os.environ.get("DOG_WEBRTC_HOST") or None,
-    "dogEnhancedWebRtcHost": os.environ.get("DOG_ENHANCED_WEBRTC_HOST") or None,
-    "webRtcPort": int(os.environ["WEBRTC_PORT"]),
-    "dogWebRtcPort": int(os.environ["DOG_WEBRTC_PORT"]),
-    "dogEnhancedWebRtcPort": int(os.environ["DOG_ENHANCED_WEBRTC_PORT"]),
-    "webRtcSignalUrl": os.environ.get("WEBRTC_SIGNAL_URL") or None,
-    "dogWebRtcSignalUrl": os.environ.get("DOG_WEBRTC_SIGNAL_URL") or None,
-    "dogEnhancedWebRtcSignalUrl": os.environ.get("DOG_ENHANCED_WEBRTC_SIGNAL_URL") or None,
-}
+
+def value(env_key, default_expr):
+    """env 显式给值就用（JSON 字符串），否则用浏览器侧动态默认值。"""
+    raw = (os.environ.get(env_key) or "").strip()
+    if raw:
+        return json.dumps(raw, ensure_ascii=False)
+    return default_expr
+
+
+lines = [
+    "(() => {",
+    '  const protocol = window.location.protocol === "https:" ? "https:" : "http:";',
+    "  const host = window.location.hostname;",
+    "  const sysAgentBase = " + value("SYS_AGENT_API_URL", "`${protocol}//${host}:9100`") + ";",
+    "  const sandboxBase = " + value("SANDBOX_API_URL", "`${protocol}//${host}:8787`") + ";",
+    "  window.__RUNTIME_CONFIG__ = {",
+    "    ...(window.__RUNTIME_CONFIG__ || {}),",
+    "    sysAgentApiUrl: sysAgentBase,",
+    "    stageApiUrl: " + value("STAGE_API_URL", "`${sysAgentBase}/api/stage`") + ",",
+    "    arStatusApiUrl: " + value("AR_STATUS_API_URL", "`${sysAgentBase}/api/v1/system/ar/status`") + ",",
+    "    sandboxApiUrl: sandboxBase,",
+    "    sandboxHealthApiUrl: " + value("SANDBOX_HEALTH_API_URL", "`${sandboxBase}/api/health`") + ",",
+    "    latencyApiUrl: " + value("LATENCY_API_URL", "`${sandboxBase}/api/latency`") + ",",
+    "    qosPushChannelUrl: " + value("QOS_PUSH_CHANNEL_URL", "`${sandboxBase}/api/v1/qos/events`") + ",",
+    "    intentStatusApiUrl: " + value("INTENT_STATUS_API_URL", "`${sandboxBase}/api/v1/intent/status`") + ",",
+    "    webRtcSignalUrl: " + value("WEBRTC_SIGNAL_URL", "`${sandboxBase}/api/v1/web/sdp/offer`") + ",",
+    "    dogWebRtcSignalUrl: " + value("DOG_WEBRTC_SIGNAL_URL", "`${sandboxBase}/api/v1/web/sdp/offer`") + ",",
+    "    dogEnhancedWebRtcSignalUrl: " + value("DOG_ENHANCED_WEBRTC_SIGNAL_URL", "`${sandboxBase}/api/v1/web/sdp/offer`") + ",",
+    "  };",
+    "})();",
+    "",
+]
 
 with open("/app/dist/runtime-config.js", "w", encoding="utf-8") as handle:
-    handle.write("window.__RUNTIME_CONFIG__ = ")
-    json.dump(config, handle, ensure_ascii=False)
-    handle.write(";\n")
+    handle.write("\n".join(lines))
 PY
 
 pids=""

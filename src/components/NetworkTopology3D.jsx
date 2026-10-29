@@ -1302,11 +1302,6 @@ export const NetworkTopology3D = ({
                     <div className="relative z-10 -mt-2 whitespace-pre-line text-center text-[14px] font-black leading-[1.05] text-blue-50 [text-shadow:0_1px_4px_rgba(2,6,23,1),0_0_8px_rgba(2,6,23,0.9)]">
                       {value.name}
                     </div>
-                    {key === "SystemAgent" && intentReject ? (
-                      <div className="relative z-20 mt-1 animate-pulse rounded border border-red-400 bg-red-600/35 px-2 py-[2px] text-[10px] font-black uppercase tracking-[0.08em] text-red-50 shadow-[0_0_16px_rgba(248,113,113,0.85)]">
-                        intent rejected
-                      </div>
-                    ) : null}
                   </div>
                 </div>
               );
@@ -1340,6 +1335,16 @@ export const NetworkTopology3D = ({
             );
           })}
         </div>
+        {intentReject ? (
+          <div
+            className="pointer-events-none absolute z-[70] -translate-x-1/2"
+            style={{ left: `${nodes.SystemAgent.x}%`, top: `calc(${nodes.SystemAgent.y}% + 62px)` }}
+          >
+            <div className="animate-pulse rounded border-2 border-red-300 bg-red-600 px-3 py-[3px] text-[12px] font-black uppercase tracking-[0.08em] text-white shadow-[0_0_22px_rgba(248,113,113,0.95)]">
+              intent rejected
+            </div>
+          </div>
+        ) : null}
         {positionedAgentBubbles.map((bubble, index) => (
           <AgentSpeechBubble
             key={`${bubble.targetNode || "agent"}-${bubble.placement || "bubble"}-${index}`}

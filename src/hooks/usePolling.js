@@ -178,6 +178,7 @@ const useIntentStatus = () => {
   useEffect(() => {
     let disposed = false;
     let isPolling = false;
+    let failureCount = 0;
 
     const pollIntentStatus = async () => {
       if (isPolling) {
@@ -196,6 +197,7 @@ const useIntentStatus = () => {
         }
 
         const payload = await response.json();
+        failureCount = 0;
         if (!disposed) {
           setIntentStatus({
             intentReject: Boolean(payload && payload.intent_reject),
@@ -204,6 +206,10 @@ const useIntentStatus = () => {
           });
         }
       } catch (intentStatusError) {
+        failureCount += 1;
+        if (failureCount >= 3 && !disposed) {
+          setIntentStatus({ intentReject: false, text: "", reason: "" });
+        }
         console.error("Intent status polling failed", intentStatusError);
       } finally {
         isPolling = false;

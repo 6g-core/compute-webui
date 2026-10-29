@@ -1173,7 +1173,7 @@ const HandoffPanel = () => (
 const QosConversationPanel = ({ items = [] }) => {
   const visibleItems = items.slice(-3);
 
-  const renderImage = (item) => (
+  const renderImage = (item) => (!item.image ? null : (
     <figure className="relative h-[82px] w-[118px] shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/95 shadow-[0_4px_12px_rgba(0,0,0,0.24)]">
       <img
         src={item.image}
@@ -1185,7 +1185,7 @@ const QosConversationPanel = ({ items = [] }) => {
         <ImagePlus className="h-2.5 w-2.5" />
       </span>
     </figure>
-  );
+  ));
 
   return (
     <section

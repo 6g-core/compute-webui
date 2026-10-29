@@ -127,14 +127,17 @@ export const buildQosDialogItems = (dialogs, images, imagePlacements) => {
       throw new Error(`QoS dialog item ${index} must be a string`);
     }
 
-    if (!isSupportedQosImageSource(image)) {
+    // 空字符串表示这条对话没有配图（视觉问答没匹配到盒子 GIF 时只推文字）
+    const hasImage = typeof image === "string" ? image.trim().length > 0 : Boolean(image);
+
+    if (hasImage && !isSupportedQosImageSource(image)) {
       throw new Error(`QoS image item ${index} must be a png/jpeg/gif data URI or http(s) URL`);
     }
 
     return {
-      id: `${index}-${dialog}-${image.slice(0, 32)}-${placement.imagePlacement.join("-")}`,
+      id: `${index}-${dialog}-${hasImage ? image.slice(0, 32) : "noimg"}-${placement.imagePlacement.join("-")}`,
       dialog,
-      image,
+      image: hasImage ? image : "",
       ...placement,
     };
   });

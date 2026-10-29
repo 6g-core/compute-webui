@@ -62,7 +62,7 @@ test("CP tool panel keeps only AM, SM, Policy, and UDM", () => {
   assert.doesNotMatch(panelSource, /Agentic Base/);
   assert.doesNotMatch(panelSource, /Beyond Connectivity/);
   assert.doesNotMatch(panelSource, /IDM Tool|ARF Tool|CMF Tool|CSPF Tool/);
-  assert.match(panelSource, /left-1\/2 top-\[43%\][\s\S]*-translate-x-1\/2 -translate-y-1\/2[\s\S]*text-\[14px\]/);
+  assert.match(panelSource, /left-1\/2 top-\[32%\][\s\S]*-translate-x-1\/2 -translate-y-1\/2[\s\S]*text-\[14px\]/);
   assert.doesNotMatch(panelSource, /items-center justify-start/);
   assert.match(panelSource, /text-\[14px\]/);
   assert.match(panelSource, /text-\[10px\]/);

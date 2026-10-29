@@ -562,14 +562,14 @@ export const StepBar = ({ steps, orientation = "horizontal", stage, stagePhaseKe
                   isDone ? "text-emerald-400" : isWorking ? "animate-pulse text-amber-300" : "text-blue-300/80"
                 }`} />
                 <div className={`stepbar-copy min-w-0 leading-none ${
-                  isVertical ? "grid flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-2" : "flex flex-col gap-1"
+                  isVertical ? "grid flex-1 grid-cols-1 gap-1" : "flex flex-col gap-1"
                 }`}>
                   <span className={`stepbar-title min-w-0 font-bold leading-tight text-blue-100 ${
-                    isVertical ? "whitespace-nowrap text-base xl:text-[17px]" : "text-lg"
+                    isVertical ? "whitespace-normal break-words text-base xl:text-[17px]" : "text-lg"
                   }`}>
                     {step.title}
                   </span>
-                  <span className={`stepbar-subtitle shrink-0 font-semibold leading-tight ${isVertical ? "text-[11px] xl:text-xs" : "text-base"} ${
+                  <span className={`stepbar-subtitle shrink-0 font-semibold leading-tight ${isVertical ? "justify-self-end text-[11px] xl:text-xs" : "text-base"} ${
                     isDone ? "text-emerald-400" : isWorking ? "text-amber-300" : "text-blue-300/70"
                   }`}>
                     {isVertical ? compactSubtitle : step.subtitle}

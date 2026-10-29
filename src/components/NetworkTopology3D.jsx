@@ -568,7 +568,7 @@ const UnifiedToolPanel = ({ toolStates }) => {
           <span className={`absolute bottom-1.5 right-1.5 rounded border bg-slate-950/88 px-2 py-0.5 font-mono text-[10px] font-black uppercase leading-none tracking-[0.08em] shadow-[0_0_7px_rgba(34,211,238,0.16)] ${state === "working" ? "border-amber-100/90 text-amber-100" : "border-cyan-200/50 text-cyan-100/90"}`}>
             Tool
           </span>
-          <span className="absolute left-1/2 top-[43%] flex min-w-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-2 whitespace-nowrap text-[14px] font-black leading-none text-blue-50/95">
+          <span className="absolute left-1/2 top-[32%] flex min-w-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-2 whitespace-nowrap text-[14px] font-black leading-none text-blue-50/95">
             <ToolIcon className={`h-4 w-4 shrink-0 ${state === "working" ? "text-amber-200" : "text-cyan-200/80"}`} />
             <span>{name.replace(/\s+Tool$/, "")}</span>
           </span>

@@ -13,7 +13,7 @@ import {
 import { STAGE10_COMPLETED_TASKS, getWorkflowBubbleFromRows, pinBubbleToSystemAgent } from './config/stageConfig.jsx';
 import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, useBackendVideoStream, useDogVideoOfferGate } from './hooks/useBackendVideo';
 import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
-import { useArLastWhisper, useStagePolling } from './hooks/usePolling';
+import { useArLastWhisper, useIntentStatus, useStagePolling } from './hooks/usePolling';
 import { useQosFeed } from './hooks/useQosFeed';
 import { CoreNetworkValuePanel, LeftPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
@@ -1700,6 +1700,7 @@ export default function App() {
 
   const { stage, connectionState, error } = useStagePolling();
   const arLastWhisper = useArLastWhisper();
+  const { intentReject } = useIntentStatus();
   const [stage5VideoReady, setStage5VideoReady] = useState(false);
   const handleStage5VideoFrame = useCallback(() => {
     if (stage === 5) {
@@ -2034,6 +2035,7 @@ export default function App() {
               stagePhaseKey={effectiveStageConfig.stagePhaseKey}
               language={language}
               qosMetrics={qosFeed.metrics}
+              intentReject={intentReject}
             />
           </div>
 

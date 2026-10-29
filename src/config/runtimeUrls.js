@@ -36,6 +36,13 @@ export const getArStatusApiUrl = () => {
     || buildRuntimeBackendUrl("sysAgentApiUrl", "sysAgentPort", 9100, "/api/v1/system/ar/status");
 };
 
+export const getIntentStatusApiUrl = () => {
+  const runtimeConfig = getRuntimeConfig();
+  return runtimeConfig.intentStatusApiUrl
+    || getViteEnv().VITE_INTENT_STATUS_API_URL
+    || buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/v1/intent/status", "sandboxHost");
+};
+
 export const getLatencyApiUrl = () => {
   const runtimeConfig = getRuntimeConfig();
   return runtimeConfig.latencyApiUrl

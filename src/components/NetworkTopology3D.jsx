@@ -737,6 +737,7 @@ export const NetworkTopology3D = ({
   stagePhaseKey = null,
   language = "zh",
   qosMetrics = [],
+  intentReject = false,
 }) => {
   const nodes = TOPOLOGY_NODES;
   const connections = useMemo(() => (
@@ -1301,6 +1302,11 @@ export const NetworkTopology3D = ({
                     <div className="relative z-10 -mt-2 whitespace-pre-line text-center text-[14px] font-black leading-[1.05] text-blue-50 [text-shadow:0_1px_4px_rgba(2,6,23,1),0_0_8px_rgba(2,6,23,0.9)]">
                       {value.name}
                     </div>
+                    {key === "SystemAgent" && intentReject ? (
+                      <div className="relative z-20 mt-1 animate-pulse rounded border border-red-400 bg-red-600/35 px-2 py-[2px] text-[10px] font-black uppercase tracking-[0.08em] text-red-50 shadow-[0_0_16px_rgba(248,113,113,0.85)]">
+                        intent rejected
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               );

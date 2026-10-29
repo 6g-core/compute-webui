@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getArStatusApiUrl, getLatencyApiUrl, getStageApiUrl } from '../config/runtimeUrls';
+import { getArStatusApiUrl, getIntentStatusApiUrl, getLatencyApiUrl, getStageApiUrl } from '../config/runtimeUrls';
 import {
   appendLatencyPoint,
   parseArLastWhisper,
@@ -172,4 +172,54 @@ const useLatencySeries = (enabled) => {
 };
 
 
-export { useArLastWhisper, useLatencySeries, useStagePolling };
+const useIntentStatus = () => {
+  const [intentStatus, setIntentStatus] = useState({ intentReject: false, text: "", reason: "" });
+
+  useEffect(() => {
+    let disposed = false;
+    let isPolling = false;
+
+    const pollIntentStatus = async () => {
+      if (isPolling) {
+        return;
+      }
+
+      isPolling = true;
+
+      try {
+        const response = await fetch(getIntentStatusApiUrl(), {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Intent status API failed: ${response.status}`);
+        }
+
+        const payload = await response.json();
+        if (!disposed) {
+          setIntentStatus({
+            intentReject: Boolean(payload && payload.intent_reject),
+            text: String((payload && payload.text) || ""),
+            reason: String((payload && payload.reason) || ""),
+          });
+        }
+      } catch (intentStatusError) {
+        console.error("Intent status polling failed", intentStatusError);
+      } finally {
+        isPolling = false;
+      }
+    };
+
+    pollIntentStatus();
+    const interval = window.setInterval(pollIntentStatus, 1000);
+
+    return () => {
+      disposed = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  return intentStatus;
+};
+
+export { useArLastWhisper, useIntentStatus, useLatencySeries, useStagePolling };

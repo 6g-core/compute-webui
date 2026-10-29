@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getArStatusApiUrl, getIntentStatusApiUrl, getLatencyApiUrl, getStageApiUrl } from '../config/runtimeUrls';
 import {
   appendLatencyPoint,
@@ -174,6 +174,10 @@ const useLatencySeries = (enabled) => {
 
 const useIntentStatus = () => {
   const [intentStatus, setIntentStatus] = useState({ intentReject: false, text: "", reason: "" });
+  // 意图被拒只用于前端提示：出现后闪 3 秒自动隐藏，后端状态不受影响
+  const [rejectFlashVisible, setRejectFlashVisible] = useState(false);
+  const lastRejectStampRef = useRef(0);
+  const rejectFlashTimerRef = useRef(null);
 
   useEffect(() => {
     let disposed = false;
@@ -198,9 +202,20 @@ const useIntentStatus = () => {
 
         const payload = await response.json();
         failureCount = 0;
+        const rejected = Boolean(payload && payload.intent_reject);
+        const rejectStamp = Number((payload && payload.timestamp) || 0);
+        if (rejected && rejectStamp !== lastRejectStampRef.current) {
+          // 新的一次意图被拒：重新亮 3 秒
+          lastRejectStampRef.current = rejectStamp;
+          setRejectFlashVisible(true);
+          window.clearTimeout(rejectFlashTimerRef.current);
+          rejectFlashTimerRef.current = window.setTimeout(() => {
+            setRejectFlashVisible(false);
+          }, 3000);
+        }
         if (!disposed) {
           setIntentStatus({
-            intentReject: Boolean(payload && payload.intent_reject),
+            intentReject: rejected,
             text: String((payload && payload.text) || ""),
             reason: String((payload && payload.reason) || ""),
           });
@@ -225,7 +240,11 @@ const useIntentStatus = () => {
     };
   }, []);
 
-  return intentStatus;
+  useEffect(() => () => {
+    window.clearTimeout(rejectFlashTimerRef.current);
+  }, []);
+
+  return { ...intentStatus, rejectFlashVisible };
 };
 
 export { useArLastWhisper, useIntentStatus, useLatencySeries, useStagePolling };

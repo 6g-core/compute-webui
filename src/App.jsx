@@ -1700,7 +1700,7 @@ export default function App() {
 
   const { stage, connectionState, error } = useStagePolling();
   const arLastWhisper = useArLastWhisper();
-  const { intentReject } = useIntentStatus();
+  const { rejectFlashVisible } = useIntentStatus();
   const [stage5VideoReady, setStage5VideoReady] = useState(false);
   const handleStage5VideoFrame = useCallback(() => {
     if (stage === 5) {
@@ -2035,7 +2035,7 @@ export default function App() {
               stagePhaseKey={effectiveStageConfig.stagePhaseKey}
               language={language}
               qosMetrics={qosFeed.metrics}
-              intentReject={intentReject}
+              intentReject={rejectFlashVisible}
             />
           </div>
 

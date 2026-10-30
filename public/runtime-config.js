@@ -14,7 +14,7 @@
     latencyApiUrl: `${sandboxBase}/api/latency`,
     qosPushChannelUrl: `${sandboxBase}/api/v1/qos/events`,
     intentStatusApiUrl: `${sandboxBase}/api/v1/intent/status`,
-    webRtcSignalUrl: `${sandboxBase}/api/v1/web/sdp/offer`,
+    webRtcSignalUrl: `${protocol}//${host}:28450/offer`,
     dogWebRtcSignalUrl: `${sandboxBase}/api/v1/web/sdp/offer`,
     dogEnhancedWebRtcSignalUrl: `${sandboxBase}/api/v1/web/sdp/offer`,
   };

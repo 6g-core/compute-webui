@@ -58,7 +58,8 @@ lines = [
     "    latencyApiUrl: " + value("LATENCY_API_URL", "`${sandboxBase}/api/latency`") + ",",
     "    qosPushChannelUrl: " + value("QOS_PUSH_CHANNEL_URL", "`${sandboxBase}/api/v1/qos/events`") + ",",
     "    intentStatusApiUrl: " + value("INTENT_STATUS_API_URL", "`${sandboxBase}/api/v1/intent/status`") + ",",
-    "    webRtcSignalUrl: " + value("WEBRTC_SIGNAL_URL", "`${sandboxBase}/api/v1/web/sdp/offer`") + ",",
+    # 舞台/背景视频来自 Windows 侧的 apriltag WebRTC 服务（28450），不是沙箱
+    "    webRtcSignalUrl: " + value("WEBRTC_SIGNAL_URL", "`${protocol}//${host}:28450/offer`") + ",",
     "    dogWebRtcSignalUrl: " + value("DOG_WEBRTC_SIGNAL_URL", "`${sandboxBase}/api/v1/web/sdp/offer`") + ",",
     "    dogEnhancedWebRtcSignalUrl: " + value("DOG_ENHANCED_WEBRTC_SIGNAL_URL", "`${sandboxBase}/api/v1/web/sdp/offer`") + ",",
     "  };",

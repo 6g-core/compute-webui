@@ -43,6 +43,8 @@ export const getIntentStatusApiUrl = () => {
     || buildRuntimeBackendUrl("sandboxApiUrl", "sandboxPort", 8787, "/api/v1/intent/status", "sandboxHost");
 };
 
+export const getCoreIntentStatusApiUrl = () => buildRuntimeBackendUrl("sysAgentApiUrl", "sysAgentPort", 9100, "/api/v1/system/intent/status");
+
 export const getLatencyApiUrl = () => {
   const runtimeConfig = getRuntimeConfig();
   return runtimeConfig.latencyApiUrl

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getArStatusApiUrl, getIntentStatusApiUrl, getLatencyApiUrl, getStageApiUrl } from '../config/runtimeUrls';
+import { getArStatusApiUrl, getCoreIntentStatusApiUrl, getIntentStatusApiUrl, getLatencyApiUrl, getStageApiUrl } from '../config/runtimeUrls';
 import {
   appendLatencyPoint,
   parseArLastWhisper,
@@ -176,7 +176,7 @@ const useIntentStatus = () => {
   const [intentStatus, setIntentStatus] = useState({ intentReject: false, text: "", reason: "" });
   // 意图被拒只用于前端提示：出现后闪 3 秒自动隐藏，后端状态不受影响
   const [rejectFlashVisible, setRejectFlashVisible] = useState(false);
-  const lastRejectStampRef = useRef(0);
+  const lastRejectStampRef = useRef({});
   const rejectFlashTimerRef = useRef(null);
 
   useEffect(() => {
@@ -192,21 +192,26 @@ const useIntentStatus = () => {
       isPolling = true;
 
       try {
-        const response = await fetch(getIntentStatusApiUrl(), {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          throw new Error(`Intent status API failed: ${response.status}`);
-        }
-
-        const payload = await response.json();
+        const results = await Promise.allSettled([getIntentStatusApiUrl(), getCoreIntentStatusApiUrl()].map(async (url) => {
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) throw new Error(`Intent status API failed: ${response.status}`);
+          return response.json();
+        }));
+        const payloads = results.map((result) => result.status === "fulfilled" ? result.value : null);
+        if (payloads.every((payload) => !payload)) throw new Error("Intent status APIs unavailable");
+        if (disposed) return;
         failureCount = 0;
+        let payload = null;
+        payloads.forEach((item, index) => {
+          const stamp = String(item?.timestamp || "");
+          if (item?.intent_reject && stamp && stamp !== lastRejectStampRef.current[index]) {
+            lastRejectStampRef.current[index] = stamp;
+            payload = item;
+          }
+        });
         const rejected = Boolean(payload && payload.intent_reject);
-        const rejectStamp = Number((payload && payload.timestamp) || 0);
-        if (rejected && rejectStamp !== lastRejectStampRef.current) {
+        if (rejected) {
           // 新的一次意图被拒：重新亮 3 秒
-          lastRejectStampRef.current = rejectStamp;
           setRejectFlashVisible(true);
           window.clearTimeout(rejectFlashTimerRef.current);
           rejectFlashTimerRef.current = window.setTimeout(() => {

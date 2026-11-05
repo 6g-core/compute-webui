@@ -15,7 +15,7 @@ import { getDogEnhancedOfferUrl, getDogVisionOfferUrl, getWebRtcOfferUrl, useBac
 import { useEffectiveStageConfig } from './hooks/useEffectiveStageConfig';
 import { useArLastWhisper, useIntentStatus, useStagePolling } from './hooks/usePolling';
 import { useQosFeed } from './hooks/useQosFeed';
-import { CoreNetworkValuePanel, LeftPanel, StepBar } from './components/DemoPanels.jsx';
+import { LeftPanel, StepBar } from './components/DemoPanels.jsx';
 import { NetworkTopology3D } from './components/NetworkTopology3D.jsx';
 import WebRtcBackground from './components/WebRtcBackground.jsx';
 
@@ -253,6 +253,7 @@ const UI_TRANSLATIONS = {
   "连接无中断": "No connection interruption",
   "端侧状态：L2级通信保障": "Device Status:\nL2 Communication Assurance",
   "视频传输流畅": "Smooth video transmission",
+  "流畅视频": "Smooth video",
   "视频传输保障": "Video Transport Assurance",
   "L2级通信保障": "L2 Communication Assurance",
   "端侧状态：L3级通信保障": "Device Status:\nL3 Communication Assurance",
@@ -1557,6 +1558,22 @@ const DogVisionStreams = ({
   }
 
   if (sampleRaw) {
+    if (stageAnimationDone) {
+      return (
+        <div
+          className="flex min-h-0 flex-1 flex-col"
+          data-stage5-video-phase="smooth-final"
+        >
+          <DogVisionPanel
+            label="流畅视频"
+            state={raw.state}
+            videoRef={raw.videoRef}
+            tall
+          />
+        </div>
+      );
+    }
+
     return (
       <div
         className="flex min-h-0 flex-1 flex-col"
@@ -2050,7 +2067,6 @@ export default function App() {
 
         </div>
 
-        <CoreNetworkValuePanel />
       </div>
       {/* 底部反光效果 */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-blue-900/10 to-transparent -z-10 pointer-events-none transform scale-y-[-1] opacity-50 blur-xl"></div>

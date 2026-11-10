@@ -46,3 +46,13 @@ test("appendLatencyPoint keeps a bounded 24 point sliding window", () => {
   assert.equal(next[0].timestamp, 1);
   assert.equal(next.at(-1).timestamp, 24);
 });
+
+test("latest rejection pairs current sandbox speech with rejection despite old nanosecond core event", async () => {
+  const { latestRejectedIntent } = await import("../src/utils/pollingPayloads.js");
+  const current = { intent_reject: true, text: "Destroys the server.", timestamp: 1794295774787 };
+  const old = { intent_reject: true, text: "old", timestamp: 1794282900366454449 };
+  assert.equal(latestRejectedIntent([current, old]), current);
+  assert.equal(latestRejectedIntent([old, current]), current);
+  assert.equal(latestRejectedIntent([{ intent_reject: false }]), null);
+  assert.equal(latestRejectedIntent([null]), null);
+});

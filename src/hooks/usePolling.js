@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getArStatusApiUrl, getCoreIntentStatusApiUrl, getIntentStatusApiUrl, getLatencyApiUrl, getStageApiUrl } from '../config/runtimeUrls';
 import {
   appendLatencyPoint,
+  latestRejectedIntent,
   parseArLastWhisper,
   parseLatencyPayload,
   parseStagePayload,
@@ -176,6 +177,7 @@ const useIntentStatus = () => {
   const [intentStatus, setIntentStatus] = useState({ intentReject: false, text: "", reason: "" });
   // 意图被拒只用于前端提示：出现后闪 3 秒自动隐藏，后端状态不受影响
   const [rejectFlashVisible, setRejectFlashVisible] = useState(false);
+  const [rejectionEventId, setRejectionEventId] = useState(0);
   const lastRejectStampRef = useRef({});
   const rejectFlashTimerRef = useRef(null);
 
@@ -201,24 +203,26 @@ const useIntentStatus = () => {
         if (payloads.every((payload) => !payload)) throw new Error("Intent status APIs unavailable");
         if (disposed) return;
         failureCount = 0;
-        let payload = null;
+        const newRejections = [];
         payloads.forEach((item, index) => {
           const stamp = String(item?.timestamp || "");
           if (item?.intent_reject && stamp && stamp !== lastRejectStampRef.current[index]) {
             lastRejectStampRef.current[index] = stamp;
-            payload = item;
+            newRejections.push(item);
           }
         });
+        const payload = latestRejectedIntent(newRejections);
         const rejected = Boolean(payload && payload.intent_reject);
         if (rejected) {
           // 新的一次意图被拒：重新亮 3 秒
+          setRejectionEventId((id) => id + 1);
           setRejectFlashVisible(true);
           window.clearTimeout(rejectFlashTimerRef.current);
           rejectFlashTimerRef.current = window.setTimeout(() => {
             setRejectFlashVisible(false);
           }, 3000);
         }
-        if (!disposed) {
+        if (!disposed && rejected) {
           setIntentStatus({
             intentReject: rejected,
             text: String((payload && payload.text) || ""),
@@ -249,7 +253,7 @@ const useIntentStatus = () => {
     window.clearTimeout(rejectFlashTimerRef.current);
   }, []);
 
-  return { ...intentStatus, rejectFlashVisible };
+  return { ...intentStatus, rejectFlashVisible, rejectionEventId };
 };
 
 export { useArLastWhisper, useIntentStatus, useLatencySeries, useStagePolling };

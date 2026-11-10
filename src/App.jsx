@@ -1,3 +1,4 @@
+import { useRejectionPresentation } from './hooks/useRejectionPresentation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AudioWaveform,
@@ -1717,61 +1718,25 @@ export default function App() {
 
   const { stage, connectionState, error } = useStagePolling();
   const arLastWhisper = useArLastWhisper();
-  const { rejectFlashVisible } = useIntentStatus();
+  const { rejectFlashVisible, rejectionEventId, text: rejectedSpeechText } = useIntentStatus();
   const [stage5VideoReady, setStage5VideoReady] = useState(false);
   const handleStage5VideoFrame = useCallback(() => {
     if (stage === 5) {
       setStage5VideoReady(true);
     }
   }, [stage]);
-  const effectiveStageConfig = useEffectiveStageConfig(stage, { stage5VideoReady });
+  const effectiveStageConfig = useEffectiveStageConfig(stage, { stage5VideoReady, rejectionEventId });
   const qosFeed = useQosFeed(stage === 9);
-  const postAnimationWhisperBaselineRef = useRef({ stage, whisper: arLastWhisper });
-  const [postAnimationArSpeechText, setPostAnimationArSpeechText] = useState("");
 
   useEffect(() => {
     setStage5VideoReady(false);
   }, [stage]);
 
-  useEffect(() => {
-    postAnimationWhisperBaselineRef.current = { stage, whisper: arLastWhisper };
-    setPostAnimationArSpeechText("");
-  }, [stage]);
-
-  useEffect(() => {
-    if (stage <= 1 || stage === 8 || stage === 9) {
-      setPostAnimationArSpeechText("");
-      postAnimationWhisperBaselineRef.current = { stage, whisper: arLastWhisper };
-      return;
-    }
-
-    if (effectiveStageConfig.showArSpeech || !effectiveStageConfig.stageAnimationDone) {
-      setPostAnimationArSpeechText("");
-      postAnimationWhisperBaselineRef.current = { stage, whisper: arLastWhisper };
-      return;
-    }
-
-    if (!arLastWhisper) {
-      setPostAnimationArSpeechText("");
-      postAnimationWhisperBaselineRef.current = { stage, whisper: "" };
-      return;
-    }
-
-    const baseline = postAnimationWhisperBaselineRef.current;
-    if (baseline.stage === stage && arLastWhisper !== baseline.whisper) {
-      setPostAnimationArSpeechText(arLastWhisper);
-      postAnimationWhisperBaselineRef.current = { stage, whisper: arLastWhisper };
-    }
-  }, [
-    arLastWhisper,
-    effectiveStageConfig.showArSpeech,
-    effectiveStageConfig.stageAnimationDone,
-    stage,
-  ]);
-
-  const arSpeechText = effectiveStageConfig.showArSpeech
-    ? arLastWhisper
-    : postAnimationArSpeechText;
+  // Live user speech is independent of scripted topology animation phases.
+  // An empty backend value clears the bubble.
+  const { arSpeechText, intentRejectVisible } = useRejectionPresentation({
+    stage, arLastWhisper, rejectedSpeechText, rejectionEventId, rejectFlashVisible,
+  });
   const topologyAgentBubble = effectiveStageConfig.systemAgentBubble
     ? pinBubbleToSystemAgent(effectiveStageConfig.systemAgentBubble)
     : stage === 9 || stage === 10
@@ -2052,7 +2017,7 @@ export default function App() {
               stagePhaseKey={effectiveStageConfig.stagePhaseKey}
               language={language}
               qosMetrics={qosFeed.metrics}
-              intentReject={rejectFlashVisible}
+              intentReject={intentRejectVisible}
             />
           </div>
 

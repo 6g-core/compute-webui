@@ -32,3 +32,15 @@ export const parseLatencyPayload = (payload, now = Date.now) => {
 export const appendLatencyPoint = (points, point, maxPoints = 24) => (
   [...points, point].slice(-maxPoints)
 );
+
+// Core timestamps are nanoseconds, sandbox timestamps are milliseconds.
+export const latestRejectedIntent = (payloads) => {
+  const milliseconds = (value) => {
+    const stamp = Number(value || 0);
+    return stamp > 1e17 ? stamp / 1e6 : stamp > 0 && stamp < 1e11 ? stamp * 1000 : stamp;
+  };
+  return payloads.filter((item) => item?.intent_reject).reduce(
+    (latest, item) => !latest || milliseconds(item.timestamp) > milliseconds(latest.timestamp) ? item : latest,
+    null,
+  );
+};

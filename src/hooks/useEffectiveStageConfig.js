@@ -54,40 +54,63 @@ const buildCompletedStageIntentSummary = (summaryItems, phases) => (
 
 const STAGE10_HANDOFF_FLASH_MS = 5000;
 
-export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {}) => {
+export const useEffectiveStageConfig = (stage, { stage5VideoReady = true, rejectionEventId = 0 } = {}) => {
   const stageConfig = STAGE_CONFIG[stage] || STAGE_CONFIG[1];
-  const [stage2Progress, setStage2Progress] = useState({
+  const [stage2ProgressState, setStage2Progress] = useState({
     activeTask: 0,
     completedCount: 0,
     bubbleStatus: "working",
   });
-  const [stage4Progress, setStage4Progress] = useState({
+  const [stage4ProgressState, setStage4Progress] = useState({
     activeTask: 0,
     completedCount: 0,
     bubbleStatus: "working",
   });
-  const [stage6Progress, setStage6Progress] = useState({
+  const [stage6ProgressState, setStage6Progress] = useState({
     activeTask: 0,
     completedCount: 0,
     bubbleStatus: "working",
   });
-  const [stage7Progress, setStage7Progress] = useState({
+  const [stage7ProgressState, setStage7Progress] = useState({
     activeTask: 0,
     completedCount: 0,
     bubbleStatus: "working",
   });
-  const [stage2PhaseIndex, setStage2PhaseIndex] = useState(0);
-  const [stage2FinalFlashActive, setStage2FinalFlashActive] = useState(false);
-  const [stage4PhaseIndex, setStage4PhaseIndex] = useState(0);
-  const [stage4FinalFlashActive, setStage4FinalFlashActive] = useState(false);
-  const [stage5PhaseIndex, setStage5PhaseIndex] = useState(0);
-  const [stage5AnimationComplete, setStage5AnimationComplete] = useState(false);
-  const [stage7PhaseIndex, setStage7PhaseIndex] = useState(0);
-  const [stage7FinalFlashActive, setStage7FinalFlashActive] = useState(false);
-  const [stage9QosPhaseIndex, setStage9QosPhaseIndex] = useState(0);
-  const [stage10HandoffFlashActive, setStage10HandoffFlashActive] = useState(false);
+  const [stage2PhaseIndexState, setStage2PhaseIndex] = useState(0);
+  const [stage2FinalFlashActiveState, setStage2FinalFlashActive] = useState(false);
+  const [stage4PhaseIndexState, setStage4PhaseIndex] = useState(0);
+  const [stage4FinalFlashActiveState, setStage4FinalFlashActive] = useState(false);
+  const [stage5PhaseIndexState, setStage5PhaseIndex] = useState(0);
+  const [stage5AnimationCompleteState, setStage5AnimationComplete] = useState(false);
+  const [stage7PhaseIndexState, setStage7PhaseIndex] = useState(0);
+  const [stage7FinalFlashActiveState, setStage7FinalFlashActive] = useState(false);
+  const [stage9QosPhaseIndexState, setStage9QosPhaseIndex] = useState(0);
+  const [stage10HandoffFlashActiveState, setStage10HandoffFlashActive] = useState(false);
+
+  // Latch only a new rejection in this stage. Flash expiry must not restart it.
+  const [completion, setCompletion] = useState({ stage, eventId: rejectionEventId, forced: false });
+  const newRejection = rejectionEventId !== completion.eventId;
+  const forceComplete = newRejection || (completion.stage === stage && completion.forced);
+  if (completion.stage !== stage || newRejection) {
+    setCompletion({ stage, eventId: rejectionEventId, forced: forceComplete });
+  }
+  const stage2Progress = forceComplete ? { activeTask: STAGE2_WORKFLOW.length - 1, completedCount: STAGE2_WORKFLOW.length, bubbleStatus: "success" } : stage2ProgressState;
+  const stage4Progress = forceComplete ? { activeTask: STAGE4_WORKFLOW.length - 1, completedCount: STAGE4_WORKFLOW.length, bubbleStatus: "success" } : stage4ProgressState;
+  const stage6Progress = forceComplete ? { activeTask: STAGE6_WORKFLOW.length - 1, completedCount: STAGE6_WORKFLOW.length, bubbleStatus: "success" } : stage6ProgressState;
+  const stage7Progress = forceComplete ? { activeTask: STAGE7_WORKFLOW.length - 1, completedCount: STAGE7_WORKFLOW.length, bubbleStatus: "success" } : stage7ProgressState;
+  const stage2PhaseIndex = forceComplete ? STAGE2_PHASES.length - 1 : stage2PhaseIndexState;
+  const stage4PhaseIndex = forceComplete ? STAGE4_PHASES.length - 1 : stage4PhaseIndexState;
+  const stage5PhaseIndex = forceComplete ? STAGE5_PHASES.length - 1 : stage5PhaseIndexState;
+  const stage7PhaseIndex = forceComplete ? STAGE7_PHASES.length - 1 : stage7PhaseIndexState;
+  const stage2FinalFlashActive = forceComplete ? false : stage2FinalFlashActiveState;
+  const stage4FinalFlashActive = forceComplete ? false : stage4FinalFlashActiveState;
+  const stage7FinalFlashActive = forceComplete ? false : stage7FinalFlashActiveState;
+  const stage5AnimationComplete = forceComplete ? true : stage5AnimationCompleteState;
+  const stage9QosPhaseIndex = forceComplete ? STAGE9_QOS_PHASES.length - 1 : stage9QosPhaseIndexState;
+  const stage10HandoffFlashActive = forceComplete ? false : stage10HandoffFlashActiveState;
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 2) {
       setStage2PhaseIndex(0);
       setStage2FinalFlashActive(false);
@@ -106,9 +129,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     });
     setStage2PhaseIndex(0);
     setStage2FinalFlashActive(false);
-  }, [stage]);
+  }, [forceComplete, stage]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage === 2) {
       return undefined;
     }
@@ -142,7 +166,7 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
       : STAGE_ANIMATION_TIMING[2].successMs);
 
     return () => window.clearTimeout(timer);
-  }, [
+  }, [forceComplete,
     stage,
     stage2Progress.activeTask,
     stage2Progress.bubbleStatus,
@@ -150,6 +174,7 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
   ]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 2 || stage2PhaseIndex >= STAGE2_PHASES.length - 1) {
       return undefined;
     }
@@ -159,9 +184,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     }, STAGE2_PHASE_TIMING[stage2PhaseIndex] || 1300);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage2PhaseIndex]);
+  }, [forceComplete, stage, stage2PhaseIndex]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 2 || stage2PhaseIndex !== STAGE2_PHASES.length - 1) {
       setStage2FinalFlashActive(false);
       return undefined;
@@ -173,9 +199,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     }, 1000);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage2PhaseIndex]);
+  }, [forceComplete, stage, stage2PhaseIndex]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 4) {
       setStage4PhaseIndex(0);
       setStage4FinalFlashActive(false);
@@ -194,9 +221,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     });
     setStage4PhaseIndex(0);
     setStage4FinalFlashActive(false);
-  }, [stage]);
+  }, [forceComplete, stage]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 6) {
       setStage6Progress({
         activeTask: 0,
@@ -211,9 +239,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
       completedCount: 0,
       bubbleStatus: "working",
     });
-  }, [stage]);
+  }, [forceComplete, stage]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 5) {
       setStage5PhaseIndex(0);
       setStage5AnimationComplete(false);
@@ -222,9 +251,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
 
     setStage5PhaseIndex(0);
     setStage5AnimationComplete(false);
-  }, [stage]);
+  }, [forceComplete, stage]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 7) {
       setStage7PhaseIndex(0);
       setStage7FinalFlashActive(false);
@@ -243,9 +273,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     });
     setStage7PhaseIndex(0);
     setStage7FinalFlashActive(false);
-  }, [stage]);
+  }, [forceComplete, stage]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 9) {
       setStage9QosPhaseIndex(0);
       return undefined;
@@ -253,9 +284,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
 
     setStage9QosPhaseIndex(0);
     return undefined;
-  }, [stage]);
+  }, [forceComplete, stage]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 9 || stage9QosPhaseIndex >= STAGE9_QOS_PHASES.length - 1) {
       return undefined;
     }
@@ -265,9 +297,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     }, STAGE9_QOS_PHASE_TIMING[stage9QosPhaseIndex] || 3000);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage9QosPhaseIndex]);
+  }, [forceComplete, stage, stage9QosPhaseIndex]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 10) {
       setStage10HandoffFlashActive(false);
       return undefined;
@@ -279,9 +312,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     }, STAGE10_HANDOFF_FLASH_MS);
 
     return () => window.clearTimeout(timer);
-  }, [stage]);
+  }, [forceComplete, stage]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 4 || stage4PhaseIndex >= STAGE4_PHASES.length - 1) {
       return undefined;
     }
@@ -291,9 +325,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     }, STAGE4_PHASE_TIMING[stage4PhaseIndex] || 1300);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage4PhaseIndex]);
+  }, [forceComplete, stage, stage4PhaseIndex]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 4 || stage4PhaseIndex !== STAGE4_PHASES.length - 1) {
       setStage4FinalFlashActive(false);
       return undefined;
@@ -305,9 +340,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     }, 1000);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage4PhaseIndex]);
+  }, [forceComplete, stage, stage4PhaseIndex]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 5 || !stage5VideoReady || stage5PhaseIndex >= STAGE5_PHASES.length - 1) {
       return undefined;
     }
@@ -317,9 +353,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     }, STAGE5_PHASE_TIMING[stage5PhaseIndex] || 1300);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage5PhaseIndex, stage5VideoReady]);
+  }, [forceComplete, stage, stage5PhaseIndex, stage5VideoReady]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 5 || stage5PhaseIndex !== STAGE5_PHASES.length - 1) {
       setStage5AnimationComplete(false);
       return undefined;
@@ -331,9 +368,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     }, 1000);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage5PhaseIndex]);
+  }, [forceComplete, stage, stage5PhaseIndex]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 7 || stage7PhaseIndex >= STAGE7_PHASES.length - 1) {
       return undefined;
     }
@@ -343,9 +381,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     }, STAGE7_PHASE_TIMING[stage7PhaseIndex] || 1300);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage7PhaseIndex]);
+  }, [forceComplete, stage, stage7PhaseIndex]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 7 || stage7PhaseIndex !== STAGE7_PHASES.length - 1) {
       setStage7FinalFlashActive(false);
       return undefined;
@@ -357,9 +396,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
     }, 1000);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage7PhaseIndex]);
+  }, [forceComplete, stage, stage7PhaseIndex]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 4 || stage4Progress.completedCount >= STAGE4_WORKFLOW.length) {
       return undefined;
     }
@@ -389,9 +429,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
       : STAGE_ANIMATION_TIMING[4].successMs);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage4Progress.activeTask, stage4Progress.bubbleStatus, stage4Progress.completedCount]);
+  }, [forceComplete, stage, stage4Progress.activeTask, stage4Progress.bubbleStatus, stage4Progress.completedCount]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 6 || stage6Progress.completedCount >= STAGE6_WORKFLOW.length) {
       return undefined;
     }
@@ -421,9 +462,10 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
       : STAGE_ANIMATION_TIMING[6].successMs);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage6Progress.activeTask, stage6Progress.bubbleStatus, stage6Progress.completedCount]);
+  }, [forceComplete, stage, stage6Progress.activeTask, stage6Progress.bubbleStatus, stage6Progress.completedCount]);
 
   useEffect(() => {
+    if (forceComplete) return undefined;
     if (stage !== 7 || stage7Progress.completedCount >= STAGE7_WORKFLOW.length) {
       return undefined;
     }
@@ -453,7 +495,7 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
       : STAGE_ANIMATION_TIMING[7].successMs);
 
     return () => window.clearTimeout(timer);
-  }, [stage, stage7Progress.activeTask, stage7Progress.bubbleStatus, stage7Progress.completedCount]);
+  }, [forceComplete, stage, stage7Progress.activeTask, stage7Progress.bubbleStatus, stage7Progress.completedCount]);
 
   const buildCumulativeIntentSummary = () => {
     if (stage === 1) {
@@ -607,7 +649,7 @@ export const useEffectiveStageConfig = (stage, { stage5VideoReady = true } = {})
       const allDone = stage5PhaseIndex >= STAGE5_PHASES.length - 1;
       const hideFinalFlash = phase.key === "stage5_6" && stage5AnimationComplete;
       const l2GuaranteeDone = Boolean(phase.qoeComplete);
-      const stage5Prewarming = !stage5VideoReady;
+      const stage5Prewarming = !stage5VideoReady && !forceComplete;
       const showArSpeech = !stage5Prewarming && phase.key === "stage5_source" && !hideFinalFlash;
 
       return {
